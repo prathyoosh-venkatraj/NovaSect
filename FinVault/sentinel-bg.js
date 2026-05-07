@@ -4,6 +4,10 @@
  */
 
 (function() {
+    if (typeof THREE === 'undefined') {
+        console.error('Three.js not loaded');
+        return;
+    }
     const container = document.getElementById('sentinel-bg-canvas');
     if (!container) return;
 
