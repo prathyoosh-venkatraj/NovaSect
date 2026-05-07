@@ -11,6 +11,7 @@
     }
 
     function initSentinelBackground() {
+        console.log("Sentinel BG Script Initialized - v3");
         if (typeof THREE === 'undefined') {
             console.error('Three.js not loaded');
             return;

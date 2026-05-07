@@ -29,7 +29,7 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
     <style>
         .terminal-scanline {
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
@@ -81,7 +81,7 @@
 </head>
 <body class="bg-black text-white font-montserrat overflow-x-hidden min-h-screen">
     <div class="terminal-scanline fixed inset-0 opacity-20 z-[60]"></div>
-    <div id="sentinel-bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></div>
+    <div id="sentinel-bg-canvas" class="fixed inset-0 z-10 pointer-events-none"></div>
 
     <header class="header">
         <a href="index.html" class="logo text-white no-underline">NovaSect</a>
@@ -313,8 +313,8 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="sentinel.v2.js"></script>
-    <script src="sentinel-bg.js"></script>
+    <script src="sentinel.v2.js?v=2"></script>
+    <script src="sentinel-bg.js?v=3"></script>
 
     <style>
         @keyframes loading {
