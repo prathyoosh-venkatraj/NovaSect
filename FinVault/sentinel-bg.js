@@ -29,14 +29,14 @@
     const gridHelper = new THREE.GridHelper(size, divisions, gridColor, gridColor);
     gridHelper.position.y = -10;
     gridHelper.material.transparent = true;
-    gridHelper.material.opacity = 0.2;
+    gridHelper.material.opacity = 0.6; // Increased from 0.2
     scene.add(gridHelper);
 
     // Top Grid Plane (Symmetry)
     const topGrid = new THREE.GridHelper(size, divisions, gridColor, gridColor);
     topGrid.position.y = 20;
     topGrid.material.transparent = true;
-    topGrid.material.opacity = 0.1;
+    topGrid.material.opacity = 0.3; // Increased from 0.1
     scene.add(topGrid);
 
     // Data Nodes (Floating Particles)
@@ -56,9 +56,9 @@
     
     const pointsMaterial = new THREE.PointsMaterial({
         color: 0x39FF14,
-        size: 0.1,
+        size: 0.15, // Increased size
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.9, // Increased opacity
         blending: THREE.AdditiveBlending
     });
 
