@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -27,7 +29,7 @@
             }
         }
     </script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
     <style>
         .terminal-scanline {
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
@@ -78,7 +80,8 @@
     </style>
 </head>
 <body class="bg-black text-white font-montserrat overflow-x-hidden min-h-screen">
-    <div class="terminal-scanline fixed inset-0 opacity-30"></div>
+    <div class="terminal-scanline fixed inset-0 opacity-20 z-[60]"></div>
+    <div id="sentinel-bg-canvas" class="fixed inset-0 z-10 pointer-events-none"></div>
 
     <header class="header">
         <a href="index.html" class="logo text-white no-underline">NovaSect</a>
@@ -94,7 +97,7 @@
         </nav>
     </header>
 
-    <main class="relative z-10 pt-32 px-4 pb-20 max-w-7xl mx-auto">
+    <main class="relative z-[50] pt-32 px-4 pb-20 max-w-7xl mx-auto">
         <!-- Dashboard Header -->
         <div class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
@@ -310,7 +313,125 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="sentinel.v2.js"></script>
+    <script src="sentinel.v2.js?v=2"></script>
+
+    <!-- Inline Background Animation -->
+    <script>
+        (function() {
+            function initSentinelBackground() {
+                console.log("Sentinel BG Script Initialized - INLINE");
+                if (typeof THREE === 'undefined') {
+                    console.error('Three.js not loaded');
+                    return;
+                }
+                const container = document.getElementById('sentinel-bg-canvas');
+                if (!container) return;
+
+                // Clear container just in case
+                container.innerHTML = '';
+
+                // Scene Setup
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+                
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                container.appendChild(renderer.domElement);
+
+                // Grid System
+                const size = 100;
+                const divisions = 40;
+                const gridColor = 0x39FF14;
+                
+                // Bottom Grid Plane
+                const gridHelper = new THREE.GridHelper(size, divisions, gridColor, gridColor);
+                gridHelper.position.y = -10;
+                gridHelper.material.transparent = true;
+                gridHelper.material.opacity = 0.6;
+                scene.add(gridHelper);
+
+                // Top Grid Plane
+                const topGrid = new THREE.GridHelper(size, divisions, gridColor, gridColor);
+                topGrid.position.y = 20;
+                topGrid.material.transparent = true;
+                topGrid.material.opacity = 0.3;
+                scene.add(topGrid);
+
+                // Data Nodes
+                const pointsGeometry = new THREE.BufferGeometry();
+                const count = 500;
+                const positions = new Float32Array(count * 3);
+                const velocities = new Float32Array(count);
+
+                for(let i = 0; i < count * 3; i += 3) {
+                    positions[i] = (Math.random() - 0.5) * size;
+                    positions[i+1] = Math.random() * 30 - 10;
+                    positions[i+2] = (Math.random() - 0.5) * size;
+                    velocities[i/3] = Math.random() * 0.05 + 0.02;
+                }
+
+                pointsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                
+                const pointsMaterial = new THREE.PointsMaterial({
+                    color: 0x39FF14,
+                    size: 0.15,
+                    transparent: true,
+                    opacity: 0.9,
+                    blending: THREE.AdditiveBlending
+                });
+
+                const dataNodes = new THREE.Points(pointsGeometry, pointsMaterial);
+                scene.add(dataNodes);
+
+                camera.position.z = 30;
+                camera.position.y = 2;
+
+                let mouseX = 0;
+                let mouseY = 0;
+                window.addEventListener('mousemove', (e) => {
+                    mouseX = (e.clientX - window.innerWidth / 2) / 100;
+                    mouseY = (e.clientY - window.innerHeight / 2) / 100;
+                });
+
+                function animate() {
+                    requestAnimationFrame(animate);
+
+                    camera.position.x += (mouseX - camera.position.x) * 0.05;
+                    camera.position.y += (-mouseY + 2 - camera.position.y) * 0.05;
+                    camera.lookAt(scene.position);
+
+                    gridHelper.rotation.y += 0.001;
+                    topGrid.rotation.y -= 0.0005;
+
+                    const positions = dataNodes.geometry.attributes.position.array;
+                    for(let i = 0; i < count; i++) {
+                        const i3 = i * 3;
+                        positions[i3 + 2] += velocities[i];
+                        if(positions[i3 + 2] > size / 2) positions[i3 + 2] = -size / 2;
+                        positions[i3 + 1] += Math.sin(Date.now() * 0.001 + positions[i3]) * 0.01;
+                    }
+                    dataNodes.geometry.attributes.position.needsUpdate = true;
+
+                    renderer.render(scene, camera);
+                }
+
+                window.addEventListener('resize', () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+
+                animate();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initSentinelBackground);
+            } else {
+                initSentinelBackground();
+            }
+        })();
+    </script>
 
     <style>
         @keyframes loading {
