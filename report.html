@@ -643,7 +643,7 @@
                             }
 
                             if (!isCached) {
-                                document.querySelectorAll('.val-unit').forEach(el => {
+                                document.querySelectorAll('.multiple-value').forEach(el => {
                                     el.style.color = '#fff';
                                     el.style.textShadow = '0 0 20px rgba(57, 255, 20, 0.4)';
                                     setTimeout(() => {
@@ -663,34 +663,28 @@
                         }
 
                         // 2. Optimized Fetch Logic
-                        const fetchPrice = async (url) => {
-                            const cacheBuster = `?t=${Date.now()}`;
-                            const proxies = [
-                                `https://api.allorigins.win/raw?url=${encodeURIComponent(url + cacheBuster)}`,
-                                `https://api.cors.lol/?url=${encodeURIComponent(url + cacheBuster)}`
-                            ];
+                        const fetchPrice = async (symbol) => {
+                            const cacheBuster = `&t=${Date.now()}`;
+                            const url = `/api/yahoo-proxy?symbol=${symbol}${cacheBuster}`;
 
-                            for (const proxyUrl of proxies) {
-                                try {
-                                    const response = await fetch(proxyUrl);
-                                    if (!response.ok) continue;
-                                    const rawJson = await response.json();
-                                    
-                                    if (rawJson.chart?.result?.[0]) {
-                                        const meta = rawJson.chart.result[0].meta;
-                                        // Fallback to previousClose if regularMarketPrice is missing (market closed)
-                                        return meta.regularMarketPrice || meta.previousClose;
-                                    }
-                                } catch (e) { console.warn(`Proxy fail: ${proxyUrl.split('?')[0]}`); }
-                            }
-                            throw new Error("All proxies failed.");
+                            try {
+                                const response = await fetch(url);
+                                if (!response.ok) throw new Error("Native proxy failed");
+                                const json = await response.json();
+                                
+                                if (json.price) {
+                                    return json.price;
+                                }
+                            } catch (e) { console.warn(`Fetch fail:`, e); }
+                            
+                            throw new Error("Price fetch failed.");
                         };
 
                         // Fetch if no cache or cache older than 1 hour
                         const isStale = !cachedData || (Date.now() - cachedData.timestamp > 60 * 60 * 1000);
 
                         if (isStale) {
-                            fetchPrice(targetUrl)
+                            fetchPrice(yahooSymbol)
                                 .then(price => {
                                     if (price) {
                                         updateMultiplesUI(price);

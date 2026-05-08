@@ -71,6 +71,7 @@ export default async function handler(req, res) {
             volatility: volatilityPercentage,
             dailyPriceChangePct: dailyPriceChangePct,
             latestDate: latestDate,
+            price: result.meta?.regularMarketPrice || result.meta?.previousClose || lastClose,
             source: 'Yahoo Finance Live'
         });
 
