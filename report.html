@@ -402,6 +402,19 @@
 
             if (company) {
                 const companyData = {
+                    'chevron': {
+                        name: 'Chevron',
+                        industry: 'Integrated Oil & Gas',
+                        pdf: 'assets/reports/chevron.pdf',
+                        ticker: 'NYSE:CVX',
+                        fundamentals: {
+                            trailingEPS: null,
+                            forwardEPS: null,
+                            fcfPerShare: null,
+                            dividendYield: '--'
+                        },
+                        stats: []
+                    },
                     'exxonmobil': {
                         name: 'ExxonMobil',
                         industry: 'Integrated Oil & Gas',
@@ -607,13 +620,13 @@
                         // UI Rendering Helper
                         const updateMultiplesUI = (price, isCached = false) => {
                             if (!price || !data.fundamentals) return;
-                            const trailingPE = (price / data.fundamentals.trailingEPS).toFixed(1);
-                            const leadingPE = (price / data.fundamentals.forwardEPS).toFixed(1);
-                            const priceFCF = (price / data.fundamentals.fcfPerShare).toFixed(1);
+                            const trailingPE = data.fundamentals.trailingEPS ? (price / data.fundamentals.trailingEPS).toFixed(1) + 'x' : '--';
+                            const leadingPE = data.fundamentals.forwardEPS ? (price / data.fundamentals.forwardEPS).toFixed(1) + 'x' : '--';
+                            const priceFCF = data.fundamentals.fcfPerShare ? (price / data.fundamentals.fcfPerShare).toFixed(1) + 'x' : '--';
 
-                            document.getElementById('val-trailing-pe').textContent = trailingPE + 'x';
-                            document.getElementById('val-leading-pe').textContent = leadingPE + 'x';
-                            document.getElementById('val-price-fcf').textContent = priceFCF + 'x';
+                            document.getElementById('val-trailing-pe').textContent = trailingPE;
+                            document.getElementById('val-leading-pe').textContent = leadingPE;
+                            document.getElementById('val-price-fcf').textContent = priceFCF;
 
                             if (!isCached) {
                                 document.querySelectorAll('.val-unit').forEach(el => {
