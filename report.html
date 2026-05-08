@@ -411,7 +411,8 @@
                             trailingEPS: 6.63,
                             forwardEPS: 7.75,
                             fcfPerShare: 10.93,
-                            dividendYield: '5.1%'
+                            dividendYield: '5.1%',
+                            dividendAmount: 6.52
                         },
                         stats: ['1.15', '0.72', '1.02', '0.71', '0.18', '0.41', '15.1x', '11.1x', '9.53x', '5.23x', '0.65x', '10.4%', '6.5%', '4.2%', '7.3%']
                     },
@@ -424,7 +425,8 @@
                             trailingEPS: 6.70,
                             forwardEPS: 9.01,
                             fcfPerShare: 5.48,
-                            dividendYield: '2.64%'
+                            dividendYield: '2.64%',
+                            dividendAmount: 3.80
                         },
                         stats: ['1.15', '0.76', '0.72', '0.68', '0.16', '0.406', '69.4x', '7.4x', '7.3x', '3.0x', '0.72', '12.6%', '8.7%', '6.4%', '10.7%']
                     },
@@ -606,7 +608,7 @@
                     if (data.fundamentals && data.ticker) {
                         const multiplesSection = document.getElementById('multiples-section');
                         multiplesSection.style.display = 'block';
-                        document.getElementById('val-div-yield').textContent = data.fundamentals.dividendYield;
+                        document.getElementById('val-div-yield').textContent = data.fundamentals.dividendYield || '--';
 
                         const ticker = data.ticker.split(':')[1];
                         const symbolMap = { 
@@ -627,6 +629,11 @@
                             document.getElementById('val-trailing-pe').textContent = trailingPE;
                             document.getElementById('val-leading-pe').textContent = leadingPE;
                             document.getElementById('val-price-fcf').textContent = priceFCF;
+
+                            if (data.fundamentals.dividendAmount) {
+                                const liveYield = ((data.fundamentals.dividendAmount / price) * 100).toFixed(2) + '%';
+                                document.getElementById('val-div-yield').textContent = liveYield;
+                            }
 
                             if (!isCached) {
                                 document.querySelectorAll('.val-unit').forEach(el => {
