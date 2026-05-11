@@ -114,7 +114,13 @@ class OsirisOrchestrator {
                 const percentiles = e.data.percentiles;
 
                 // Render Cloud
-                this.canvas.renderCloud(percentiles);
+                this.canvas.renderCloud({
+                    percentiles: percentiles,
+                    initialPrice: initialPrice,
+                    physicsType: physicsType,
+                    physicsParams: physicsParams,
+                    drift: drift
+                });
 
                 // Run Oracle Synthesis
                 const lastIdx = percentiles.p50.length - 1;
