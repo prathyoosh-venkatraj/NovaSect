@@ -158,10 +158,55 @@
                 <div class="osiris-subtitle">STOCHASTIC PROBABILITY ENGINE // MULTI-PATH FORWARD SIMULATION</div>
             </div>
 
-            <div class="osiris-controls">
-                <span style="color: var(--accent-green); font-family: monospace;">TARGET TICKER:</span>
-                <input type="text" id="osiris-ticker-input" class="osiris-input" placeholder="e.g. XOM" value="XOM" />
-                <button id="osiris-trigger-btn" class="osiris-btn">INITIATE SIMULATION</button>
+            <div class="osiris-controls-wrapper" style="background: rgba(0, 255, 0, 0.05); border: 1px solid rgba(0, 255, 0, 0.2); padding: 20px; border-radius: 4px;">
+                <div class="osiris-controls" style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 20px; border: none; padding: 0; background: transparent;">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
+                        <label for="osiris-ticker-select" style="color: var(--accent-green); font-family: monospace; font-size: 0.9em;">TARGET TICKER:</label>
+                        <select id="osiris-ticker-select" class="osiris-input" style="width: 100%;">
+                            <optgroup label="ENERGY & UTILITIES // OU MEAN-REVERSION">
+                                <option value="XOM">XOM - ExxonMobil Corp</option>
+                                <option value="CVX">CVX - Chevron Corp</option>
+                                <option value="NEE">NEE - NextEra Energy Inc</option>
+                                <option value="DUK">DUK - Duke Energy Corp</option>
+                            </optgroup>
+                            <optgroup label="INDUSTRIALS & DEFENSE // GBM + POISSON JUMPS">
+                                <option value="LMT">LMT - Lockheed Martin Corp</option>
+                                <option value="GD">GD - General Dynamics Corp</option>
+                                <option value="CAT">CAT - Caterpillar Inc</option>
+                                <option value="GE">GE - GE Aerospace</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <button id="osiris-trigger-btn" class="osiris-btn" style="height: 40px;">INITIATE SIMULATION</button>
+                </div>
+
+                <div id="osiris-metadata-readout" style="font-family: monospace; color: rgba(0, 200, 255, 0.8); font-size: 0.85em; margin-bottom: 20px; letter-spacing: 1px;">
+                    TETHERED HUB: BRENT CRUDE BASIS
+                </div>
+
+                <div class="osiris-sliders" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                    <div class="slider-group" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; color: var(--accent-green); font-family: monospace; font-size: 0.85em;">
+                            <span>ASSET VOLATILITY (σ)</span>
+                            <span id="val-volatility">0.22</span>
+                        </div>
+                        <input type="range" id="slider-volatility" min="0.01" max="0.80" step="0.01" value="0.22" style="accent-color: var(--accent-green);">
+                    </div>
+                    <div class="slider-group" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; color: var(--accent-green); font-family: monospace; font-size: 0.85em;">
+                            <span id="label-physics-param">REVERSION SPEED (θ)</span>
+                            <span id="val-physics-param">0.15</span>
+                        </div>
+                        <input type="range" id="slider-physics-param" min="0.01" max="1.00" step="0.01" value="0.15" style="accent-color: var(--accent-green);">
+                    </div>
+                    <div class="slider-group" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; color: var(--accent-green); font-family: monospace; font-size: 0.85em;">
+                            <span>TIME HORIZON (DAYS)</span>
+                            <span id="val-horizon">252</span>
+                        </div>
+                        <input type="range" id="slider-horizon" min="21" max="504" step="21" value="252" style="accent-color: var(--accent-green);">
+                    </div>
+                </div>
             </div>
 
             <div class="canvas-wrapper">

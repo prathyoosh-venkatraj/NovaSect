@@ -38,6 +38,11 @@ class OsirisOrchestrator {
             const configRes = await fetch('/physics-config.json');
             this.physicsConfig = await configRes.json();
             console.log('[OSIRIS] Physics configuration loaded', this.physicsConfig.version);
+            
+            const tickerSelect = document.getElementById('osiris-ticker-select');
+            if (tickerSelect) {
+                this.syncUIState(tickerSelect.value);
+            }
         } catch (e) {
             console.error('[OSIRIS] Failed to load physics-config.json', e);
         }
@@ -45,14 +50,74 @@ class OsirisOrchestrator {
         // Cache Macro Hubs on Initialization
         await osirisIngestion.getMacroHubs();
 
-        // Bind UI Controls (assuming there's a button to trigger simulation)
+        // Bind UI Controls
         const triggerBtn = document.getElementById('osiris-trigger-btn');
+        const tickerSelect = document.getElementById('osiris-ticker-select');
+        const sliderVol = document.getElementById('slider-volatility');
+        const valVol = document.getElementById('val-volatility');
+        const sliderPhysics = document.getElementById('slider-physics-param');
+        const valPhysics = document.getElementById('val-physics-param');
+        const sliderHorizon = document.getElementById('slider-horizon');
+        const valHorizon = document.getElementById('val-horizon');
+
+        sliderVol.addEventListener('input', (e) => valVol.innerText = e.target.value);
+        sliderPhysics.addEventListener('input', (e) => valPhysics.innerText = e.target.value);
+        sliderHorizon.addEventListener('input', (e) => valHorizon.innerText = e.target.value);
+
+        let debounceTimer = null;
+        tickerSelect.addEventListener('change', (e) => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                this.syncUIState(e.target.value);
+            }, 150);
+        });
+
         if (triggerBtn) {
             triggerBtn.addEventListener('click', () => {
-                const tickerInput = document.getElementById('osiris-ticker-input').value.toUpperCase() || 'XOM';
-                this.runSimulation(tickerInput);
+                this.runSimulation(tickerSelect.value);
             });
         }
+    }
+
+    syncUIState(tickerSymbol) {
+        if (!this.physicsConfig) return;
+
+        let physicsType = 'Ornstein-Uhlenbeck';
+        let physicsParams = null;
+
+        for (const cohortName in this.physicsConfig.cohorts) {
+            const cohort = this.physicsConfig.cohorts[cohortName];
+            const tickerData = cohort.tickers.find(t => t.symbol === tickerSymbol);
+            if (tickerData) {
+                physicsType = cohort.physics;
+                physicsParams = tickerData;
+                break;
+            }
+        }
+
+        if (!physicsParams) return;
+
+        const sliderPhysics = document.getElementById('slider-physics-param');
+        const valPhysics = document.getElementById('val-physics-param');
+        const labelPhysics = document.getElementById('label-physics-param');
+        const metadataReadout = document.getElementById('osiris-metadata-readout');
+
+        if (physicsType === 'Ornstein-Uhlenbeck') {
+            sliderPhysics.min = 0.01;
+            sliderPhysics.max = 1.00;
+            sliderPhysics.step = 0.01;
+            sliderPhysics.value = physicsParams.reversionSpeedTheta;
+            labelPhysics.innerText = 'REVERSION SPEED (θ)';
+            metadataReadout.innerText = 'TETHERED HUB: BRENT CRUDE BASIS';
+        } else {
+            sliderPhysics.min = 1;
+            sliderPhysics.max = 20;
+            sliderPhysics.step = 1;
+            sliderPhysics.value = physicsParams.jumpFrequencyLambda;
+            labelPhysics.innerText = 'JUMP FREQUENCY (λ)';
+            metadataReadout.innerText = 'TETHERED HUB: US10Y TREASURY BASIS';
+        }
+        valPhysics.innerText = sliderPhysics.value;
     }
 
     async runSimulation(tickerSymbol) {
@@ -67,22 +132,23 @@ class OsirisOrchestrator {
 
         // Determine Cohort & Physics
         let physicsType = 'Ornstein-Uhlenbeck';
-        let physicsParams = null;
-        let isFound = false;
-
         for (const cohortName in this.physicsConfig.cohorts) {
             const cohort = this.physicsConfig.cohorts[cohortName];
-            const tickerData = cohort.tickers.find(t => t.symbol === tickerSymbol);
-            if (tickerData) {
+            if (cohort.tickers.find(t => t.symbol === tickerSymbol)) {
                 physicsType = cohort.physics;
-                physicsParams = tickerData;
-                isFound = true;
                 break;
             }
         }
 
-        if (!isFound) {
-            console.warn(`[OSIRIS] Ticker ${tickerSymbol} not found in config. Using defaults.`);
+        const sliderVol = parseFloat(document.getElementById('slider-volatility').value);
+        const sliderPhysics = parseFloat(document.getElementById('slider-physics-param').value);
+        const sliderHorizon = parseInt(document.getElementById('slider-horizon').value, 10);
+
+        let physicsParams = {};
+        if (physicsType === 'Ornstein-Uhlenbeck') {
+            physicsParams = { reversionSpeedTheta: sliderPhysics };
+        } else {
+            physicsParams = { jumpFrequencyLambda: sliderPhysics };
         }
 
         // Fetch Data
@@ -97,7 +163,7 @@ class OsirisOrchestrator {
             
             // Simplified derived drift/volatility
             const drift = macros.US10Y || 0.045;
-            const volatility = macros.XLE_VOL || 0.22;
+            const volatility = sliderVol;
 
             // Instantiate New Worker
             this.activeWorker = new Worker('/components/osiris/stochasticWorker.js');
@@ -142,7 +208,7 @@ class OsirisOrchestrator {
                 initialPrice: initialPrice,
                 drift: drift,
                 volatility: volatility,
-                steps: this.physicsConfig.timeHorizonDays,
+                steps: sliderHorizon,
                 paths: this.physicsConfig.defaultPaths,
                 physicsType: physicsType,
                 physicsParams: physicsParams
