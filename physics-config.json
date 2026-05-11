@@ -1,0 +1,27 @@
+{
+  "version": "1.0-production",
+  "defaultPaths": 5000,
+  "timeHorizonDays": 252,
+  "cohorts": {
+    "energy_and_utilities": {
+      "physics": "Ornstein-Uhlenbeck",
+      "description": "Mean-reverting bounds tethered to commodity ceilings and regulatory rate floors.",
+      "tickers": [
+        { "symbol": "XOM", "name": "ExxonMobil Corp", "reversionSpeedTheta": 0.15 },
+        { "symbol": "CVX", "name": "Chevron Corp", "reversionSpeedTheta": 0.12 },
+        { "symbol": "NEE", "name": "NextEra Energy Inc", "reversionSpeedTheta": 0.08 },
+        { "symbol": "DUK", "name": "Duke Energy Corp", "reversionSpeedTheta": 0.20 }
+      ]
+    },
+    "industrials_and_defense": {
+      "physics": "Geometric Brownian Motion + Jump Diffusion",
+      "description": "Unbound variance cones subject to lumpy, contract-driven Poisson jumps.",
+      "tickers": [
+        { "symbol": "LMT", "name": "Lockheed Martin Corp", "jumpFrequencyLambda": 4 },
+        { "symbol": "GD", "name": "General Dynamics Corp", "jumpFrequencyLambda": 3 },
+        { "symbol": "CAT", "name": "Caterpillar Inc", "jumpFrequencyLambda": 6 },
+        { "symbol": "GE", "name": "GE Aerospace", "jumpFrequencyLambda": 5 }
+      ]
+    }
+  }
+}
