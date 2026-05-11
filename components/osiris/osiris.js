@@ -297,7 +297,10 @@ class OsirisOrchestrator {
                     p50: percentiles.p50[lastIdx],
                     p05: percentiles.p05[lastIdx],
                     p95: percentiles.p95[lastIdx],
-                    physicsType: physicsType
+                    physicsType: physicsType,
+                    volatility: volatility,
+                    physicsParams: physicsParams,
+                    horizonDays: final_steps
                 });
 
                 // Cleanup worker after successful completion
