@@ -85,9 +85,6 @@ export class OsirisOracle {
         const winProb = this._approximateWinProbability(params);
         const days = horizonDays || 252;
         const sigma = volatility || 0.22;
-        const pctChange = ((p50 / currentPrice) - 1) * 100;
-        const direction = pctChange >= 0 ? '▲' : '▼';
-        const directionColor = pctChange >= 0 ? '#00ff88' : '#ff4444';
 
         // Physics-specific assumption bullet
         let physicsBullet = '';
