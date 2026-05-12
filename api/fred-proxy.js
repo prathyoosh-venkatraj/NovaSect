@@ -32,7 +32,9 @@ export default async function handler(req, res) {
 
         if (data.observations && data.observations.length > 0) {
             const latest = data.observations[0];
-            res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
+            // FRED series are daily-published; 6h edge TTL refreshes 4×/day,
+            // dropping upstream from ~216/day to ~36/day across the 9 series.
+            res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=21600');
             return res.status(200).json({
                 value: parseFloat(latest.value),
                 date: latest.date,

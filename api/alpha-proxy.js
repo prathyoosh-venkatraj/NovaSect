@@ -76,7 +76,10 @@ export default async function handler(req, res) {
         // Convert to percentage (e.g. 15.5 for 15.5%)
         const volatilityPercentage = parseFloat((annualizedVol * 100).toFixed(2));
 
-        res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
+        // Sector vol changes slowly; 12h edge TTL keeps us well under Alpha
+        // Vantage's 25/day free-tier cap (~6 upstream calls/day for the 3 ETFs
+        // vs ~72/day at the previous 1h TTL).
+        res.setHeader('Cache-Control', 's-maxage=43200, stale-while-revalidate=43200');
         return res.status(200).json({
             symbol: symbol,
             volatility: volatilityPercentage,

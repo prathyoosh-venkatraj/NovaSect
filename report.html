@@ -664,9 +664,13 @@
                         }
 
                         // 2. Optimized Fetch Logic
+                        // Edge cache (1h s-maxage in yahoo-proxy summary mode) handles
+                        // freshness now; the previous &t=Date.now() cache-buster was
+                        // bypassing the edge on every page load and forcing an upstream
+                        // Yahoo fetch each time. Report prices are at-most-1h stale,
+                        // acceptable for an analytical readout.
                         const fetchPrice = async (symbol) => {
-                            const cacheBuster = `&t=${Date.now()}`;
-                            const url = `/api/yahoo-proxy?symbol=${symbol}${cacheBuster}`;
+                            const url = `/api/yahoo-proxy?symbol=${symbol}`;
 
                             try {
                                 const response = await fetch(url);
