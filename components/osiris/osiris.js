@@ -152,7 +152,8 @@ class OsirisOrchestrator {
             sliderPhysics.step = 0.01;
             sliderPhysics.value = physicsParams.reversionSpeedTheta;
             labelPhysics.innerText = 'REVERSION SPEED (θ)';
-            metadataReadout.innerText = 'TETHERED HUB: BRENT CRUDE BASIS';
+            metadataReadout.dataset.baseText = 'TETHERED HUB: BRENT CRUDE BASIS';
+            metadataReadout.innerText = metadataReadout.dataset.baseText;
             
             if (operationalShock) {
                 operationalShock.innerHTML = `
@@ -167,7 +168,8 @@ class OsirisOrchestrator {
             sliderPhysics.step = 1;
             sliderPhysics.value = physicsParams.jumpFrequencyLambda;
             labelPhysics.innerText = 'JUMP FREQUENCY (λ)';
-            metadataReadout.innerText = 'TETHERED HUB: US10Y TREASURY BASIS';
+            metadataReadout.dataset.baseText = 'TETHERED HUB: US10Y TREASURY BASIS';
+            metadataReadout.innerText = metadataReadout.dataset.baseText;
             
             if (operationalShock) {
                 operationalShock.innerHTML = `
@@ -263,8 +265,18 @@ class OsirisOrchestrator {
             const history = await osirisIngestion.getHistoricalData(tickerSymbol);
             const macros = await osirisIngestion.getMacroHubs();
 
+            // Surface data-source status (LIVE / CACHED / FALLBACK) next to the basis label
+            const metadataReadout = document.getElementById('osiris-metadata-readout');
+            if (metadataReadout) {
+                const baseText = metadataReadout.dataset.baseText || metadataReadout.innerText;
+                const info = osirisIngestion.getLastFetchInfo();
+                const histTag = (info.history.source || 'unknown').toUpperCase();
+                const macroTag = (info.macro.source || 'unknown').toUpperCase();
+                metadataReadout.innerText = `${baseText}  ·  DATA[HIST: ${histTag} ${info.history.date || '—'} · MACRO: ${macroTag} ${info.macro.date || '—'}]`;
+            }
+
             const initialPrice = history.length > 0 ? history[history.length - 1].adjClose : 100.0;
-            
+
             // Simplified derived drift/volatility
             const drift = macros.US10Y || 0.045;
             const volatility = final_sigma;

@@ -4,10 +4,15 @@
  */
 export default async function handler(req, res) {
     const { symbol } = req.query;
-    const apiKey = process.env.ALPHA_VANTAGE_API_KEY || 'HUDHHNQD7RIB97FS';
+    const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
 
     if (!symbol) {
         return res.status(400).json({ error: 'E400: Missing symbol' });
+    }
+
+    if (!apiKey) {
+        console.warn('ALPHA_VANTAGE_API_KEY missing from environment');
+        return res.status(500).json({ error: 'E500: ENVAR_MISSING (Check Dashboard)' });
     }
 
     try {
