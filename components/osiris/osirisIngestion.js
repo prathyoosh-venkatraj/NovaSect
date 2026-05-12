@@ -184,6 +184,7 @@ export const osirisIngestion = {
         // Compute derived metrics
         const realizedSigma = this._computeAnnualizedRealizedVol(series);
         const dividendYield = this._computeTTMDividendYield(dividends, currentPrice ?? (series[series.length - 1]?.adjClose));
+        const longTermMeanPrice = this._computeLongTermMeanPrice(series);
 
         let beta = null;
         if (ticker === BENCHMARK_SYMBOL) {
@@ -208,7 +209,8 @@ export const osirisIngestion = {
             dividends: dividends,
             beta: beta,
             dividendYield: dividendYield,
-            realizedSigma: realizedSigma
+            realizedSigma: realizedSigma,
+            longTermMeanPrice: longTermMeanPrice
         };
 
         await this._writeRecord(db, record);
@@ -232,6 +234,7 @@ export const osirisIngestion = {
             beta: record.beta,
             dividendYield: record.dividendYield,
             realizedSigma: record.realizedSigma,
+            longTermMeanPrice: record.longTermMeanPrice ?? null,
             latestDate: record.latestDate,
             currentPrice: record.currentPrice
         };
@@ -322,6 +325,27 @@ export const osirisIngestion = {
 
         if (varSum <= 0) return null;
         return covSum / varSum;
+    },
+
+    /**
+     * Long-term mean price for the OU mean-reversion target. Currently the
+     * arithmetic mean of adjClose over the cached 1y window — matches the
+     * arithmetic OU formulation in stochasticWorker (dS = θ(μ − S)dt + σdW).
+     * A longer window (3-5y) would be more stable but would require extending
+     * the Yahoo proxy's range; Phase 3 ships with 1y as the available data.
+     */
+    _computeLongTermMeanPrice(series) {
+        if (!series || series.length < 30) return null;
+        let sum = 0;
+        let n = 0;
+        for (const point of series) {
+            if (point.adjClose > 0) {
+                sum += point.adjClose;
+                n++;
+            }
+        }
+        if (n < 30) return null;
+        return sum / n;
     },
 
     /**

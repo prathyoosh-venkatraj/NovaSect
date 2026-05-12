@@ -90,7 +90,12 @@ export class OsirisOracle {
         let physicsBullet = '';
         if (physicsType === 'Ornstein-Uhlenbeck') {
             const theta = physicsParams?.reversionSpeedTheta || 0.15;
-            physicsBullet = `Mean Reversion: Prices drift back toward a long-term level at speed θ = ${theta.toFixed(2)}. Higher θ means a faster snap-back from extremes.`;
+            const ltm = (typeof physicsParams?.longTermMean === 'number')
+                ? this._fmtPrice(physicsParams.longTermMean)
+                : null;
+            physicsBullet = ltm
+                ? `Mean Reversion: Prices drift back toward the 1y mean of ${ltm} at speed θ = ${theta.toFixed(2)}.`
+                : `Mean Reversion: Prices drift back toward a long-term level at speed θ = ${theta.toFixed(2)}.`;
         } else {
             const lambda = physicsParams?.jumpFrequencyLambda || 5;
             physicsBullet = `Event Shocks: Symmetric Poisson jumps occur at λ = ${lambda} per year. Up and down jumps are equally likely.`;

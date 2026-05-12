@@ -1,27 +1,27 @@
 {
-  "version": "1.2-live-metrics",
+  "version": "1.3-phase3",
   "defaultPaths": 5000,
   "timeHorizonDays": 252,
-  "notes": "beta and dividendYield are now auto-computed at runtime in osirisIngestion (beta = OLS regression vs SPY on 1y daily log returns; dividendYield = TTM dividends from Yahoo events / current price). creditRating remains hand-filled — no clean free feed exists. ratingLastVerified surfaces the date the rating was last confirmed against S&P; bump it when you re-verify (the Oracle UI displays it inline so staleness is visible). longTermMeanLogPrice is reserved for Phase 3 OU calibration.",
+  "notes": "beta, dividendYield, and longTermMeanPrice are auto-computed at runtime in osirisIngestion from cached Yahoo data. OU mean-reversion target uses the 1y arithmetic mean of adjClose (matches the arithmetic-OU formulation in stochasticWorker). Drift in Phase 3 = US10Y - dividendYield per ticker. creditRating remains hand-filled with a ratingLastVerified date surfaced in the Oracle UI.",
   "cohorts": {
     "energy_and_utilities": {
       "physics": "Ornstein-Uhlenbeck",
       "description": "Mean-reverting bounds tethered to commodity ceilings and regulatory rate floors.",
       "tickers": [
-        { "symbol": "XOM", "name": "ExxonMobil Corp",      "reversionSpeedTheta": 0.15, "baselineVolatility": 0.23, "creditRating": "A+",   "ratingLastVerified": "2026-05", "longTermMeanLogPrice": null },
-        { "symbol": "CVX", "name": "Chevron Corp",         "reversionSpeedTheta": 0.12, "baselineVolatility": 0.24, "creditRating": "AA-",  "ratingLastVerified": "2026-05", "longTermMeanLogPrice": null },
-        { "symbol": "NEE", "name": "NextEra Energy Inc",   "reversionSpeedTheta": 0.08, "baselineVolatility": 0.18, "creditRating": "A-",   "ratingLastVerified": "2026-05", "longTermMeanLogPrice": null },
-        { "symbol": "DUK", "name": "Duke Energy Corp",     "reversionSpeedTheta": 0.20, "baselineVolatility": 0.15, "creditRating": "BBB+", "ratingLastVerified": "2026-05", "longTermMeanLogPrice": null }
+        { "symbol": "XOM", "name": "ExxonMobil Corp",      "reversionSpeedTheta": 0.15, "baselineVolatility": 0.23, "creditRating": "A+",   "ratingLastVerified": "2026-05" },
+        { "symbol": "CVX", "name": "Chevron Corp",         "reversionSpeedTheta": 0.12, "baselineVolatility": 0.24, "creditRating": "AA-",  "ratingLastVerified": "2026-05" },
+        { "symbol": "NEE", "name": "NextEra Energy Inc",   "reversionSpeedTheta": 0.08, "baselineVolatility": 0.18, "creditRating": "A-",   "ratingLastVerified": "2026-05" },
+        { "symbol": "DUK", "name": "Duke Energy Corp",     "reversionSpeedTheta": 0.20, "baselineVolatility": 0.15, "creditRating": "BBB+", "ratingLastVerified": "2026-05" }
       ]
     },
     "industrials_and_defense": {
       "physics": "Geometric Brownian Motion + Jump Diffusion",
       "description": "Unbound variance cones subject to lumpy, contract-driven Poisson jumps.",
       "tickers": [
-        { "symbol": "LMT", "name": "Lockheed Martin Corp", "jumpFrequencyLambda": 4, "baselineVolatility": 0.21, "creditRating": "A-",   "ratingLastVerified": "2026-05", "longTermMeanLogPrice": null },
-        { "symbol": "GD",  "name": "General Dynamics Corp","jumpFrequencyLambda": 3, "baselineVolatility": 0.22, "creditRating": "A-",   "ratingLastVerified": "2026-05", "longTermMeanLogPrice": null },
-        { "symbol": "CAT", "name": "Caterpillar Inc",      "jumpFrequencyLambda": 6, "baselineVolatility": 0.28, "creditRating": "A",    "ratingLastVerified": "2026-05", "longTermMeanLogPrice": null },
-        { "symbol": "GE",  "name": "GE Aerospace",         "jumpFrequencyLambda": 5, "baselineVolatility": 0.32, "creditRating": "BBB+", "ratingLastVerified": "2026-05", "longTermMeanLogPrice": null }
+        { "symbol": "LMT", "name": "Lockheed Martin Corp", "jumpFrequencyLambda": 4, "baselineVolatility": 0.21, "creditRating": "A-",   "ratingLastVerified": "2026-05" },
+        { "symbol": "GD",  "name": "General Dynamics Corp","jumpFrequencyLambda": 3, "baselineVolatility": 0.22, "creditRating": "A-",   "ratingLastVerified": "2026-05" },
+        { "symbol": "CAT", "name": "Caterpillar Inc",      "jumpFrequencyLambda": 6, "baselineVolatility": 0.28, "creditRating": "A",    "ratingLastVerified": "2026-05" },
+        { "symbol": "GE",  "name": "GE Aerospace",         "jumpFrequencyLambda": 5, "baselineVolatility": 0.32, "creditRating": "BBB+", "ratingLastVerified": "2026-05" }
       ]
     }
   }

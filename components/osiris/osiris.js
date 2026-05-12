@@ -263,6 +263,7 @@ class OsirisOrchestrator {
         let physicsParams = {};
         if (physicsType === 'Ornstein-Uhlenbeck') {
             physicsParams = { reversionSpeedTheta: final_physics_param };
+            // longTermMean is attached below once tickerMeta metrics are loaded.
         } else {
             physicsParams = { jumpFrequencyLambda: final_physics_param };
         }
@@ -275,17 +276,27 @@ class OsirisOrchestrator {
             const history = await osirisIngestion.getHistoricalData(tickerSymbol);
             const macros = await osirisIngestion.getMacroHubs();
 
-            // Pull live beta + dividend yield from the same cached record that
-            // backed getHistoricalData (no extra network call). Merges with the
-            // hand-filled creditRating already on tickerMeta.
+            // Pull live beta + dividend yield + long-term mean from the same
+            // cached record that backed getHistoricalData (no extra network
+            // call). Merges with the hand-filled creditRating on tickerMeta.
+            let liveLongTermMean = null;
             try {
                 const liveMetrics = await osirisIngestion.getTickerMetrics(tickerSymbol);
                 if (liveMetrics) {
                     tickerMeta.beta = liveMetrics.beta;
                     tickerMeta.dividendYield = liveMetrics.dividendYield;
+                    tickerMeta.longTermMeanPrice = liveMetrics.longTermMeanPrice;
+                    liveLongTermMean = liveMetrics.longTermMeanPrice;
                 }
             } catch (metricsErr) {
                 console.warn('[OSIRIS] Live metrics computation failed; tickerMeta beta/yield will show as "—"', metricsErr);
+            }
+
+            // OU uses a calibrated 1y arithmetic mean as the reversion target.
+            // Falls back to the old initialPrice*exp(drift) formula in the
+            // worker if longTermMean is unavailable.
+            if (physicsType === 'Ornstein-Uhlenbeck' && typeof liveLongTermMean === 'number') {
+                physicsParams.longTermMean = liveLongTermMean;
             }
 
             // Surface data-source status (LIVE / CACHED / FALLBACK) next to the basis label
@@ -300,8 +311,12 @@ class OsirisOrchestrator {
 
             const initialPrice = history.length > 0 ? history[history.length - 1].adjClose : 100.0;
 
-            // Simplified derived drift/volatility
-            const drift = macros.US10Y || 0.045;
+            // Drift = risk-free rate − dividend yield (Phase 3 #8). Live US10Y
+            // from FRED, live dividend yield from osirisIngestion. Falls back
+            // to the hardcoded 4.5% only if both macro fetch and metrics fail.
+            const baseDrift = (typeof macros.US10Y === 'number') ? macros.US10Y : 0.045;
+            const dyAdj = (typeof tickerMeta.dividendYield === 'number') ? tickerMeta.dividendYield : 0;
+            const drift = baseDrift - dyAdj;
             const volatility = final_sigma;
 
             // Instantiate New Worker
@@ -324,7 +339,8 @@ class OsirisOrchestrator {
                     initialPrice: initialPrice,
                     physicsType: physicsType,
                     physicsParams: physicsParams,
-                    drift: drift
+                    drift: drift,
+                    longTermMean: physicsParams.longTermMean ?? null
                 });
 
                 // Run Oracle Synthesis

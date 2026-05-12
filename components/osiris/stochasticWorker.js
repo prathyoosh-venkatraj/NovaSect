@@ -55,9 +55,14 @@ function extractPercentilePaths(pathsMatrix, steps, paths, initialPrice) {
 }
 
 // Engine A: Ornstein-Uhlenbeck
-function simulateOU(initialPrice, drift, sigma, steps, paths, theta) {
+// longTermMean is the calibrated reversion target (1y arithmetic mean of
+// adjClose, supplied via physicsParams.longTermMean). Falls back to the old
+// initialPrice * exp(drift) formula if the calibrated value is unavailable.
+function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMean) {
     const dt = 1 / 252; // one trading day per step — calendar-time scaling
-    const longTermMean = initialPrice * Math.exp(drift); // (still a Phase-3 calibration target)
+    const reversionTarget = (typeof longTermMean === 'number' && longTermMean > 0)
+        ? longTermMean
+        : initialPrice * Math.exp(drift);
     const pathsMatrix = new Float32Array(paths * steps);
     const isZeroVol = (sigma <= 1e-8);
 
@@ -66,7 +71,7 @@ function simulateOU(initialPrice, drift, sigma, steps, paths, theta) {
         pathsMatrix[p * steps] = S; // t=0
         for (let i = 1; i < steps; i++) {
             const shock = isZeroVol ? 0 : (sigma * Math.sqrt(dt) * randomNormal());
-            const dS = theta * (longTermMean - S) * dt + shock;
+            const dS = theta * (reversionTarget - S) * dt + shock;
             S += dS;
             pathsMatrix[p * steps + i] = Math.max(0, S); // Price cannot be negative
         }
@@ -116,7 +121,10 @@ self.onmessage = function(e) {
     try {
         if (physicsType === 'Ornstein-Uhlenbeck') {
             const theta = physicsParams?.reversionSpeedTheta || 0.15;
-            result = simulateOU(initialPrice, drift, volatility, steps, paths, theta);
+            const longTermMean = (typeof physicsParams?.longTermMean === 'number')
+                ? physicsParams.longTermMean
+                : null;
+            result = simulateOU(initialPrice, drift, volatility, steps, paths, theta, longTermMean);
         } else if (physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
             const lambda = physicsParams?.jumpFrequencyLambda || 4;
             result = simulateGBMJump(initialPrice, drift, volatility, steps, paths, lambda);

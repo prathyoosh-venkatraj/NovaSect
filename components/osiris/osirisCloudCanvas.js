@@ -207,9 +207,13 @@ export class OsirisCloudCanvas {
         
         if (context.physicsType === 'Ornstein-Uhlenbeck') {
             this.ctx.fillText('PHYSICS: ORNSTEIN-UHLENBECK // MEAN-REVERTING COMMODITY BOUNDS', this.width - 20, 20);
-            
-            // Draw Long Term Mean Line
-            const longTermMean = context.initialPrice * Math.exp(context.drift);
+
+            // Draw Long Term Mean Line. Prefer the calibrated value passed
+            // via context.longTermMean (1y arithmetic mean from ingestion);
+            // fall back to the pre-Phase-3 formula if unavailable.
+            const longTermMean = (typeof context.longTermMean === 'number' && context.longTermMean > 0)
+                ? context.longTermMean
+                : context.initialPrice * Math.exp(context.drift);
             if (Math.abs(longTermMean - context.initialPrice) > 0.1) {
                 const meanPt = this._mapPoint(0, longTermMean, maxSteps, minValue, maxValue);
                 this.ctx.strokeStyle = this.colors.meanLine;
@@ -528,7 +532,9 @@ export class OsirisCloudCanvas {
         if (context.initialPrice > maxValue) maxValue = context.initialPrice;
 
         if (context.physicsType === 'Ornstein-Uhlenbeck') {
-            const longTermMean = context.initialPrice * Math.exp(context.drift);
+            const longTermMean = (typeof context.longTermMean === 'number' && context.longTermMean > 0)
+                ? context.longTermMean
+                : context.initialPrice * Math.exp(context.drift);
             if (longTermMean < minValue) minValue = longTermMean;
             if (longTermMean > maxValue) maxValue = longTermMean;
         }
