@@ -50,7 +50,15 @@ export class OsirisCloudCanvas {
         }
 
         this.canvas.addEventListener('mousemove', this._handleMouseMove.bind(this));
-        this.canvas.addEventListener('mouseleave', () => { this.tooltip.style.display = 'none'; });
+        this.canvas.addEventListener('mouseleave', () => {
+            this.tooltip.style.display = 'none';
+            // Restore clean canvas for GBM crosshair cleanup
+            if (this._cachedImageData) {
+                this.ctx.putImageData(this._cachedImageData, 0, 0);
+                const dpr = window.devicePixelRatio || 1;
+                this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+        });
 
         this.resize();
     }
@@ -75,16 +83,50 @@ export class OsirisCloudCanvas {
     }
 
     _handleMouseMove(e) {
-        if (!this.jumpNodes || this.jumpNodes.length === 0) return;
-
         const rect = this.canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        // Find nearest node within threshold radius
+        // GBM: Crosshair scrubber with cached frame restore
+        if (this.cachedContext && this.cachedContext.physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
+            if (this._cachedImageData) {
+                this.ctx.putImageData(this._cachedImageData, 0, 0);
+                // Re-apply DPR scale since putImageData resets transform
+                const dpr = window.devicePixelRatio || 1;
+                this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+            this._drawCrosshair(mouseX);
+
+            // Jump node tooltip (on P50 arrows)
+            if (this.jumpNodes && this.jumpNodes.length > 0) {
+                const threshold = 12;
+                let nearestNode = null;
+                let minDist = threshold * threshold;
+                for (const node of this.jumpNodes) {
+                    const dx = mouseX - node.x;
+                    const dy = mouseY - node.y;
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq < minDist) { minDist = distSq; nearestNode = node; }
+                }
+                if (nearestNode) {
+                    this.tooltip.style.display = 'block';
+                    this.tooltip.style.left = (mouseX + 15) + 'px';
+                    this.tooltip.style.top = (mouseY + 15) + 'px';
+                    const dir = nearestNode.magnitude > 0 ? '▲' : '▼';
+                    this.tooltip.textContent = `Contract Shock: ${dir} ${(Math.abs(nearestNode.magnitude) * 100).toFixed(1)}%\nDay ${nearestNode.step}`;
+                } else {
+                    this.tooltip.style.display = 'none';
+                }
+            }
+            return;
+        }
+
+        // OU: Original jump node tooltip behavior (unchanged)
+        if (!this.jumpNodes || this.jumpNodes.length === 0) return;
+
         const threshold = 10;
         let nearestNode = null;
-        let minDist = threshold * threshold; // Use squared distance
+        let minDist = threshold * threshold;
 
         for (const node of this.jumpNodes) {
             const dx = mouseX - node.x;
@@ -218,18 +260,23 @@ export class OsirisCloudCanvas {
 
     /**
      * PASS 2: Renders stochastic ribbons, terminal badges, and jump nodes.
+     * Branches to GBM-specific rendering for industrials.
      */
     _drawStochasticLayer(context, maxSteps, minValue, maxValue) {
+        if (context.physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
+            this._drawGBMStochasticLayer(context, maxSteps, minValue, maxValue);
+            return;
+        }
+
+        // ── OU Engine: Original rendering (unchanged) ──────────────────
         const percentiles = context.percentiles;
         
-        // 1. Draw 5th to 95th Percentile Band (Outer Strokes)
         const path05 = new Path2D();
         const path95 = new Path2D();
         
         for (let i = 0; i <= maxSteps; i++) {
             const pt05 = this._mapPoint(i, percentiles.p05[i], maxSteps, minValue, maxValue);
             const pt95 = this._mapPoint(i, percentiles.p95[i], maxSteps, minValue, maxValue);
-            
             if (i === 0) {
                 path05.moveTo(pt05.x, pt05.y);
                 path95.moveTo(pt95.x, pt95.y);
@@ -246,7 +293,6 @@ export class OsirisCloudCanvas {
         this.ctx.stroke(path95);
         this.ctx.setLineDash([]);
 
-        // 2. Draw 25th to 75th Percentile Band (Shaded Fill)
         const path25_75 = new Path2D();
         for (let i = 0; i <= maxSteps; i++) {
             const pt75 = this._mapPoint(i, percentiles.p75[i], maxSteps, minValue, maxValue);
@@ -265,7 +311,6 @@ export class OsirisCloudCanvas {
         this.ctx.lineWidth = 1.5;
         this.ctx.stroke(path25_75);
 
-        // 3. Draw 50th Percentile (Median Focal Trajectory)
         const path50 = new Path2D();
         for (let i = 0; i <= maxSteps; i++) {
             const pt50 = this._mapPoint(i, percentiles.p50[i], maxSteps, minValue, maxValue);
@@ -280,7 +325,33 @@ export class OsirisCloudCanvas {
         this.ctx.stroke(path50);
         this.ctx.shadowBlur = 0;
 
-        // Phase 3: Terminal Badges
+        this._drawTerminalBadges(percentiles, maxSteps, minValue, maxValue);
+        this.jumpNodes = [];
+    }
+
+    /**
+     * Helper: Draw a filled band between two percentile paths.
+     */
+    _drawFilledBand(upperPath, lowerPath, maxSteps, minValue, maxValue, fillStyle) {
+        const band = new Path2D();
+        for (let i = 0; i <= maxSteps; i++) {
+            const pt = this._mapPoint(i, upperPath[i], maxSteps, minValue, maxValue);
+            if (i === 0) band.moveTo(pt.x, pt.y);
+            else band.lineTo(pt.x, pt.y);
+        }
+        for (let i = maxSteps; i >= 0; i--) {
+            const pt = this._mapPoint(i, lowerPath[i], maxSteps, minValue, maxValue);
+            band.lineTo(pt.x, pt.y);
+        }
+        band.closePath();
+        this.ctx.fillStyle = fillStyle;
+        this.ctx.fill(band);
+    }
+
+    /**
+     * Helper: Draw terminal price badges at right edge.
+     */
+    _drawTerminalBadges(percentiles, maxSteps, minValue, maxValue) {
         this.ctx.font = '10px monospace';
         this.ctx.textAlign = 'left';
         
@@ -292,57 +363,193 @@ export class OsirisCloudCanvas {
 
         badges.forEach(b => {
             const pt = this._mapPoint(maxSteps, b.val, maxSteps, minValue, maxValue);
-            
-            // Draw badge background
             this.ctx.fillStyle = 'rgba(0,0,0,0.8)';
             this.ctx.strokeStyle = this.colors.text;
             this.ctx.lineWidth = 1;
-            
             const badgeW = 45;
             const badgeH = 16;
             this.ctx.fillRect(pt.x + 5, pt.y - 8, badgeW, badgeH);
             this.ctx.strokeRect(pt.x + 5, pt.y - 8, badgeW, badgeH);
-            
-            // Draw badge text
             this.ctx.fillStyle = this.colors.text;
             this.ctx.fillText(b.val.toFixed(2), pt.x + 10, pt.y + 4);
         });
+    }
 
-        // Phase 4: Jump Nodes for GBM
-        this.jumpNodes = [];
-        if (context.physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
-            const bands = ['p05', 'p25', 'p50', 'p75', 'p95'];
-            // A dynamic threshold representing an anomalous percentage jump in a single day
-            const jumpThreshold = 0.04; // 4% daily jump indicates an anomaly
+    /**
+     * GBM-SPECIFIC PASS 2: Graduated heatmap, gain/loss zones, directional jumps.
+     */
+    _drawGBMStochasticLayer(context, maxSteps, minValue, maxValue) {
+        const percentiles = context.percentiles;
+        const paddingLeft = 40;
+        const paddingRight = 60;
+        const paddingTop = 40;
+        const paddingBottom = 30;
+        const drawWidth = this.width - paddingLeft - paddingRight;
 
-            bands.forEach(band => {
-                const path = percentiles[band];
-                for (let i = 1; i <= maxSteps; i++) {
-                    const delta = Math.abs((path[i] - path[i-1]) / path[i-1]);
-                    if (delta > jumpThreshold) {
-                        const pt = this._mapPoint(i, path[i], maxSteps, minValue, maxValue);
-                        this.jumpNodes.push({
-                            x: pt.x,
-                            y: pt.y,
-                            band: band.toUpperCase(),
-                            step: i,
-                            magnitude: delta
-                        });
-                        
-                        // Draw visual indicator node
-                        this.ctx.beginPath();
-                        this.ctx.arc(pt.x, pt.y, 3, 0, 2 * Math.PI);
-                        this.ctx.fillStyle = this.colors.jumpNode;
-                        
-                        // Glow
-                        this.ctx.shadowColor = this.colors.jumpNodeGlow;
-                        this.ctx.shadowBlur = 8;
-                        this.ctx.fill();
-                        this.ctx.shadowBlur = 0;
-                    }
-                }
-            });
+        // ── 1. Gain/Loss Baseline Zones ────────────────────────────────
+        const baselinePt = this._mapPoint(0, context.initialPrice, maxSteps, minValue, maxValue);
+        // Green zone above baseline (profit)
+        this.ctx.fillStyle = 'rgba(0, 255, 60, 0.025)';
+        this.ctx.fillRect(paddingLeft, paddingTop, drawWidth, baselinePt.y - paddingTop);
+        // Red zone below baseline (loss)
+        this.ctx.fillStyle = 'rgba(255, 40, 40, 0.025)';
+        this.ctx.fillRect(paddingLeft, baselinePt.y, drawWidth, this.height - paddingBottom - baselinePt.y);
+
+        // ── 2. Graduated Probability Heatmap (outer → inner) ───────────
+        // P05-P95: outermost tail boundary
+        this._drawFilledBand(percentiles.p95, percentiles.p05, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.025)');
+        // P10-P90: wide confidence band
+        if (percentiles.p10 && percentiles.p90) {
+            this._drawFilledBand(percentiles.p90, percentiles.p10, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.04)');
         }
+        // P25-P75: core probability mass
+        this._drawFilledBand(percentiles.p75, percentiles.p25, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.07)');
+        // P45-P55: highest density core
+        if (percentiles.p45 && percentiles.p55) {
+            this._drawFilledBand(percentiles.p55, percentiles.p45, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.15)');
+        }
+
+        // ── 3. Outer Boundary Strokes (P05 & P95 dashed) ──────────────
+        const path05 = new Path2D();
+        const path95 = new Path2D();
+        for (let i = 0; i <= maxSteps; i++) {
+            const pt05 = this._mapPoint(i, percentiles.p05[i], maxSteps, minValue, maxValue);
+            const pt95 = this._mapPoint(i, percentiles.p95[i], maxSteps, minValue, maxValue);
+            if (i === 0) { path05.moveTo(pt05.x, pt05.y); path95.moveTo(pt95.x, pt95.y); }
+            else { path05.lineTo(pt05.x, pt05.y); path95.lineTo(pt95.x, pt95.y); }
+        }
+        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([5, 5]);
+        this.ctx.stroke(path05);
+        this.ctx.stroke(path95);
+        this.ctx.setLineDash([]);
+
+        // ── 4. P50 Median (bold glow) ──────────────────────────────────
+        const path50 = new Path2D();
+        for (let i = 0; i <= maxSteps; i++) {
+            const pt50 = this._mapPoint(i, percentiles.p50[i], maxSteps, minValue, maxValue);
+            if (i === 0) path50.moveTo(pt50.x, pt50.y);
+            else path50.lineTo(pt50.x, pt50.y);
+        }
+        this.ctx.strokeStyle = this.colors.p50_stroke;
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowColor = this.colors.p50_stroke;
+        this.ctx.shadowBlur = 10;
+        this.ctx.stroke(path50);
+        this.ctx.shadowBlur = 0;
+
+        // ── 5. Jump Arrows on P50 Only ─────────────────────────────────
+        this.jumpNodes = [];
+        const jumpThreshold = 0.04;
+        const p50Path = percentiles.p50;
+        for (let i = 1; i <= maxSteps; i++) {
+            const delta = (p50Path[i] - p50Path[i - 1]) / p50Path[i - 1];
+            if (Math.abs(delta) > jumpThreshold) {
+                const pt = this._mapPoint(i, p50Path[i], maxSteps, minValue, maxValue);
+                const isUp = delta > 0;
+
+                this.jumpNodes.push({
+                    x: pt.x, y: pt.y,
+                    band: 'P50', step: i,
+                    magnitude: delta
+                });
+
+                // Directional arrow marker
+                this.ctx.beginPath();
+                this.ctx.fillStyle = isUp ? 'rgba(0, 255, 100, 0.9)' : 'rgba(255, 60, 60, 0.9)';
+                this.ctx.shadowColor = isUp ? 'rgba(0, 255, 100, 0.4)' : 'rgba(255, 60, 60, 0.4)';
+                this.ctx.shadowBlur = 6;
+                if (isUp) {
+                    this.ctx.moveTo(pt.x, pt.y - 10);
+                    this.ctx.lineTo(pt.x - 5, pt.y - 3);
+                    this.ctx.lineTo(pt.x + 5, pt.y - 3);
+                } else {
+                    this.ctx.moveTo(pt.x, pt.y + 10);
+                    this.ctx.lineTo(pt.x - 5, pt.y + 3);
+                    this.ctx.lineTo(pt.x + 5, pt.y + 3);
+                }
+                this.ctx.fill();
+                this.ctx.shadowBlur = 0;
+            }
+        }
+
+        // ── 6. Terminal Badges ─────────────────────────────────────────
+        this._drawTerminalBadges(percentiles, maxSteps, minValue, maxValue);
+    }
+
+    /**
+     * GBM Crosshair Scrubber: draws vertical line + percentile readout at mouseX.
+     */
+    _drawCrosshair(mouseX) {
+        if (!this.cachedContext || !this._renderParams) return;
+        const { maxSteps, minValue, maxValue } = this._renderParams;
+        const percentiles = this.cachedContext.percentiles;
+
+        const paddingLeft = 40;
+        const paddingRight = 60;
+        const paddingTop = 40;
+        const paddingBottom = 30;
+        const drawWidth = this.width - paddingLeft - paddingRight;
+
+        // Reverse-map mouse X → simulation step
+        const step = Math.round(((mouseX - paddingLeft) / drawWidth) * maxSteps);
+        if (step < 0 || step > maxSteps) return;
+
+        // Vertical crosshair line
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([3, 3]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(mouseX, paddingTop);
+        this.ctx.lineTo(mouseX, this.height - paddingBottom);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+
+        // Percentile readout labels
+        const levels = [
+            { key: 'p95', label: 'P95', color: 'rgba(0, 255, 0, 0.5)' },
+            { key: 'p75', label: 'P75', color: 'rgba(0, 255, 0, 0.4)' },
+            { key: 'p50', label: 'P50', color: '#00ff00' },
+            { key: 'p25', label: 'P25', color: 'rgba(0, 255, 0, 0.4)' },
+            { key: 'p05', label: 'P05', color: 'rgba(0, 255, 0, 0.5)' }
+        ];
+
+        this.ctx.font = '9px monospace';
+        levels.forEach(level => {
+            if (!percentiles[level.key]) return;
+            const val = percentiles[level.key][step];
+            const pt = this._mapPoint(step, val, maxSteps, minValue, maxValue);
+
+            // Dot at intersection
+            this.ctx.beginPath();
+            this.ctx.arc(pt.x, pt.y, 3, 0, 2 * Math.PI);
+            this.ctx.fillStyle = level.color;
+            this.ctx.fill();
+
+            // Label background + text
+            const labelX = pt.x + 8;
+            const labelW = 55;
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            this.ctx.fillRect(labelX, pt.y - 7, labelW, 14);
+            this.ctx.strokeStyle = level.color;
+            this.ctx.lineWidth = 0.5;
+            this.ctx.strokeRect(labelX, pt.y - 7, labelW, 14);
+            this.ctx.fillStyle = level.color;
+            this.ctx.textAlign = 'left';
+            this.ctx.fillText(`${level.label} $${val.toFixed(0)}`, labelX + 3, pt.y + 4);
+        });
+
+        // Day counter at bottom
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        this.ctx.fillRect(mouseX - 22, this.height - paddingBottom + 2, 44, 14);
+        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+        this.ctx.lineWidth = 0.5;
+        this.ctx.strokeRect(mouseX - 22, this.height - paddingBottom + 2, 44, 14);
+        this.ctx.fillStyle = '#fff';
+        this.ctx.textAlign = 'center';
+        this.ctx.font = '9px monospace';
+        this.ctx.fillText(`DAY ${step}`, mouseX, this.height - paddingBottom + 13);
     }
 
     renderCloud(context) {
@@ -352,7 +559,6 @@ export class OsirisCloudCanvas {
         const percentiles = context.percentiles;
         const maxSteps = percentiles.p50.length - 1;
         
-        // Determine global min and max for scaling across all percentiles
         let minValue = Number.MAX_VALUE;
         let maxValue = Number.MIN_VALUE;
 
@@ -361,25 +567,30 @@ export class OsirisCloudCanvas {
             if (percentiles.p95[i] > maxValue) maxValue = percentiles.p95[i];
         }
 
-        // Include initialPrice in bounds to ensure basis line is visible
         if (context.initialPrice < minValue) minValue = context.initialPrice;
         if (context.initialPrice > maxValue) maxValue = context.initialPrice;
 
-        // Include longTermMean in bounds if applicable
         if (context.physicsType === 'Ornstein-Uhlenbeck') {
             const longTermMean = context.initialPrice * Math.exp(context.drift);
             if (longTermMean < minValue) minValue = longTermMean;
             if (longTermMean > maxValue) maxValue = longTermMean;
         }
 
-        // Add 5% padding to scale dynamically
         const range = maxValue - minValue;
         minValue -= range * 0.05;
         maxValue += range * 0.05;
         minValue = Math.max(0, minValue);
 
+        // Store for crosshair reverse-mapping
+        this._renderParams = { maxSteps, minValue, maxValue };
+
         // Render Two-Pass Hierarchy
         this._drawBackgroundLayer(context, maxSteps, minValue, maxValue);
         this._drawStochasticLayer(context, maxSteps, minValue, maxValue);
+
+        // Cache rendered frame for GBM crosshair overlay
+        if (context.physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
+            this._cachedImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        }
     }
 }

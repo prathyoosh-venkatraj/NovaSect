@@ -13,7 +13,6 @@ function randomNormal() {
 }
 
 function extractPercentilePaths(pathsMatrix, steps, paths) {
-    // Array of objects with terminal value and path index
     const terminalValues = new Array(paths);
     for (let p = 0; p < paths; p++) {
         terminalValues[p] = {
@@ -22,31 +21,27 @@ function extractPercentilePaths(pathsMatrix, steps, paths) {
         };
     }
 
-    // Sort by terminal value
     terminalValues.sort((a, b) => a.value - b.value);
 
-    // Get indices for percentiles
-    const i05 = terminalValues[Math.floor(paths * 0.05)].index;
-    const i25 = terminalValues[Math.floor(paths * 0.25)].index;
-    const i50 = terminalValues[Math.floor(paths * 0.50)].index;
-    const i75 = terminalValues[Math.floor(paths * 0.75)].index;
-    const i95 = terminalValues[Math.floor(paths * 0.95)].index;
-
-    // Helper to extract a single path array
-    function getPath(pathIndex) {
+    function getPath(percentile) {
+        const pathIndex = terminalValues[Math.floor(paths * percentile)].index;
         const path = new Float32Array(steps);
-        for(let t = 0; t < steps; t++) {
+        for (let t = 0; t < steps; t++) {
             path[t] = pathsMatrix[pathIndex * steps + t];
         }
         return path;
     }
 
     return {
-        p05: getPath(i05),
-        p25: getPath(i25),
-        p50: getPath(i50),
-        p75: getPath(i75),
-        p95: getPath(i95)
+        p05: getPath(0.05),
+        p10: getPath(0.10),
+        p25: getPath(0.25),
+        p45: getPath(0.45),
+        p50: getPath(0.50),
+        p55: getPath(0.55),
+        p75: getPath(0.75),
+        p90: getPath(0.90),
+        p95: getPath(0.95)
     };
 }
 
