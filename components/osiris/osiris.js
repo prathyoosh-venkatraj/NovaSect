@@ -216,10 +216,14 @@ class OsirisOrchestrator {
                 if (tData.baselineVolatility) {
                     baseline_sigma = tData.baselineVolatility;
                 }
+                // creditRating + ratingLastVerified are still hand-filled in the
+                // config (no clean free feed). beta + dividendYield are derived
+                // live from Yahoo data in osirisIngestion (populated below).
                 tickerMeta = {
                     creditRating: tData.creditRating ?? null,
-                    beta: typeof tData.beta === 'number' ? tData.beta : null,
-                    dividendYield: typeof tData.dividendYield === 'number' ? tData.dividendYield : null
+                    ratingLastVerified: tData.ratingLastVerified ?? null,
+                    beta: null,
+                    dividendYield: null
                 };
             }
         }
@@ -270,6 +274,19 @@ class OsirisOrchestrator {
         try {
             const history = await osirisIngestion.getHistoricalData(tickerSymbol);
             const macros = await osirisIngestion.getMacroHubs();
+
+            // Pull live beta + dividend yield from the same cached record that
+            // backed getHistoricalData (no extra network call). Merges with the
+            // hand-filled creditRating already on tickerMeta.
+            try {
+                const liveMetrics = await osirisIngestion.getTickerMetrics(tickerSymbol);
+                if (liveMetrics) {
+                    tickerMeta.beta = liveMetrics.beta;
+                    tickerMeta.dividendYield = liveMetrics.dividendYield;
+                }
+            } catch (metricsErr) {
+                console.warn('[OSIRIS] Live metrics computation failed; tickerMeta beta/yield will show as "—"', metricsErr);
+            }
 
             // Surface data-source status (LIVE / CACHED / FALLBACK) next to the basis label
             const metadataReadout = document.getElementById('osiris-metadata-readout');

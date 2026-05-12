@@ -19,7 +19,10 @@ export default async function handler(req, res) {
     const fetchRange = isHistoryMode ? (range || '1y') : '1mo';
 
     try {
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${fetchRange}`;
+        // In history mode, also request dividend events so the client can
+        // compute trailing-12-month dividend yield without an extra round-trip.
+        const eventsParam = isHistoryMode ? '&events=div' : '';
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${fetchRange}${eventsParam}`;
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -63,6 +66,16 @@ export default async function handler(req, res) {
                 || result.meta?.previousClose
                 || latest.adjClose;
 
+            // Dividend events (Yahoo keys them by unix timestamp under events.dividends)
+            const divEvents = result.events?.dividends || {};
+            const dividends = Object.values(divEvents)
+                .filter(d => d && typeof d.amount === 'number' && typeof d.date === 'number')
+                .map(d => ({
+                    date: new Date(d.date * 1000).toISOString().split('T')[0],
+                    amount: d.amount
+                }))
+                .sort((a, b) => a.date.localeCompare(b.date));
+
             // 24h edge cache for daily-close data
             res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=43200');
             return res.status(200).json({
@@ -72,6 +85,7 @@ export default async function handler(req, res) {
                 latestDate: latest.date,
                 currentPrice: currentPrice,
                 series: series,
+                dividends: dividends,
                 source: 'Yahoo Finance Live'
             });
         }

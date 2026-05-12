@@ -96,13 +96,16 @@ export class OsirisOracle {
             physicsBullet = `Event Shocks: Symmetric Poisson jumps occur at λ = ${lambda} per year. Up and down jumps are equally likely.`;
         }
 
-        // Ticker-profile bullet (Phase 2 schema fields). Hidden if all three are absent.
+        // Ticker-profile bullet. Beta + dividendYield are live-derived in
+        // osirisIngestion; creditRating is hand-filled in physics-config.json
+        // with a ratingLastVerified date so staleness is visible to users.
         let tickerProfileBullet = '';
         if (tickerMeta && (tickerMeta.creditRating || tickerMeta.beta != null || tickerMeta.dividendYield != null)) {
             const rating = tickerMeta.creditRating || '—';
+            const ratingDate = tickerMeta.ratingLastVerified ? ` (verified ${tickerMeta.ratingLastVerified})` : '';
             const betaStr = (typeof tickerMeta.beta === 'number') ? tickerMeta.beta.toFixed(2) : '—';
             const dyStr = (typeof tickerMeta.dividendYield === 'number') ? (tickerMeta.dividendYield * 100).toFixed(2) + '%' : '—';
-            tickerProfileBullet = `Ticker Profile: Credit Rating ${rating} · Beta ${betaStr} · Dividend Yield ${dyStr}.`;
+            tickerProfileBullet = `Ticker Profile: Credit Rating ${rating}${ratingDate} · Beta ${betaStr} · Dividend Yield ${dyStr}.`;
         }
 
         const template = document.createElement('div');

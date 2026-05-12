@@ -1,21 +1,34 @@
 /**
  * Project Osiris - Data Pipeline
  *
- * Live wiring (Phase 0):
- *   - Historical price series: GET /api/yahoo-proxy?symbol=X&mode=history&range=1y
- *   - Macro hubs (US10Y, VIX):  GET /api/fred-proxy?series_id=DGS10|VIXCLS
+ * Live wiring:
+ *   - Historical price series + dividend events:
+ *       GET /api/yahoo-proxy?symbol=X&mode=history&range=1y
+ *   - Macro hubs (US10Y, VIX):
+ *       GET /api/fred-proxy?series_id=DGS10|VIXCLS
  *
- * Caching layers:
- *   1. IndexedDB (OsirisTickerCache, store: historical_data) — 24h TTL per ticker
- *   2. localStorage (osiris_macro_hubs) — 24h TTL
- *   3. Vercel edge cache on proxies (24h on history mode, 1h on FRED — shared with Sentinel)
+ * Phase-2 spike: per-ticker `beta` and `dividendYield` are now computed at
+ * runtime from cached data:
+ *   - beta = cov(stockReturns, benchmarkReturns) / var(benchmarkReturns)
+ *     using 1y daily log-returns against SPY (cached the same way as any
+ *     ticker, edge-cached on the proxy, so SPY is fetched ~1x/day site-wide).
+ *   - dividendYield = sum(TTM dividend events) / currentPrice.
+ * Only `creditRating` remains hand-filled in physics-config.json (no clean
+ * free API for that — see ratingLastVerified for staleness visibility).
  *
- * `_lastFetchInfo` exposes the freshness/source of the most recent reads so the
- * orchestrator can surface "DATA: LIVE / CACHED / FALLBACK" status in the UI.
+ * Caching:
+ *   1. IndexedDB store `historical_data` keyed by ticker — 24h TTL. The
+ *      record now also caches beta/yield/sigma so we don't recompute on
+ *      every read. Records are tagged with RECORD_SCHEMA_VERSION; mismatches
+ *      force a refresh.
+ *   2. localStorage `osiris_macro_hubs` — 24h TTL.
+ *   3. Vercel edge cache on proxies (24h for history mode).
  */
 
 const MACRO_CACHE_KEY = 'osiris_macro_hubs';
-const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000;
+const RECORD_SCHEMA_VERSION = 2; // bumped when record shape changes
+const BENCHMARK_SYMBOL = 'SPY';
 
 export const osirisIngestion = {
     _lastFetchInfo: {
@@ -62,7 +75,6 @@ export const osirisIngestion = {
     },
 
     async _fetchMacroHubsFromAPI() {
-        // Fallback values used only if FRED is unreachable / key missing
         const fallback = { US10Y: 0.045, VIX: 15.2, _fallback: true };
 
         try {
@@ -77,7 +89,6 @@ export const osirisIngestion = {
             let vixLive = false;
 
             if (us10yRes.status === 'fulfilled' && typeof us10yRes.value.value === 'number') {
-                // FRED returns DGS10 as a percent (e.g. 4.25). Convert to decimal drift.
                 result.US10Y = us10yRes.value.value / 100;
                 latestDate = us10yRes.value.date || latestDate;
                 us10yLive = true;
@@ -104,7 +115,7 @@ export const osirisIngestion = {
         }
     },
 
-    // ── Historical ticker data: 1y daily adjusted close from Yahoo ─────────
+    // ── Historical ticker data + derived metrics ───────────────────────────
     async _initIndexedDB() {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open('OsirisTickerCache', 1);
@@ -119,61 +130,120 @@ export const osirisIngestion = {
         });
     },
 
-    async getHistoricalData(ticker) {
-        const db = await this._initIndexedDB();
-
+    async _readRecord(db, ticker) {
         return new Promise((resolve, reject) => {
-            const transaction = db.transaction(['historical_data'], 'readonly');
-            const store = transaction.objectStore('historical_data');
-            const request = store.get(ticker);
-
-            request.onsuccess = async () => {
-                const cachedRecord = request.result;
-                const now = Date.now();
-
-                if (cachedRecord && (now - cachedRecord.lastUpdated < CACHE_EXPIRY_MS)) {
-                    console.log(`[OSIRIS] Loaded ${ticker} history from IndexedDB`);
-                    this._lastFetchInfo.history = {
-                        source: 'cached',
-                        date: cachedRecord.latestDate,
-                        ticker: ticker
-                    };
-                    resolve(cachedRecord.data);
-                    return;
-                }
-
-                console.log(`[OSIRIS] Fetching fresh historical data for ${ticker}`);
-                try {
-                    const freshData = await this._fetchTickerHistoryFromAPI(ticker);
-                    const latestDate = freshData.length > 0 ? freshData[freshData.length - 1].date : null;
-                    const realizedSigma = this._computeAnnualizedRealizedVol(freshData);
-
-                    const writeTx = db.transaction(['historical_data'], 'readwrite');
-                    const writeStore = writeTx.objectStore('historical_data');
-                    writeStore.put({
-                        ticker: ticker,
-                        lastUpdated: now,
-                        latestDate: latestDate,
-                        realizedSigma: realizedSigma,
-                        data: freshData
-                    });
-
-                    this._lastFetchInfo.history = {
-                        source: 'live',
-                        date: latestDate,
-                        ticker: ticker
-                    };
-                    resolve(freshData);
-                } catch (e) {
-                    reject(e);
-                }
-            };
-
-            request.onerror = () => reject(request.error);
+            const tx = db.transaction(['historical_data'], 'readonly');
+            const store = tx.objectStore('historical_data');
+            const req = store.get(ticker);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error);
         });
     },
 
-    async _fetchTickerHistoryFromAPI(ticker) {
+    async _writeRecord(db, record) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(['historical_data'], 'readwrite');
+            const store = tx.objectStore('historical_data');
+            const req = store.put(record);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    },
+
+    _isRecordFresh(record) {
+        if (!record) return false;
+        if (record._schemaVersion !== RECORD_SCHEMA_VERSION) return false;
+        if (Date.now() - record.lastUpdated >= CACHE_EXPIRY_MS) return false;
+        return true;
+    },
+
+    /**
+     * Core fetcher: returns a complete cached record (raw series + dividends +
+     * derived beta + dividendYield + realizedSigma). All other public methods
+     * route through this. Recursion-safe: a request for the benchmark itself
+     * does not re-fetch the benchmark.
+     */
+    async _getRecord(ticker) {
+        const db = await this._initIndexedDB();
+        const cached = await this._readRecord(db, ticker);
+
+        if (this._isRecordFresh(cached)) {
+            console.log(`[OSIRIS] Loaded ${ticker} record from IndexedDB`);
+            this._lastFetchInfo.history = {
+                source: 'cached',
+                date: cached.latestDate,
+                ticker: ticker
+            };
+            return cached;
+        }
+
+        console.log(`[OSIRIS] Fetching fresh data for ${ticker}`);
+        const { series, dividends, currentPrice } = await this._fetchTickerPayloadFromAPI(ticker);
+        const latestDate = series.length > 0 ? series[series.length - 1].date : null;
+
+        // Compute derived metrics
+        const realizedSigma = this._computeAnnualizedRealizedVol(series);
+        const dividendYield = this._computeTTMDividendYield(dividends, currentPrice ?? (series[series.length - 1]?.adjClose));
+
+        let beta = null;
+        if (ticker === BENCHMARK_SYMBOL) {
+            beta = 1.0; // benchmark beta vs itself
+        } else {
+            try {
+                const benchmarkRecord = await this._getRecord(BENCHMARK_SYMBOL);
+                beta = this._computeBeta(series, benchmarkRecord.data);
+            } catch (e) {
+                console.warn(`[OSIRIS] Beta computation failed for ${ticker}:`, e);
+                beta = null;
+            }
+        }
+
+        const record = {
+            ticker: ticker,
+            _schemaVersion: RECORD_SCHEMA_VERSION,
+            lastUpdated: Date.now(),
+            latestDate: latestDate,
+            currentPrice: currentPrice ?? (series[series.length - 1]?.adjClose ?? null),
+            data: series,
+            dividends: dividends,
+            beta: beta,
+            dividendYield: dividendYield,
+            realizedSigma: realizedSigma
+        };
+
+        await this._writeRecord(db, record);
+
+        this._lastFetchInfo.history = {
+            source: 'live',
+            date: latestDate,
+            ticker: ticker
+        };
+        return record;
+    },
+
+    async getHistoricalData(ticker) {
+        const record = await this._getRecord(ticker);
+        return record.data;
+    },
+
+    async getTickerMetrics(ticker) {
+        const record = await this._getRecord(ticker);
+        return {
+            beta: record.beta,
+            dividendYield: record.dividendYield,
+            realizedSigma: record.realizedSigma,
+            latestDate: record.latestDate,
+            currentPrice: record.currentPrice
+        };
+    },
+
+    // Legacy entry point — retained for Phase 1 callers
+    async getRealizedSigma(ticker) {
+        const record = await this._getRecord(ticker);
+        return record.realizedSigma ?? null;
+    },
+
+    async _fetchTickerPayloadFromAPI(ticker) {
         const url = `/api/yahoo-proxy?symbol=${encodeURIComponent(ticker)}&mode=history&range=1y`;
         const response = await fetch(url);
         if (!response.ok) {
@@ -184,11 +254,15 @@ export const osirisIngestion = {
         if (!Array.isArray(payload.series) || payload.series.length < 2) {
             throw new Error('Yahoo proxy returned empty or invalid series');
         }
-        return payload.series;
+        return {
+            series: payload.series,
+            dividends: Array.isArray(payload.dividends) ? payload.dividends : [],
+            currentPrice: typeof payload.currentPrice === 'number' ? payload.currentPrice : null
+        };
     },
 
-    // Annualized log-return standard deviation. Cached on the ticker record
-    // so downstream phases (#1 σ replacement, #5 OU calibration) read it free.
+    // ── Derived metrics ────────────────────────────────────────────────────
+
     _computeAnnualizedRealizedVol(series) {
         if (!series || series.length < 2) return null;
         const returns = [];
@@ -205,15 +279,66 @@ export const osirisIngestion = {
         return Math.sqrt(variance) * Math.sqrt(252);
     },
 
-    // Helper for Phase 1 to read the realized σ without re-fetching.
-    async getRealizedSigma(ticker) {
-        const db = await this._initIndexedDB();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction(['historical_data'], 'readonly');
-            const store = transaction.objectStore('historical_data');
-            const request = store.get(ticker);
-            request.onsuccess = () => resolve(request.result?.realizedSigma || null);
-            request.onerror = () => reject(request.error);
-        });
+    /**
+     * OLS beta vs benchmark using daily log-returns over the overlapping
+     * date range. Returns null on insufficient data.
+     */
+    _computeBeta(stockSeries, benchmarkSeries) {
+        if (!stockSeries || !benchmarkSeries) return null;
+
+        const stockMap = new Map(stockSeries.map(p => [p.date, p.adjClose]));
+        const benchMap = new Map(benchmarkSeries.map(p => [p.date, p.adjClose]));
+
+        const sharedDates = [...stockMap.keys()].filter(d => benchMap.has(d)).sort();
+        if (sharedDates.length < 30) return null;
+
+        const stockReturns = [];
+        const marketReturns = [];
+        for (let i = 1; i < sharedDates.length; i++) {
+            const sPrev = stockMap.get(sharedDates[i - 1]);
+            const sCurr = stockMap.get(sharedDates[i]);
+            const mPrev = benchMap.get(sharedDates[i - 1]);
+            const mCurr = benchMap.get(sharedDates[i]);
+            if (sPrev > 0 && sCurr > 0 && mPrev > 0 && mCurr > 0) {
+                stockReturns.push(Math.log(sCurr / sPrev));
+                marketReturns.push(Math.log(mCurr / mPrev));
+            }
+        }
+
+        const n = stockReturns.length;
+        if (n < 30) return null;
+
+        const stockMean = stockReturns.reduce((a, b) => a + b, 0) / n;
+        const marketMean = marketReturns.reduce((a, b) => a + b, 0) / n;
+
+        let covSum = 0;
+        let varSum = 0;
+        for (let i = 0; i < n; i++) {
+            const dS = stockReturns[i] - stockMean;
+            const dM = marketReturns[i] - marketMean;
+            covSum += dS * dM;
+            varSum += dM * dM;
+        }
+
+        if (varSum <= 0) return null;
+        return covSum / varSum;
+    },
+
+    /**
+     * Trailing-12-month dividend yield. Sums dividend events with ex-div
+     * date in the 365 calendar days preceding the series' latest date.
+     */
+    _computeTTMDividendYield(dividends, latestPrice) {
+        if (!Array.isArray(dividends) || dividends.length === 0) return 0;
+        if (!(latestPrice > 0)) return null;
+
+        const cutoff = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+            .toISOString().split('T')[0];
+
+        const ttmTotal = dividends
+            .filter(d => d.date >= cutoff)
+            .reduce((sum, d) => sum + d.amount, 0);
+
+        return ttmTotal / latestPrice;
     }
 };
