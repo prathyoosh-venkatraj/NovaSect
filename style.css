@@ -1454,3 +1454,87 @@ body.contagion-alert::before {
         right: -10px;
     }
 }
+
+/* ===== OSIRIS Promo Section (index page only) ===== */
+.osiris-paths-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.osiris-histogram {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 90px;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    padding: 0 6%;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+}
+
+.osiris-promo-section:hover .osiris-histogram {
+    opacity: 0.95;
+}
+
+.osiris-hist-bar {
+    flex: 1 1 auto;
+    background: linear-gradient(to top,
+        rgba(57, 255, 20, 0.6) 0%,
+        rgba(57, 255, 20, 0.25) 55%,
+        rgba(57, 255, 20, 0) 100%);
+    transform-origin: bottom;
+    animation: osirisHistBreath 4.5s ease-in-out infinite;
+    box-shadow: 0 0 4px rgba(57, 255, 20, 0.35);
+    min-height: 3px;
+}
+
+@keyframes osirisHistBreath {
+    0%, 100% { transform: scaleY(0.88); opacity: 0.75; }
+    50%      { transform: scaleY(1.12); opacity: 1; }
+}
+
+.osiris-sim-readout {
+    position: absolute;
+    top: 1.75rem;
+    right: 2rem;
+    z-index: 10;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+    color: var(--accent-green);
+    text-shadow: 0 0 8px rgba(57, 255, 20, 0.7);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    text-transform: uppercase;
+}
+
+.osiris-promo-section:hover .osiris-sim-readout {
+    opacity: 1;
+}
+
+.osiris-sim-label {
+    color: rgba(57, 255, 20, 0.65);
+    margin-right: 0.5rem;
+}
+
+.osiris-sim-counter {
+    color: var(--accent-green);
+}
+
+/* Mobile: keep OSIRIS visually unchanged from current mobile look */
+@media (max-width: 768px) {
+    .osiris-paths-canvas,
+    .osiris-histogram,
+    .osiris-sim-readout {
+        display: none;
+    }
+}
