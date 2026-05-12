@@ -80,7 +80,7 @@ export class OsirisOracle {
     // ── Phase 1 & 3: Componentized DOM Injection ───────────────────────────
 
     _renderComponentizedReadout(params) {
-        const { ticker, currentPrice, p50, p05, p95, physicsType, volatility, physicsParams, horizonDays } = params;
+        const { ticker, currentPrice, p50, p05, p95, physicsType, volatility, physicsParams, tickerMeta, horizonDays } = params;
 
         const winProb = this._approximateWinProbability(params);
         const days = horizonDays || 252;
@@ -90,10 +90,19 @@ export class OsirisOracle {
         let physicsBullet = '';
         if (physicsType === 'Ornstein-Uhlenbeck') {
             const theta = physicsParams?.reversionSpeedTheta || 0.15;
-            physicsBullet = `Market Gravity: Assumes extreme price movements are naturally pulled back toward long-term averages (Reversion Speed: ${theta.toFixed(2)}).`;
+            physicsBullet = `Mean Reversion: Prices drift back toward a long-term level at speed θ = ${theta.toFixed(2)}. Higher θ means a faster snap-back from extremes.`;
         } else {
             const lambda = physicsParams?.jumpFrequencyLambda || 5;
-            physicsBullet = `Contract Shocks: Assumes unconstrained baseline growth subject to sudden contract win/loss spikes (Jump Freq: ${lambda}).`;
+            physicsBullet = `Event Shocks: Symmetric Poisson jumps occur at λ = ${lambda} per year. Up and down jumps are equally likely.`;
+        }
+
+        // Ticker-profile bullet (Phase 2 schema fields). Hidden if all three are absent.
+        let tickerProfileBullet = '';
+        if (tickerMeta && (tickerMeta.creditRating || tickerMeta.beta != null || tickerMeta.dividendYield != null)) {
+            const rating = tickerMeta.creditRating || '—';
+            const betaStr = (typeof tickerMeta.beta === 'number') ? tickerMeta.beta.toFixed(2) : '—';
+            const dyStr = (typeof tickerMeta.dividendYield === 'number') ? (tickerMeta.dividendYield * 100).toFixed(2) + '%' : '—';
+            tickerProfileBullet = `Ticker Profile: Credit Rating ${rating} · Beta ${betaStr} · Dividend Yield ${dyStr}.`;
         }
 
         const template = document.createElement('div');
@@ -160,6 +169,10 @@ export class OsirisOracle {
                     <span style="color:var(--accent-green);margin-right:6px;">›</span>
                     ${physicsBullet}
                 </li>
+                ${tickerProfileBullet ? `<li style="font-size:0.85em;color:rgba(0,255,0,0.7);line-height:1.5;">
+                    <span style="color:var(--accent-green);margin-right:6px;">›</span>
+                    ${tickerProfileBullet}
+                </li>` : ''}
             </ul>
         `;
         template.appendChild(assumptions);

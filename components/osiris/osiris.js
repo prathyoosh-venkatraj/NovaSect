@@ -205,6 +205,7 @@ class OsirisOrchestrator {
         // Baseline parameters — now ticker-specific
         let baseline_sigma = 0.22; // Fallback default
         let baseline_physics_param = 0.15;
+        let tickerMeta = {};
 
         // Extract base from JSON if available (to allow slider to be independent base)
         const cohort = this.physicsConfig.cohorts[Object.keys(this.physicsConfig.cohorts).find(c => this.physicsConfig.cohorts[c].tickers.some(t => t.symbol === tickerSymbol))];
@@ -215,6 +216,11 @@ class OsirisOrchestrator {
                 if (tData.baselineVolatility) {
                     baseline_sigma = tData.baselineVolatility;
                 }
+                tickerMeta = {
+                    creditRating: tData.creditRating ?? null,
+                    beta: typeof tData.beta === 'number' ? tData.beta : null,
+                    dividendYield: typeof tData.dividendYield === 'number' ? tData.dividendYield : null
+                };
             }
         }
 
@@ -316,6 +322,7 @@ class OsirisOrchestrator {
                     physicsType: physicsType,
                     volatility: volatility,
                     physicsParams: physicsParams,
+                    tickerMeta: tickerMeta,
                     horizonDays: final_steps
                 });
 
