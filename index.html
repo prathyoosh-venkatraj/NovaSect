@@ -93,10 +93,46 @@
         </section>
 
         <!-- Sentinel Promo Section -->
-        <section class="sentinel-promo-section" onclick="window.location.href='sentinel.html'">
+        <section class="sentinel-promo-section sentinel-active" onclick="window.location.href='sentinel.html'">
             <div class="matrix-bits-container"></div>
+            <div class="sentinel-sonar" aria-hidden="true">
+                <span class="sonar-ring"></span>
+                <span class="sonar-ring"></span>
+                <span class="sonar-ring"></span>
+            </div>
             <div class="mesh-robot-container">
                 <div class="mesh-robot-asset"></div>
+            </div>
+            <div class="sentinel-reticle" aria-hidden="true">
+                <span class="reticle-ring outer"></span>
+                <span class="reticle-ring inner"></span>
+                <span class="reticle-corner tl"></span>
+                <span class="reticle-corner tr"></span>
+                <span class="reticle-corner bl"></span>
+                <span class="reticle-corner br"></span>
+            </div>
+            <svg class="sentinel-ekg" viewBox="0 0 1200 100" preserveAspectRatio="none" aria-hidden="true">
+                <g>
+                    <path class="ekg-path" d="M0,50" fill="none" stroke="rgba(57, 255, 20, 0.85)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <animateTransform attributeName="transform" type="translate" from="0 0" to="-200 0" dur="1s" repeatCount="indefinite" />
+                </g>
+            </svg>
+            <div class="sentinel-readouts" aria-hidden="true">
+                <div class="readout pos-1">
+                    <span class="readout-label">PROC.CORE</span>
+                    <span class="readout-value" data-readout="proc">87.4%</span>
+                    <span class="readout-status">STABLE</span>
+                </div>
+                <div class="readout pos-2">
+                    <span class="readout-label">SIG.UPLINK</span>
+                    <span class="readout-value" data-readout="sig">124bp</span>
+                    <span class="readout-status">STABLE</span>
+                </div>
+                <div class="readout pos-3">
+                    <span class="readout-label">G-SPRD &Delta;</span>
+                    <span class="readout-value" data-readout="gsp">+0.043</span>
+                    <span class="readout-status">STABLE</span>
+                </div>
             </div>
             <div class="promo-overlay"></div>
             <div class="sentinel-promo-content">
@@ -170,6 +206,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="script.js"></script>
     <script src="osiris-bg.js"></script>
+    <script src="sentinel-promo.js"></script>
 </body>
 
 </html>
