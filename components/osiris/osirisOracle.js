@@ -98,7 +98,13 @@ export class OsirisOracle {
                 : `Mean Reversion: Prices drift back toward a long-term level at speed θ = ${theta.toFixed(2)}.`;
         } else {
             const lambda = physicsParams?.jumpFrequencyLambda || 5;
-            physicsBullet = `Event Shocks: Symmetric Poisson jumps occur at λ = ${lambda} per year. Up and down jumps are equally likely.`;
+            const jumpMu = physicsParams?.jumpMu;
+            if (typeof jumpMu === 'number' && Math.abs(jumpMu) > 1e-6) {
+                const sign = jumpMu > 0 ? '+' : '';
+                physicsBullet = `Event Shocks: Lognormal jumps at λ = ${lambda}/yr, mean log-jump ${sign}${(jumpMu * 100).toFixed(2)}% — captures contract-flow asymmetry.`;
+            } else {
+                physicsBullet = `Event Shocks: Symmetric Poisson jumps at λ = ${lambda}/yr. Up and down jumps equally likely.`;
+            }
         }
 
         // Ticker-profile bullet. Beta + dividendYield are live-derived in

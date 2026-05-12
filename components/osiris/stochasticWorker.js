@@ -80,18 +80,21 @@ function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMea
 }
 
 // Engine B: Geometric Brownian Motion + Jump Diffusion (Merton)
-function simulateGBMJump(initialPrice, mu, sigma, steps, paths, lambda) {
+// jumpMu is the log-jump mean (Phase 4): a positive value introduces upward
+// skew representing contract-driven flow asymmetry. Defaults to 0 (symmetric)
+// when not supplied for backward compatibility with non-industrial callers.
+function simulateGBMJump(initialPrice, mu, sigma, steps, paths, lambda, jumpMu) {
     const dt = 1 / 252; // one trading day per step
     const pathsMatrix = new Float32Array(paths * steps);
     const isZeroVol = (sigma <= 1e-8);
 
     // Jump size distribution: log-jump ~ N(jumpMean, jumpStd^2)
-    const jumpMean = 0; // symmetric in Phase 1; Phase 4 will skew this positively for industrials
+    const jumpMean = (typeof jumpMu === 'number') ? jumpMu : 0;
     const jumpStd = isZeroVol ? 0 : sigma * 1.5;
 
-    // Merton compensator: subtracts E[J - 1] * lambda from the drift so the
-    // jump process is mean-zero on the log-price scale. Without this, frequent
-    // jumps systematically inflate the expected terminal price.
+    // Merton compensator: subtracts λ·E[J - 1] from the drift so the expected
+    // log-price growth rate is unchanged by the jump process. Re-derived with
+    // the (now-asymmetric) jumpMean: E[J] = exp(μ_J + ½σ_J²).
     const compensator = isZeroVol
         ? 0
         : lambda * (Math.exp(jumpMean + 0.5 * jumpStd * jumpStd) - 1);
@@ -127,7 +130,8 @@ self.onmessage = function(e) {
             result = simulateOU(initialPrice, drift, volatility, steps, paths, theta, longTermMean);
         } else if (physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
             const lambda = physicsParams?.jumpFrequencyLambda || 4;
-            result = simulateGBMJump(initialPrice, drift, volatility, steps, paths, lambda);
+            const jumpMu = (typeof physicsParams?.jumpMu === 'number') ? physicsParams.jumpMu : 0;
+            result = simulateGBMJump(initialPrice, drift, volatility, steps, paths, lambda, jumpMu);
         } else {
             self.postMessage({ error: 'Unknown physicsType: ' + physicsType });
             return;

@@ -205,6 +205,7 @@ class OsirisOrchestrator {
         // Baseline parameters — now ticker-specific
         let baseline_sigma = 0.22; // Fallback default
         let baseline_physics_param = 0.15;
+        let baseline_jumpMu = 0; // Phase 4: positive for industrials, 0 otherwise
         let tickerMeta = {};
 
         // Extract base from JSON if available (to allow slider to be independent base)
@@ -215,6 +216,9 @@ class OsirisOrchestrator {
                 baseline_physics_param = physicsType === 'Ornstein-Uhlenbeck' ? tData.reversionSpeedTheta : tData.jumpFrequencyLambda;
                 if (tData.baselineVolatility) {
                     baseline_sigma = tData.baselineVolatility;
+                }
+                if (typeof tData.jumpMu === 'number') {
+                    baseline_jumpMu = tData.jumpMu;
                 }
                 // creditRating + ratingLastVerified are still hand-filled in the
                 // config (no clean free feed). beta + dividendYield are derived
@@ -231,13 +235,15 @@ class OsirisOrchestrator {
         const advancedDetails = document.querySelector('.advanced-greeks');
         const isAdvancedOpen = advancedDetails && advancedDetails.open;
 
-        let final_sigma, final_physics_param, final_steps;
+        let final_sigma, final_physics_param, final_steps, final_jumpMu;
 
         if (isAdvancedOpen) {
             // Use raw slider values directly if advanced section is open
             final_sigma = parseFloat(document.getElementById('slider-volatility').value);
             final_physics_param = parseFloat(document.getElementById('slider-physics-param').value);
             final_steps = parseInt(document.getElementById('slider-horizon').value, 10);
+            // Advanced mode has no jumpMu slider; use ticker baseline unscaled.
+            final_jumpMu = baseline_jumpMu;
         } else {
             // Phase 3: Mathematical Multiplier Reconciliation
             const volRegRegime = document.getElementById('osiris-volatility-regime');
@@ -246,10 +252,14 @@ class OsirisOrchestrator {
 
             const volRegimeMult = volRegRegime ? parseFloat(volRegRegime.value) : 1.0;
             const opShockMult = opShock ? parseFloat(opShock.value) : 1.0;
-            
+
             final_sigma = baseline_sigma * volRegimeMult;
             final_physics_param = baseline_physics_param * opShockMult;
             final_steps = customDays ? parseInt(customDays.value, 10) : 252;
+            // Phase 4: operational-shock multiplier scales BOTH λ and jumpMu.
+            // "Aggressive Contract Wins" (2.0×) doubles frequency AND magnitude
+            // of positive jumps; "Stagnant Backlog" (0.0×) zeroes both.
+            final_jumpMu = baseline_jumpMu * opShockMult;
             
             // Sync sliders visually
             document.getElementById('slider-volatility').value = final_sigma;
@@ -265,7 +275,10 @@ class OsirisOrchestrator {
             physicsParams = { reversionSpeedTheta: final_physics_param };
             // longTermMean is attached below once tickerMeta metrics are loaded.
         } else {
-            physicsParams = { jumpFrequencyLambda: final_physics_param };
+            physicsParams = {
+                jumpFrequencyLambda: final_physics_param,
+                jumpMu: final_jumpMu
+            };
         }
 
         // Fetch Data
