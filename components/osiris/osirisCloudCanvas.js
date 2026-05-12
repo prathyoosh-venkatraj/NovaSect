@@ -116,28 +116,6 @@ export class OsirisCloudCanvas {
                 }
             }
             return;
-
-        const threshold = 10;
-        let nearestNode = null;
-        let minDist = threshold * threshold;
-
-        for (const node of this.jumpNodes) {
-            const dx = mouseX - node.x;
-            const dy = mouseY - node.y;
-            const distSq = dx*dx + dy*dy;
-            if (distSq < minDist) {
-                minDist = distSq;
-                nearestNode = node;
-            }
-        }
-
-        if (nearestNode) {
-            this.tooltip.style.display = 'block';
-            this.tooltip.style.left = (mouseX + 15) + 'px';
-            this.tooltip.style.top = (mouseY + 15) + 'px';
-            this.tooltip.textContent = `Simulated Anomaly: Contract Backlog / Procurement Shock\nPercentile Band: ${nearestNode.band}\nStep: Day ${nearestNode.step}\nMagnitude: +${(nearestNode.magnitude * 100).toFixed(1)}%`;
-        } else {
-            this.tooltip.style.display = 'none';
         }
     }
 
