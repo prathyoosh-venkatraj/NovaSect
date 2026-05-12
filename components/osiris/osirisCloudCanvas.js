@@ -87,17 +87,14 @@ export class OsirisCloudCanvas {
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        // GBM: Crosshair scrubber with cached frame restore
-        if (this.cachedContext && this.cachedContext.physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
-            if (this._cachedImageData) {
-                this.ctx.putImageData(this._cachedImageData, 0, 0);
-                // Re-apply DPR scale since putImageData resets transform
-                const dpr = window.devicePixelRatio || 1;
-                this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            }
+        // Crosshair scrubber (both engines)
+        if (this.cachedContext && this._cachedImageData) {
+            this.ctx.putImageData(this._cachedImageData, 0, 0);
+            const dpr = window.devicePixelRatio || 1;
+            this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             this._drawCrosshair(mouseX);
 
-            // Jump node tooltip (on P50 arrows)
+            // Jump node tooltip (GBM P50 arrows)
             if (this.jumpNodes && this.jumpNodes.length > 0) {
                 const threshold = 12;
                 let nearestNode = null;
@@ -119,10 +116,6 @@ export class OsirisCloudCanvas {
                 }
             }
             return;
-        }
-
-        // OU: Original jump node tooltip behavior (unchanged)
-        if (!this.jumpNodes || this.jumpNodes.length === 0) return;
 
         const threshold = 10;
         let nearestNode = null;
@@ -268,56 +261,42 @@ export class OsirisCloudCanvas {
             return;
         }
 
-        // ── OU Engine: Original rendering (unchanged) ──────────────────
+        // ── OU Engine: Graduated heatmap + crosshair ──────────────────
         const percentiles = context.percentiles;
-        
+
+        // Graduated Probability Heatmap (outer → inner)
+        this._drawFilledBand(percentiles.p95, percentiles.p05, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.025)');
+        if (percentiles.p10 && percentiles.p90) {
+            this._drawFilledBand(percentiles.p90, percentiles.p10, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.04)');
+        }
+        this._drawFilledBand(percentiles.p75, percentiles.p25, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.07)');
+        if (percentiles.p45 && percentiles.p55) {
+            this._drawFilledBand(percentiles.p55, percentiles.p45, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.15)');
+        }
+
+        // P05 & P95 outer boundary strokes (dashed)
         const path05 = new Path2D();
         const path95 = new Path2D();
-        
         for (let i = 0; i <= maxSteps; i++) {
             const pt05 = this._mapPoint(i, percentiles.p05[i], maxSteps, minValue, maxValue);
             const pt95 = this._mapPoint(i, percentiles.p95[i], maxSteps, minValue, maxValue);
-            if (i === 0) {
-                path05.moveTo(pt05.x, pt05.y);
-                path95.moveTo(pt95.x, pt95.y);
-            } else {
-                path05.lineTo(pt05.x, pt05.y);
-                path95.lineTo(pt95.x, pt95.y);
-            }
+            if (i === 0) { path05.moveTo(pt05.x, pt05.y); path95.moveTo(pt95.x, pt95.y); }
+            else { path05.lineTo(pt05.x, pt05.y); path95.lineTo(pt95.x, pt95.y); }
         }
-
-        this.ctx.strokeStyle = this.colors.p05_95_stroke;
+        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
         this.ctx.lineWidth = 1;
-        this.ctx.setLineDash([5, 5]); 
+        this.ctx.setLineDash([5, 5]);
         this.ctx.stroke(path05);
         this.ctx.stroke(path95);
         this.ctx.setLineDash([]);
 
-        const path25_75 = new Path2D();
-        for (let i = 0; i <= maxSteps; i++) {
-            const pt75 = this._mapPoint(i, percentiles.p75[i], maxSteps, minValue, maxValue);
-            if (i === 0) path25_75.moveTo(pt75.x, pt75.y);
-            else path25_75.lineTo(pt75.x, pt75.y);
-        }
-        for (let i = maxSteps; i >= 0; i--) {
-            const pt25 = this._mapPoint(i, percentiles.p25[i], maxSteps, minValue, maxValue);
-            path25_75.lineTo(pt25.x, pt25.y);
-        }
-        path25_75.closePath();
-
-        this.ctx.fillStyle = this.colors.p25_75_fill;
-        this.ctx.fill(path25_75);
-        this.ctx.strokeStyle = this.colors.p25_75_stroke;
-        this.ctx.lineWidth = 1.5;
-        this.ctx.stroke(path25_75);
-
+        // P50 Median (bold glow)
         const path50 = new Path2D();
         for (let i = 0; i <= maxSteps; i++) {
             const pt50 = this._mapPoint(i, percentiles.p50[i], maxSteps, minValue, maxValue);
             if (i === 0) path50.moveTo(pt50.x, pt50.y);
             else path50.lineTo(pt50.x, pt50.y);
         }
-
         this.ctx.strokeStyle = this.colors.p50_stroke;
         this.ctx.lineWidth = 3;
         this.ctx.shadowColor = this.colors.p50_stroke;
@@ -588,9 +567,7 @@ export class OsirisCloudCanvas {
         this._drawBackgroundLayer(context, maxSteps, minValue, maxValue);
         this._drawStochasticLayer(context, maxSteps, minValue, maxValue);
 
-        // Cache rendered frame for GBM crosshair overlay
-        if (context.physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
-            this._cachedImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-        }
+        // Cache rendered frame for crosshair overlay (both engines)
+        this._cachedImageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
     }
 }
