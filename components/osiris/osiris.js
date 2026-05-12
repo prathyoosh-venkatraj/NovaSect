@@ -312,6 +312,7 @@ class OsirisOrchestrator {
                     p50: percentiles.p50[lastIdx],
                     p05: percentiles.p05[lastIdx],
                     p95: percentiles.p95[lastIdx],
+                    pAboveSpot: e.data.pAboveSpot,
                     physicsType: physicsType,
                     volatility: volatility,
                     physicsParams: physicsParams,

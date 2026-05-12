@@ -28,22 +28,31 @@ export class OsirisOracle {
     // ── Phase 2: Plain-English Translation Engine ──────────────────────────
 
     /**
-     * Approximates the probability of closing above current price using
-     * a normal CDF estimate derived from percentile spread geometry.
+     * Probability that the terminal price exceeds the current spot.
+     *
+     * Phase 1: prefer the empirical count from the 5000-path simulation when
+     * provided (`pAboveSpot`). This is exactly correct regardless of the
+     * underlying distribution (OU's truncated/bounded terminal, GBM+Jump's
+     * heavy-tailed mixture, etc.).
+     *
+     * Fallback: the legacy Gaussian Φ(z) approximation from the P05/P50/P95
+     * percentile spread. Kept defensively for backward compat — should not
+     * be reached in normal operation.
      */
     _approximateWinProbability(params) {
-        const { currentPrice, p50, p05, p95 } = params;
+        const { currentPrice, p50, p05, p95, pAboveSpot } = params;
 
-        // Approximate sigma from the 90% confidence interval (P05 to P95 ≈ ±1.645σ)
+        if (typeof pAboveSpot === 'number' && pAboveSpot >= 0 && pAboveSpot <= 1) {
+            const prob = Math.round(pAboveSpot * 100);
+            return Math.max(1, Math.min(99, prob));
+        }
+
+        // ── Legacy fallback (Gaussian approximation of a non-Gaussian output) ──
         const impliedSigma = (p95 - p05) / (2 * 1.645);
         if (impliedSigma <= 0) return 50;
 
-        // Z-score: how many implied-sigmas above the current price is the median?
         const z = (p50 - currentPrice) / impliedSigma;
-
-        // Abramowitz & Stegun rational approximation of Φ(z)
         const cdf = this._normalCDF(z);
-        // Probability of finishing above current price
         const prob = Math.round(cdf * 100);
         return Math.max(1, Math.min(99, prob));
     }
