@@ -7,20 +7,20 @@
       "physics": "Ornstein-Uhlenbeck",
       "description": "Mean-reverting bounds tethered to commodity ceilings and regulatory rate floors.",
       "tickers": [
-        { "symbol": "XOM", "name": "ExxonMobil Corp", "reversionSpeedTheta": 0.15 },
-        { "symbol": "CVX", "name": "Chevron Corp", "reversionSpeedTheta": 0.12 },
-        { "symbol": "NEE", "name": "NextEra Energy Inc", "reversionSpeedTheta": 0.08 },
-        { "symbol": "DUK", "name": "Duke Energy Corp", "reversionSpeedTheta": 0.20 }
+        { "symbol": "XOM", "name": "ExxonMobil Corp", "reversionSpeedTheta": 0.15, "baselineVolatility": 0.23 },
+        { "symbol": "CVX", "name": "Chevron Corp", "reversionSpeedTheta": 0.12, "baselineVolatility": 0.24 },
+        { "symbol": "NEE", "name": "NextEra Energy Inc", "reversionSpeedTheta": 0.08, "baselineVolatility": 0.18 },
+        { "symbol": "DUK", "name": "Duke Energy Corp", "reversionSpeedTheta": 0.20, "baselineVolatility": 0.15 }
       ]
     },
     "industrials_and_defense": {
       "physics": "Geometric Brownian Motion + Jump Diffusion",
       "description": "Unbound variance cones subject to lumpy, contract-driven Poisson jumps.",
       "tickers": [
-        { "symbol": "LMT", "name": "Lockheed Martin Corp", "jumpFrequencyLambda": 4 },
-        { "symbol": "GD", "name": "General Dynamics Corp", "jumpFrequencyLambda": 3 },
-        { "symbol": "CAT", "name": "Caterpillar Inc", "jumpFrequencyLambda": 6 },
-        { "symbol": "GE", "name": "GE Aerospace", "jumpFrequencyLambda": 5 }
+        { "symbol": "LMT", "name": "Lockheed Martin Corp", "jumpFrequencyLambda": 4, "baselineVolatility": 0.21 },
+        { "symbol": "GD", "name": "General Dynamics Corp", "jumpFrequencyLambda": 3, "baselineVolatility": 0.22 },
+        { "symbol": "CAT", "name": "Caterpillar Inc", "jumpFrequencyLambda": 6, "baselineVolatility": 0.28 },
+        { "symbol": "GE", "name": "GE Aerospace", "jumpFrequencyLambda": 5, "baselineVolatility": 0.32 }
       ]
     }
   }

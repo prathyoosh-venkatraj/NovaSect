@@ -200,8 +200,8 @@ class OsirisOrchestrator {
             }
         }
 
-        // Baseline parameters
-        let baseline_sigma = 0.22; // Default
+        // Baseline parameters — now ticker-specific
+        let baseline_sigma = 0.22; // Fallback default
         let baseline_physics_param = 0.15;
 
         // Extract base from JSON if available (to allow slider to be independent base)
@@ -210,6 +210,9 @@ class OsirisOrchestrator {
             const tData = cohort.tickers.find(t => t.symbol === tickerSymbol);
             if (tData) {
                 baseline_physics_param = physicsType === 'Ornstein-Uhlenbeck' ? tData.reversionSpeedTheta : tData.jumpFrequencyLambda;
+                if (tData.baselineVolatility) {
+                    baseline_sigma = tData.baselineVolatility;
+                }
             }
         }
 
