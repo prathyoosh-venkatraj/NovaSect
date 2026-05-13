@@ -1225,28 +1225,37 @@
             },
             'exxonmobil': {
                 description: 'ExxonMobil is the largest publicly traded integrated oil & gas company globally. Operations include hydrocarbon exploration & production (Upstream), refining of petroleum products (Energy Products), commodity & specialty chemical manufacturing (Chemical Products), and specialty performance products. Notable assets include Permian Basin shale, Guyana Stabroek block, and global LNG.',
+                // Revenue shares from 2025 10-K segment disclosure: external "Sales and
+                // other operating revenue" by segment / total $323.8B. Upstream is small
+                // externally because most production transfers internally to Energy Products
+                // at intersegment prices.
                 segments: [
-                    { name: 'Upstream', share: 62 },
-                    { name: 'Energy Products', share: 24 },
-                    { name: 'Chemical Products', share: 11 },
-                    { name: 'Specialty Products', share: 3 }
+                    { name: 'Energy Products', share: 76 },
+                    { name: 'Upstream', share: 12 },
+                    { name: 'Chemical Products', share: 7 },
+                    { name: 'Specialty Products', share: 5 }
                 ]
             },
             'iberdrola': {
-                description: 'Iberdrola is a Spanish multinational electric utility headquartered in Bilbao and one of the world\'s largest producers of wind power. Operations include regulated transmission & distribution networks, conventional & renewable generation, and customer-facing retail, with major asset bases in Spain, the UK, the US, Brazil, and Mexico.',
+                description: 'Iberdrola is a Spanish multinational electric utility headquartered in Bilbao and one of the world\'s largest producers of wind power. Operations are organized into three businesses: regulated transmission & distribution Networks; Renewable Energy & Sustainable Generation; and Customer-facing retail. Major asset bases in Spain, the UK, the US, Brazil, and Mexico.',
+                // Revenue shares from 2025 financial report Note on segment reporting:
+                // Customers €22.1B + Networks €20.9B + Renewables €10.3B (pre-elimination).
+                // Customers segment is large because it captures pass-through commodity
+                // sales to end users; profitability is concentrated in Networks.
                 segments: [
-                    { name: 'Networks (T&D)', share: 55 },
-                    { name: 'Generation & Customers', share: 30 },
-                    { name: 'Renewables', share: 15 }
+                    { name: 'Customers (Retail)', share: 41 },
+                    { name: 'Networks (T&D)', share: 39 },
+                    { name: 'Renewable Energy & Sustainable Generation', share: 19 }
                 ]
             },
             'lockheedmartin': {
-                description: 'Lockheed Martin is an American aerospace, defense, arms, security, and advanced technologies company — the world\'s largest defense contractor by revenue. Programs span tactical aircraft (F-35, F-22), missiles & fire control, rotary aircraft (Sikorsky), and space systems. Heavy revenue concentration with the US Department of Defense (~70%).',
+                description: 'Lockheed Martin is an American aerospace, defense, arms, security, and advanced technologies company — the world\'s largest defense contractor by revenue. Programs span tactical aircraft (F-35, F-22), missiles & fire control, rotary aircraft (Sikorsky), and space systems. Customer concentration ~63% with the US Department of Defense and ~28% international. F-35 program alone is 27% of total consolidated sales.',
+                // Revenue shares from 2025 10-K (FY total sales $75.0B).
                 segments: [
                     { name: 'Aeronautics', share: 40 },
-                    { name: 'Rotary & Mission Systems', share: 25 },
-                    { name: 'Space', share: 18 },
-                    { name: 'Missiles & Fire Control', share: 17 }
+                    { name: 'Rotary & Mission Systems', share: 23 },
+                    { name: 'Missiles & Fire Control', share: 19 },
+                    { name: 'Space', share: 17 }
                 ]
             },
             'northropgrumman': {
@@ -1259,11 +1268,13 @@
                 ]
             },
             'rtx': {
-                description: 'RTX Corporation (formerly Raytheon Technologies) is an American aerospace & defense conglomerate formed by the 2020 merger of Raytheon Company and United Technologies. Operations span commercial aerospace propulsion (Pratt & Whitney), avionics & cabin systems (Collins Aerospace), and integrated defense (Raytheon).',
+                description: 'RTX Corporation (formerly Raytheon Technologies) is an American aerospace & defense conglomerate formed by the 2020 merger of Raytheon Company and United Technologies. Operations span commercial aerospace propulsion (Pratt & Whitney), avionics & cabin systems (Collins Aerospace), and integrated defense (Raytheon). Notable programs: F135 engine for F-35 (Pratt), PW1000G GTF for narrow-body airliners.',
+                // Revenue shares from 2025 10-K (segment-level net sales ~$91.2B
+                // pre-eliminations; consolidated total sales $88.6B).
                 segments: [
-                    { name: 'Collins Aerospace', share: 37 },
                     { name: 'Pratt & Whitney', share: 36 },
-                    { name: 'Raytheon (Defense)', share: 27 }
+                    { name: 'Collins Aerospace', share: 33 },
+                    { name: 'Raytheon (Defense)', share: 31 }
                 ]
             },
             'l3harris': {
