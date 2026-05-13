@@ -687,6 +687,95 @@
             }
         }
 
+        /* ── Company Profile + Revenue Segments ──────────────────────
+           Manual content (no API). Provides the orientation paragraph
+           an investor wants before drilling into metrics. */
+        .profile-section {
+            background: rgba(1, 10, 1, 0.9);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 10px;
+            padding: 1.3rem 1.5rem;
+            box-shadow: 0 0 18px rgba(57, 255, 20, 0.1) inset;
+        }
+
+        .profile-section h2 {
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0 0 1rem 0;
+            font-size: 1.05rem;
+            text-shadow: 0 0 5px var(--accent-green);
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .profile-description {
+            color: rgba(255, 255, 255, 0.85);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            margin: 0 0 1.2rem 0;
+        }
+
+        .profile-subheading {
+            color: rgba(57, 255, 20, 0.7);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin: 0 0 0.6rem 0;
+            font-weight: 600;
+        }
+
+        .segment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .segment-row {
+            display: grid;
+            grid-template-columns: minmax(140px, 0.8fr) 1fr 45px;
+            align-items: center;
+            gap: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+        }
+
+        .segment-label {
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: 0.3px;
+        }
+
+        .segment-bar-wrapper {
+            height: 12px;
+            background: rgba(57, 255, 20, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .segment-bar {
+            height: 100%;
+            background: linear-gradient(90deg, rgba(57, 255, 20, 0.45), rgba(57, 255, 20, 0.75));
+            border-radius: 3px;
+            transition: width 0.5s ease-out;
+            box-shadow: 0 0 6px rgba(57, 255, 20, 0.4);
+        }
+
+        .segment-share {
+            color: var(--accent-green);
+            text-align: right;
+            font-weight: 700;
+            text-shadow: 0 0 4px rgba(57, 255, 20, 0.4);
+        }
+
+        @media (max-width: 1024px) {
+            .segment-row {
+                grid-template-columns: minmax(120px, 0.7fr) 1fr 42px;
+                font-size: 0.7rem;
+            }
+        }
+
         .top-bar {
             width: 100% !important;
             display: flex !important;
@@ -864,6 +953,17 @@
                 <div class="company-header">
                     <h1 id="company-name" class="company-title">Company Name</h1>
                     <p id="company-industry" class="company-industry">Industry Name</p>
+                </div>
+
+                <!-- Company Profile — manual description + revenue-segment mix.
+                     Loaded from COMPANY_PROFILES per company. -->
+                <div class="profile-section" id="profile-section" style="display:none">
+                    <h2>COMPANY PROFILE</h2>
+                    <p class="profile-description" id="profile-description"></p>
+                    <div class="profile-segments" id="profile-segments-wrapper">
+                        <h3 class="profile-subheading">Revenue Segments</h3>
+                        <div class="segment-list" id="segment-list"></div>
+                    </div>
                 </div>
 
                 <!-- Market Context — populated from OSIRIS ingestion's cached metrics
@@ -1111,6 +1211,90 @@
         // no extra API calls beyond what Osiris already does on a 24h TTL).
         import { osirisIngestion } from './components/osiris/osirisIngestion.js';
 
+        // Company profile data — hand-curated description + approximate
+        // revenue-segment mix per company. Values are starter content based
+        // on public knowledge; verify against the latest 10-K before
+        // citing in research. Segment shares are approximate percentages.
+        const COMPANY_PROFILES = {
+            'chevron': {
+                description: 'Chevron is an integrated global energy company engaged in petroleum, chemicals, mining, power generation, and energy services. Operations span upstream exploration & production, downstream refining & marketing, and midstream transportation, with significant US shale, deepwater Gulf, and international assets including Australia LNG.',
+                segments: [
+                    { name: 'Upstream', share: 80 },
+                    { name: 'Downstream', share: 20 }
+                ]
+            },
+            'exxonmobil': {
+                description: 'ExxonMobil is the largest publicly traded integrated oil & gas company globally. Operations include hydrocarbon exploration & production (Upstream), refining of petroleum products (Energy Products), commodity & specialty chemical manufacturing (Chemical Products), and specialty performance products. Notable assets include Permian Basin shale, Guyana Stabroek block, and global LNG.',
+                segments: [
+                    { name: 'Upstream', share: 62 },
+                    { name: 'Energy Products', share: 24 },
+                    { name: 'Chemical Products', share: 11 },
+                    { name: 'Specialty Products', share: 3 }
+                ]
+            },
+            'iberdrola': {
+                description: 'Iberdrola is a Spanish multinational electric utility headquartered in Bilbao and one of the world\'s largest producers of wind power. Operations include regulated transmission & distribution networks, conventional & renewable generation, and customer-facing retail, with major asset bases in Spain, the UK, the US, Brazil, and Mexico.',
+                segments: [
+                    { name: 'Networks (T&D)', share: 55 },
+                    { name: 'Generation & Customers', share: 30 },
+                    { name: 'Renewables', share: 15 }
+                ]
+            },
+            'lockheedmartin': {
+                description: 'Lockheed Martin is an American aerospace, defense, arms, security, and advanced technologies company — the world\'s largest defense contractor by revenue. Programs span tactical aircraft (F-35, F-22), missiles & fire control, rotary aircraft (Sikorsky), and space systems. Heavy revenue concentration with the US Department of Defense (~70%).',
+                segments: [
+                    { name: 'Aeronautics', share: 40 },
+                    { name: 'Rotary & Mission Systems', share: 25 },
+                    { name: 'Space', share: 18 },
+                    { name: 'Missiles & Fire Control', share: 17 }
+                ]
+            },
+            'northropgrumman': {
+                description: 'Northrop Grumman is an American multinational aerospace & defense technology company. Major programs include the B-21 Raider stealth bomber, the Sentinel (GBSD) nuclear ICBM, the James Webb Space Telescope, and a broad portfolio of national security space systems. One of the most space-exposed primes.',
+                segments: [
+                    { name: 'Aeronautics Systems', share: 30 },
+                    { name: 'Mission Systems', share: 28 },
+                    { name: 'Space Systems', share: 28 },
+                    { name: 'Defense Systems', share: 14 }
+                ]
+            },
+            'rtx': {
+                description: 'RTX Corporation (formerly Raytheon Technologies) is an American aerospace & defense conglomerate formed by the 2020 merger of Raytheon Company and United Technologies. Operations span commercial aerospace propulsion (Pratt & Whitney), avionics & cabin systems (Collins Aerospace), and integrated defense (Raytheon).',
+                segments: [
+                    { name: 'Collins Aerospace', share: 37 },
+                    { name: 'Pratt & Whitney', share: 36 },
+                    { name: 'Raytheon (Defense)', share: 27 }
+                ]
+            },
+            'l3harris': {
+                description: 'L3Harris Technologies is an American defense contractor and IT services provider focused on tactical communications, electronic warfare, ISR (intelligence/surveillance/reconnaissance), space systems, and integrated mission systems. Formed by the 2019 merger of L3 Technologies and Harris Corporation; acquired Aerojet Rocketdyne in 2023.',
+                segments: [
+                    { name: 'Space & Airborne Systems', share: 31 },
+                    { name: 'Integrated Mission Systems', share: 28 },
+                    { name: 'Communications Systems', share: 25 },
+                    { name: 'Aerojet Rocketdyne', share: 16 }
+                ]
+            },
+            'rheinmetall': {
+                description: 'Rheinmetall AG is a German industrial group headquartered in Düsseldorf and Germany\'s largest manufacturer of army equipment. The Vehicle Systems business produces armored vehicles (Leopard 2, Puma IFV); Weapon and Ammunition produces small-arms and large-caliber munitions. Revenue has expanded rapidly amid post-2022 European rearmament.',
+                segments: [
+                    { name: 'Vehicle Systems', share: 40 },
+                    { name: 'Weapon & Ammunition', share: 30 },
+                    { name: 'Electronic Solutions', share: 15 },
+                    { name: 'Power Systems', share: 15 }
+                ]
+            },
+            'generaldynamics': {
+                description: 'General Dynamics is an American publicly traded aerospace & defense company headquartered in Reston, Virginia. Major programs include Gulfstream business jets, Virginia-class submarines, Abrams main battle tanks, and Stryker armored vehicles, along with mission-critical IT services. Balanced across air, sea, and land defense plus commercial aviation.',
+                segments: [
+                    { name: 'Marine Systems', share: 27 },
+                    { name: 'Technologies (IT)', share: 27 },
+                    { name: 'Aerospace (Gulfstream)', share: 24 },
+                    { name: 'Combat Systems', share: 22 }
+                ]
+            }
+        };
+
         // Peer ticker map — hand-picked per company. 2 peers each, chosen by
         // sector/business-mix similarity. Format: FinVault-style (with
         // exchange prefix) so the same toYahooSymbol() helper applies.
@@ -1200,6 +1384,37 @@
             } catch (err) {
                 console.warn('[FinVault] News feed failed for ' + ticker + ':', err);
                 feedEl.innerHTML = '<div class="news-empty">News unavailable</div>';
+            }
+        }
+
+        // ── Company Profile + Revenue Segments ───────────────────────
+        function loadProfile(companyKey, companyName) {
+            const section = document.getElementById('profile-section');
+            const descEl = document.getElementById('profile-description');
+            const wrapEl = document.getElementById('profile-segments-wrapper');
+            const listEl = document.getElementById('segment-list');
+            if (!section) return;
+
+            const profile = COMPANY_PROFILES[companyKey];
+            if (!profile) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = '';
+            descEl.textContent = profile.description || ('No description on file for ' + companyName + '.');
+
+            if (Array.isArray(profile.segments) && profile.segments.length > 0) {
+                wrapEl.style.display = '';
+                listEl.innerHTML = profile.segments.map(seg => (
+                    '<div class="segment-row">' +
+                        '<div class="segment-label">' + escapeHtml(seg.name) + '</div>' +
+                        '<div class="segment-bar-wrapper"><div class="segment-bar" style="width:' + seg.share + '%"></div></div>' +
+                        '<div class="segment-share">' + seg.share + '%</div>' +
+                    '</div>'
+                )).join('');
+            } else {
+                wrapEl.style.display = 'none';
             }
         }
 
@@ -1647,6 +1862,9 @@
                     companyDisplayName.textContent = data.name;
                     companyIndustry.textContent = data.industry;
                     document.title = `${data.name} Report - NovaSect`;
+
+                    // Render company profile (synchronous, hand-curated content).
+                    loadProfile(company.toLowerCase(), data.name);
 
                     // Fire-and-forget: populate Market Context + Forward
                     // Estimates + News Feed + Peer Snapshot + Fundamentals
