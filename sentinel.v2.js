@@ -142,7 +142,9 @@ function getBenchmark(company) {
 const CreditEngine = {
     async calculateCurrentSpread(company, isInstrumentMod = false) {
         return new Promise(resolve => {
-            const sensitivity = company.type === 'IG' ? 0.15 : 1.2;
+            // Recalibrated: IG/HY differential ~2.86x (was 8x). More aligned
+            // with empirical credit-beta dispersion between IG and HY.
+            const sensitivity = company.type === 'IG' ? 0.35 : 1.0;
             const stressMultiplier = currentBetaScaling;
             
             // Leg 1: Macro Anchor (FRED Base)
@@ -163,8 +165,10 @@ const CreditEngine = {
             // Formula: proxyVol_i = (sigma_ETF * beta_eff) + Residual
             const proxyVol = (sectorVol * effectiveSectorBeta) + company.residual;
             
-            // Leg B: Merton Convexity Adjustment
-            const mertonScalar = proxyVol > 35 ? 2.5 : 1.5;
+            // Leg B: Merton Convexity Adjustment — smooth sigmoid centered at
+            // vol=35 (was a binary 1.5/2.5 jump). Range: 1.5 (low vol) → 2.5
+            // (high vol), continuous and differentiable.
+            const mertonScalar = 1.5 + 1.0 / (1 + Math.exp(-0.4 * (proxyVol - 35)));
             const volatilityPremium = proxyVol * mertonScalar * stressMultiplier * sensitivity;
 
             const marketComp = effectiveMarketBeta * 50 * stressMultiplier * sensitivity; 
@@ -667,7 +671,10 @@ async function cycleSectorBatch() {
     // Apply Update
     for (const c of batch) {
         if (!c) continue;
-        c.residual = c.residual + (Math.random() * 1.0 - 0.5);
+        // Bounded OU jitter: mean-reverts toward 0 each tick (theta=0.05) so
+        // accumulated random walk stays near the calibrated value rather than
+        // drifting unboundedly over hours.
+        c.residual = c.residual * 0.95 + (Math.random() * 1.0 - 0.5);
         await updateCardData(c.ticker);
         c.lastUpdated = Date.now();
         
@@ -733,17 +740,19 @@ async function scanForContagion() {
     else document.body.classList.remove('contagion-alert');
 }
 
+// Rebased thresholds: 400 bps is normal BBB-/BB+ territory, not "critical".
+// Real distress begins around 800-1000 bps. New ranges align with market practice.
 function getRiskLevel(spread) {
-    if (spread < 150) return 'NOMINAL';
-    if (spread < 250) return 'CAUTION';
-    if (spread < 400) return 'ELEVATED';
+    if (spread < 200) return 'NOMINAL';
+    if (spread < 400) return 'CAUTION';
+    if (spread < 800) return 'ELEVATED';
     return 'CRITICAL';
 }
 
 function getRiskColor(spread) {
-    if (spread < 150) return 'text-neon-green';
-    if (spread < 250) return 'text-yellow-400';
-    if (spread < 400) return 'text-orange-500';
+    if (spread < 200) return 'text-neon-green';
+    if (spread < 400) return 'text-yellow-400';
+    if (spread < 800) return 'text-orange-500';
     return 'text-red-500 glow-text';
 }
 
