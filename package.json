@@ -7,9 +7,11 @@
   },
   "scripts": {
     "sitemap": "node generate-sitemap.js",
-    "convert-images": "node scripts/convert-images.js"
+    "convert-images": "node scripts/convert-images.js",
+    "build": "node scripts/build.js"
   },
   "devDependencies": {
+    "esbuild": "^0.28.0",
     "sharp": "^0.34.5"
   }
 }
