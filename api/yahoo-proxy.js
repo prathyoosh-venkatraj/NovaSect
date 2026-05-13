@@ -1,18 +1,85 @@
 /**
  * Yahoo Finance Proxy - Vercel Serverless Function
  *
- * Two modes:
+ * Three modes:
  *   - Default (no `mode` query param): returns a 30-day realized volatility summary.
  *     Cache: 1h edge. Used by Sentinel's auto-calibration spot-checks.
  *   - mode=history (with `range`, default '1y'): returns the full daily adjusted-close
- *     series for the requested range. Cache: 24h edge (daily-close data does not
- *     change intraday). Used by Osiris for initial-price + realized-σ + OU calibration.
+ *     series + dividend events for the requested range. Cache: 24h edge.
+ *     Used by Osiris for initial-price + realized-σ + OU calibration.
+ *   - mode=quote-summary: returns analyst price targets + recommendation mean
+ *     from Yahoo's quoteSummary endpoint. Requires a cookie+crumb auth flow.
+ *     Cache: 6h edge. Used by FinVault Forward Estimates panel as a free-tier
+ *     substitute for Finnhub's premium-only /stock/price-target.
  */
+
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+
+// Yahoo's v10/quoteSummary endpoint requires session cookie + crumb auth.
+// Two-step bootstrap: hit fc.yahoo.com to grab an A3 cookie, then exchange
+// it for a crumb. Auth is fetched per-request; the Vercel edge cache on
+// the proxy's response (6h) makes this cheap in aggregate.
+async function getYahooAuth() {
+    const cookieRes = await fetch('https://fc.yahoo.com/', { headers: { 'User-Agent': UA } });
+    const setCookie = cookieRes.headers.get('set-cookie') || '';
+    const a3Match = setCookie.match(/A3=([^;]+)/);
+    if (!a3Match) throw new Error('Failed to obtain Yahoo session cookie');
+    const cookieValue = 'A3=' + a3Match[1];
+
+    const crumbRes = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+        headers: { 'User-Agent': UA, 'Cookie': cookieValue }
+    });
+    const crumb = (await crumbRes.text()).trim();
+    if (!crumb || crumb.length < 5) throw new Error('Failed to obtain Yahoo crumb');
+    return { cookie: cookieValue, crumb };
+}
+
+function unwrap(obj) {
+    return (obj && typeof obj === 'object' && 'raw' in obj) ? obj.raw : null;
+}
+
 export default async function handler(req, res) {
     const { symbol, mode, range } = req.query;
 
     if (!symbol) {
         return res.status(400).json({ error: 'E400: Missing symbol' });
+    }
+
+    // ── quote-summary mode: analyst targets + recommendation mean ──────
+    if (mode === 'quote-summary') {
+        try {
+            const { cookie, crumb } = await getYahooAuth();
+            const summaryUrl = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}` +
+                `?modules=financialData&crumb=${encodeURIComponent(crumb)}`;
+            const response = await fetch(summaryUrl, {
+                headers: { 'User-Agent': UA, 'Cookie': cookie }
+            });
+            if (!response.ok) {
+                return res.status(response.status).json({ error: `E${response.status}: YAHOO_API_REJECTED` });
+            }
+            const data = await response.json();
+            const fd = data.quoteSummary?.result?.[0]?.financialData;
+            if (!fd) {
+                return res.status(404).json({ error: 'E404: NO_DATA_FOUND' });
+            }
+            res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=21600');
+            return res.status(200).json({
+                symbol: symbol,
+                mode: 'quote-summary',
+                currentPrice:      unwrap(fd.currentPrice),
+                targetMean:        unwrap(fd.targetMeanPrice),
+                targetMedian:      unwrap(fd.targetMedianPrice),
+                targetHigh:        unwrap(fd.targetHighPrice),
+                targetLow:         unwrap(fd.targetLowPrice),
+                numberOfAnalysts:  unwrap(fd.numberOfAnalystOpinions),
+                recommendationMean: unwrap(fd.recommendationMean),
+                recommendationKey: fd.recommendationKey || null,
+                source: 'Yahoo Finance Live'
+            });
+        } catch (error) {
+            console.error('Yahoo quote-summary error:', error);
+            return res.status(502).json({ error: 'E502: YAHOO_AUTH_FAILED' });
+        }
     }
 
     const isHistoryMode = mode === 'history';

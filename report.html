@@ -1505,9 +1505,12 @@
                 .catch(err => { console.warn('[FinVault] ' + url + ':', err); return null; });
 
             try {
+                // Finnhub /stock/recommendation provides the analyst-count breakdown
+                // (free tier). Yahoo quote-summary backfills the price target since
+                // Finnhub's /stock/price-target is premium-only.
                 const [recArr, target, metrics] = await Promise.all([
                     fetchJson('/api/finnhub-proxy?endpoint=stock/recommendation&symbol=' + encodeURIComponent(yahooSym)),
-                    fetchJson('/api/finnhub-proxy?endpoint=stock/price-target&symbol=' + encodeURIComponent(yahooSym)),
+                    fetchJson('/api/yahoo-proxy?symbol=' + encodeURIComponent(yahooSym) + '&mode=quote-summary'),
                     osirisIngestion.getTickerMetrics(yahooSym).catch(() => null)
                 ]);
 
@@ -1536,13 +1539,17 @@
                     }
                 }
 
-                // ── Price target
+                // ── Price target (from Yahoo quote-summary)
                 if (target && typeof target.targetMedian === 'number' && target.targetMedian > 0) {
                     const med = target.targetMedian;
                     const low = typeof target.targetLow === 'number' ? target.targetLow : null;
                     const high = typeof target.targetHigh === 'number' ? target.targetHigh : null;
                     const n = target.numberOfAnalysts || null;
-                    const lastUpdated = target.lastUpdated || '';
+                    // Yahoo gives us currentPrice in the same response (more current
+                    // than osirisIngestion's 24h-cached price). Prefer it.
+                    const currentPrice = (typeof target.currentPrice === 'number' && target.currentPrice > 0)
+                        ? target.currentPrice
+                        : metrics?.currentPrice;
 
                     document.getElementById('fe-target-median').textContent = '$' + med.toFixed(2);
                     if (low !== null && high !== null) {
@@ -1550,8 +1557,6 @@
                             '$' + low.toFixed(0) + ' – $' + high.toFixed(0);
                     }
 
-                    // Upside vs current price
-                    const currentPrice = metrics?.currentPrice;
                     if (typeof currentPrice === 'number' && currentPrice > 0) {
                         const upside = ((med / currentPrice) - 1) * 100;
                         const upsideEl = document.getElementById('fe-target-upside');
@@ -1564,11 +1569,11 @@
                         document.getElementById('fe-target-count').textContent = n + ' analysts';
                     }
 
-                    if (footer && lastUpdated) {
-                        footer.textContent = '> updated ' + lastUpdated.split('T')[0] + '  ·  ' + yahooSym;
+                    if (footer) {
+                        footer.textContent = '> price target via Yahoo  ·  ' + yahooSym;
                     }
                 } else if (footer) {
-                    footer.textContent = '> coverage limited for ' + yahooSym;
+                    footer.textContent = '> price target unavailable for ' + yahooSym;
                 }
             } catch (err) {
                 console.warn('[FinVault] Forward estimates failed for ' + ticker + ':', err);
