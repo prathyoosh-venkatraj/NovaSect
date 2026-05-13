@@ -485,6 +485,117 @@
             min-height: 0.7rem;
         }
 
+        /* ── Forward Estimates ───────────────────────────────────────
+           Analyst consensus + price target + upside, 3 cards. */
+        .forward-estimates-section {
+            background: rgba(1, 10, 1, 0.9);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 10px;
+            padding: 1.3rem 1.5rem;
+            box-shadow: 0 0 18px rgba(57, 255, 20, 0.1) inset;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .forward-estimates-section h2 {
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0 0 1rem 0;
+            font-size: 1.05rem;
+            text-shadow: 0 0 5px var(--accent-green);
+        }
+
+        .forward-estimates-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.7rem;
+        }
+
+        .fe-card {
+            background: rgba(10, 10, 10, 0.7);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            border-radius: 6px;
+            padding: 0.8rem 0.7rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .fe-card:hover {
+            border-color: rgba(57, 255, 20, 0.55);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.15);
+        }
+
+        .fe-label {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .fe-value-big {
+            color: var(--accent-green);
+            font-size: 1.15rem;
+            font-weight: 700;
+            font-family: monospace;
+            text-shadow: 0 0 6px rgba(57, 255, 20, 0.35);
+            line-height: 1.1;
+            letter-spacing: 1px;
+        }
+
+        .fe-value-small {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.5px;
+        }
+
+        /* Consensus rating colors */
+        .fe-buy {
+            color: #39FF14 !important;
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.7) !important;
+        }
+        .fe-hold {
+            color: #FFAA00 !important;
+            text-shadow: 0 0 8px rgba(255, 170, 0, 0.5) !important;
+        }
+        .fe-sell {
+            color: #FF4444 !important;
+            text-shadow: 0 0 8px rgba(255, 68, 68, 0.5) !important;
+        }
+        .fe-positive {
+            color: #39FF14 !important;
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.5) !important;
+        }
+        .fe-negative {
+            color: #FF4444 !important;
+            text-shadow: 0 0 8px rgba(255, 68, 68, 0.5) !important;
+        }
+
+        .fe-footer {
+            margin-top: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            min-height: 0.7rem;
+        }
+
+        @media (max-width: 1024px) {
+            .forward-estimates-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .forward-estimates-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .top-bar {
             width: 100% !important;
             display: flex !important;
@@ -695,6 +806,29 @@
                         </div>
                     </div>
                     <div class="mc-footer" id="mc-footer"></div>
+                </div>
+
+                <!-- Forward Estimates — Finnhub /stock/recommendation + /stock/price-target -->
+                <div class="forward-estimates-section">
+                    <h2>FORWARD ESTIMATES</h2>
+                    <div class="forward-estimates-grid">
+                        <div class="fe-card">
+                            <span class="fe-label">Analyst Consensus</span>
+                            <span class="fe-value-big" id="fe-rating">—</span>
+                            <span class="fe-value-small" id="fe-breakdown">—</span>
+                        </div>
+                        <div class="fe-card">
+                            <span class="fe-label">Price Target (Median)</span>
+                            <span class="fe-value-big" id="fe-target-median">—</span>
+                            <span class="fe-value-small" id="fe-target-range">—</span>
+                        </div>
+                        <div class="fe-card">
+                            <span class="fe-label">Upside to Median</span>
+                            <span class="fe-value-big" id="fe-target-upside">—</span>
+                            <span class="fe-value-small" id="fe-target-count">—</span>
+                        </div>
+                    </div>
+                    <div class="fe-footer" id="fe-footer"></div>
                 </div>
 
                 <!-- Recent News — last 30 days via Finnhub /company-news -->
@@ -943,6 +1077,93 @@
             } catch (err) {
                 console.warn('[FinVault] News feed failed for ' + ticker + ':', err);
                 feedEl.innerHTML = '<div class="news-empty">News unavailable</div>';
+            }
+        }
+
+        // ── Forward Estimates ────────────────────────────────────────
+        // Two Finnhub endpoints in parallel:
+        //   /stock/recommendation → period-keyed buy/hold/sell counts
+        //   /stock/price-target   → low/median/high target + analyst count
+        // Plus current price from osirisIngestion to compute upside %.
+
+        async function loadForwardEstimates(ticker) {
+            const yahooSym = toYahooSymbol(ticker);
+            const footer = document.getElementById('fe-footer');
+            if (!yahooSym) return;
+
+            const fetchJson = url => fetch(url)
+                .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+                .catch(err => { console.warn('[FinVault] ' + url + ':', err); return null; });
+
+            try {
+                const [recArr, target, metrics] = await Promise.all([
+                    fetchJson('/api/finnhub-proxy?endpoint=stock/recommendation&symbol=' + encodeURIComponent(yahooSym)),
+                    fetchJson('/api/finnhub-proxy?endpoint=stock/price-target&symbol=' + encodeURIComponent(yahooSym)),
+                    osirisIngestion.getTickerMetrics(yahooSym).catch(() => null)
+                ]);
+
+                // ── Analyst consensus (most-recent period)
+                if (Array.isArray(recArr) && recArr.length > 0) {
+                    const rec = recArr[0];
+                    const buys = (rec.strongBuy || 0) + (rec.buy || 0);
+                    const holds = rec.hold || 0;
+                    const sells = (rec.sell || 0) + (rec.strongSell || 0);
+                    const total = buys + holds + sells;
+
+                    let rating = 'HOLD';
+                    let cls = 'fe-hold';
+                    if (total > 0) {
+                        if (buys >= total * 0.5) { rating = 'BUY'; cls = 'fe-buy'; }
+                        else if (sells >= total * 0.3) { rating = 'SELL'; cls = 'fe-sell'; }
+                    }
+                    const ratingEl = document.getElementById('fe-rating');
+                    if (ratingEl) {
+                        ratingEl.textContent = rating;
+                        ratingEl.className = 'fe-value-big ' + cls;
+                    }
+                    const breakdownEl = document.getElementById('fe-breakdown');
+                    if (breakdownEl) {
+                        breakdownEl.textContent = buys + ' Buy · ' + holds + ' Hold · ' + sells + ' Sell';
+                    }
+                }
+
+                // ── Price target
+                if (target && typeof target.targetMedian === 'number' && target.targetMedian > 0) {
+                    const med = target.targetMedian;
+                    const low = typeof target.targetLow === 'number' ? target.targetLow : null;
+                    const high = typeof target.targetHigh === 'number' ? target.targetHigh : null;
+                    const n = target.numberOfAnalysts || null;
+                    const lastUpdated = target.lastUpdated || '';
+
+                    document.getElementById('fe-target-median').textContent = '$' + med.toFixed(2);
+                    if (low !== null && high !== null) {
+                        document.getElementById('fe-target-range').textContent =
+                            '$' + low.toFixed(0) + ' – $' + high.toFixed(0);
+                    }
+
+                    // Upside vs current price
+                    const currentPrice = metrics?.currentPrice;
+                    if (typeof currentPrice === 'number' && currentPrice > 0) {
+                        const upside = ((med / currentPrice) - 1) * 100;
+                        const upsideEl = document.getElementById('fe-target-upside');
+                        if (upsideEl) {
+                            upsideEl.textContent = (upside >= 0 ? '+' : '') + upside.toFixed(1) + '%';
+                            upsideEl.className = 'fe-value-big ' + (upside >= 0 ? 'fe-positive' : 'fe-negative');
+                        }
+                    }
+                    if (n !== null) {
+                        document.getElementById('fe-target-count').textContent = n + ' analysts';
+                    }
+
+                    if (footer && lastUpdated) {
+                        footer.textContent = '> updated ' + lastUpdated.split('T')[0] + '  ·  ' + yahooSym;
+                    }
+                } else if (footer) {
+                    footer.textContent = '> coverage limited for ' + yahooSym;
+                }
+            } catch (err) {
+                console.warn('[FinVault] Forward estimates failed for ' + ticker + ':', err);
+                if (footer) footer.textContent = '> estimates unavailable for ' + yahooSym;
             }
         }
 
@@ -1233,11 +1454,13 @@
                     companyIndustry.textContent = data.industry;
                     document.title = `${data.name} Report - NovaSect`;
 
-                    // Fire-and-forget: populate Market Context + News Feed
-                    // + Peer Snapshot from cached / Finnhub data. Failures
-                    // don't block the rest of the page render.
+                    // Fire-and-forget: populate Market Context + Forward
+                    // Estimates + News Feed + Peer Snapshot from cached /
+                    // Finnhub data. Failures don't block the rest of the
+                    // page render.
                     if (data.ticker) {
                         loadMarketContext(data.ticker);
+                        loadForwardEstimates(data.ticker);
                         loadNewsFeed(data.ticker);
                         loadPeerComparison(data.ticker, PEERS[company.toLowerCase()] || []);
                     }
