@@ -1004,9 +1004,9 @@
                     <h2>FORWARD ESTIMATES</h2>
                     <div class="forward-estimates-grid">
                         <div class="fe-card">
-                            <span class="fe-label">Analyst Consensus</span>
-                            <span class="fe-value-big" id="fe-rating">—</span>
-                            <span class="fe-value-small" id="fe-breakdown">—</span>
+                            <span class="fe-label">Sell-Side Coverage</span>
+                            <span class="fe-value-big" id="fe-breakdown">—</span>
+                            <span class="fe-value-small" id="fe-rating-note">Aggregated · third-party</span>
                         </div>
                         <div class="fe-card">
                             <span class="fe-label">Price Target (Median)</span>
@@ -1514,7 +1514,12 @@
                     osirisIngestion.getTickerMetrics(yahooSym).catch(() => null)
                 ]);
 
-                // ── Analyst consensus (most-recent period)
+                // ── Sell-side coverage (most-recent period from Finnhub)
+                // Display the raw analyst-count breakdown without synthesizing
+                // a BUY/HOLD/SELL rating — the rating label could read as
+                // NovaSect's own recommendation, which the site disclaimer
+                // explicitly disclaims. Counts are external/aggregated and
+                // make the third-party attribution obvious.
                 if (Array.isArray(recArr) && recArr.length > 0) {
                     const rec = recArr[0];
                     const buys = (rec.strongBuy || 0) + (rec.buy || 0);
@@ -1522,20 +1527,15 @@
                     const sells = (rec.sell || 0) + (rec.strongSell || 0);
                     const total = buys + holds + sells;
 
-                    let rating = 'HOLD';
-                    let cls = 'fe-hold';
-                    if (total > 0) {
-                        if (buys >= total * 0.5) { rating = 'BUY'; cls = 'fe-buy'; }
-                        else if (sells >= total * 0.3) { rating = 'SELL'; cls = 'fe-sell'; }
-                    }
-                    const ratingEl = document.getElementById('fe-rating');
-                    if (ratingEl) {
-                        ratingEl.textContent = rating;
-                        ratingEl.className = 'fe-value-big ' + cls;
-                    }
                     const breakdownEl = document.getElementById('fe-breakdown');
                     if (breakdownEl) {
                         breakdownEl.textContent = buys + ' Buy · ' + holds + ' Hold · ' + sells + ' Sell';
+                        breakdownEl.className = 'fe-value-big'; // neutral, no colored synthesis
+                    }
+                    const noteEl = document.getElementById('fe-rating-note');
+                    if (noteEl && total > 0) {
+                        const periodShort = (rec.period || '').split('-').slice(0, 2).join('-');
+                        noteEl.textContent = total + ' analysts' + (periodShort ? ' · as of ' + periodShort : '');
                     }
                 }
 
