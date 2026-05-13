@@ -38,30 +38,89 @@
             display: flex;
             gap: 2rem;
             width: 100%;
+            align-items: flex-start; /* required for sticky pdf-column */
+        }
+
+        /* ── Sidebar-PDF layout (desktop) ──────────────────────────────
+           Data column (60%) scrolls; PDF column (40%) is sticky and
+           stays in view while the user reads structured data.
+        */
+        .data-column {
+            flex: 6;
+            min-width: 0; /* prevent flex item from overflowing parent */
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .pdf-column {
+            flex: 4;
+            position: sticky;
+            top: 100px;
+            align-self: flex-start;
         }
 
         .pdf-section {
-            flex: 2;
-            height: 900px; /* Reduced vertical length for a better rectangular profile */
             background: rgba(0, 0, 0, 0.8);
             border: 1px solid rgba(57, 255, 20, 0.3);
             border-radius: 12px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            height: calc(100vh - 120px);
+        }
+
+        .pdf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.55rem 0.9rem;
+            background: rgba(57, 255, 20, 0.05);
+            border-bottom: 1px solid rgba(57, 255, 20, 0.25);
+            flex-shrink: 0;
+        }
+
+        .pdf-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+        }
+
+        .pdf-fullscreen-btn {
+            background: transparent;
+            border: 1px solid rgba(57, 255, 20, 0.4);
+            color: var(--accent-green);
+            padding: 4px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+        }
+
+        .pdf-fullscreen-btn:hover {
+            background: rgba(57, 255, 20, 0.12);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
+        }
+
+        /* Fullscreen state — when the PDF section is requestFullscreen'd,
+           expand the iframe to fill the viewport and remove the rounded
+           corners since they read oddly at edge-of-screen. */
+        .pdf-section:fullscreen {
+            border-radius: 0;
+            border: none;
+            height: 100vh;
         }
 
         .pdf-viewer {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        .stats-section {
             flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
+            width: 100%;
+            border: none;
         }
 
         .stats-table-container {
@@ -203,6 +262,16 @@
             .content-grid {
                 flex-direction: column;
                 gap: 3rem;
+                align-items: stretch;
+            }
+
+            .pdf-column {
+                display: none; /* desktop sidebar PDF hidden; mobile-pdf-container takes over */
+            }
+
+            .data-column {
+                width: 100%;
+                flex: 1 1 100%;
             }
 
             .pdf-section {
@@ -266,17 +335,13 @@
         </div>
 
         <div class="content-grid">
-            <div id="desktop-pdf-viewer" class="pdf-section">
-                <!-- PDF Viewer will be loaded here via JS -->
-                <iframe id="pdf-viewer" class="pdf-viewer" src="" type="application/pdf"></iframe>
-            </div>
-
-            <!-- NEW: Mobile Swipe PDF Viewer -->
+            <!-- Mobile PDF viewer: hidden ≥1025px, shows above data column on mobile -->
             <div id="mobile-pdf-viewer" class="mobile-pdf-container">
                 <div id="pdf-pages"></div>
             </div>
 
-            <div class="stats-section">
+            <!-- ─── Data column (60% on desktop; full width on mobile) ─── -->
+            <div class="data-column">
                 <div class="company-header">
                     <h1 id="company-name" class="company-title">Company Name</h1>
                     <p id="company-industry" class="company-industry">Industry Name</p>
@@ -355,38 +420,50 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Live TradingView Stock Chart Section -->
+                <div id="stock-chart-section" class="stock-chart-section" style="display: none;">
+                    <div class="tradingview-widget-container" id="tv-widget-container">
+                        <div class="tradingview-widget-container__widget"></div>
+                    </div>
+                </div>
+
+                <div id="multiples-section" class="multiples-container" style="display: none;">
+                    <h2 class="multiples-title">MULTIPLES</h2>
+                    <div class="multiples-grid">
+                        <div class="multiple-card">
+                            <span class="multiple-label">Trailing P/E</span>
+                            <span class="multiple-value" id="val-trailing-pe">--</span>
+                        </div>
+                        <div class="multiple-card">
+                            <span class="multiple-label">Leading P/E</span>
+                            <span class="multiple-value" id="val-leading-pe">--</span>
+                        </div>
+                        <div class="multiple-card">
+                            <span class="multiple-label">Price/FCF</span>
+                            <span class="multiple-value" id="val-price-fcf">--</span>
+                        </div>
+                        <div class="multiple-card">
+                            <span class="multiple-label">Dividend Yield</span>
+                            <span class="multiple-value" id="val-div-yield">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ─── end data-column ─── -->
+
+            <!-- ─── PDF column (40% on desktop, sticky; hidden on mobile) ─── -->
+            <div class="pdf-column">
+                <div id="desktop-pdf-viewer" class="pdf-section">
+                    <div class="pdf-header">
+                        <span class="pdf-label">Research Report</span>
+                        <button class="pdf-fullscreen-btn" id="pdf-fullscreen-btn" type="button">Full-screen ⛶</button>
+                    </div>
+                    <iframe id="pdf-viewer" class="pdf-viewer" src="" type="application/pdf"></iframe>
+                </div>
             </div>
         </div>
-        
-        <!-- Live TradingView Stock Chart Section -->
-        <div id="stock-chart-section" class="stock-chart-section" style="display: none;">
-            <div class="tradingview-widget-container" id="tv-widget-container">
-                <div class="tradingview-widget-container__widget"></div>
-            </div>
-        </div>
-        
-        <div id="multiples-section" class="multiples-container" style="display: none;">
-            <h2 class="multiples-title">MULTIPLES</h2>
-            <div class="multiples-grid">
-                <div class="multiple-card">
-                    <span class="multiple-label">Trailing P/E</span>
-                    <span class="multiple-value" id="val-trailing-pe">--</span>
-                </div>
-                <div class="multiple-card">
-                    <span class="multiple-label">Leading P/E</span>
-                    <span class="multiple-value" id="val-leading-pe">--</span>
-                </div>
-                <div class="multiple-card">
-                    <span class="multiple-label">Price/FCF</span>
-                    <span class="multiple-value" id="val-price-fcf">--</span>
-                </div>
-                <div class="multiple-card">
-                    <span class="multiple-label">Dividend Yield</span>
-                    <span class="multiple-value" id="val-div-yield">--</span>
-                </div>
-            </div>
-        </div>
-        
+
     </div>
 </main>
 
@@ -400,6 +477,28 @@
             const companyDisplayName = document.getElementById('company-name');
             const companyIndustry = document.getElementById('company-industry');
             const tbody = document.getElementById('stats-body');
+
+            // ── Full-screen toggle for the sidebar PDF ─────────────────
+            // Uses the HTML5 Fullscreen API on the .pdf-section bordered card.
+            // ESC exits natively; we also update the button label on state change.
+            const fullscreenBtn = document.getElementById('pdf-fullscreen-btn');
+            const pdfSection = document.getElementById('desktop-pdf-viewer');
+            if (fullscreenBtn && pdfSection) {
+                fullscreenBtn.addEventListener('click', () => {
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    } else if (pdfSection.requestFullscreen) {
+                        pdfSection.requestFullscreen().catch(err => {
+                            console.warn('Fullscreen request failed:', err);
+                        });
+                    }
+                });
+                document.addEventListener('fullscreenchange', () => {
+                    fullscreenBtn.textContent = document.fullscreenElement
+                        ? 'Exit ✕'
+                        : 'Full-screen ⛶';
+                });
+            }
 
             if (company) {
                 const companyData = {
