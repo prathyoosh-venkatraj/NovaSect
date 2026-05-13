@@ -236,6 +236,92 @@
             font-size: 1.3rem !important;
         }
 
+        /* ── Market Context panel ────────────────────────────────────
+           Surfaces live data already cached by osirisIngestion (no new
+           API calls). Sits at the top of the data column to give the
+           investor instant orientation before they dig into the PDF. */
+        .market-context-section {
+            background: rgba(1, 10, 1, 0.9);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 10px;
+            padding: 1.3rem 1.5rem;
+            box-shadow: 0 0 18px rgba(57, 255, 20, 0.1) inset;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .market-context-section h2 {
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0 0 1rem 0;
+            font-size: 1.05rem;
+            text-shadow: 0 0 5px var(--accent-green);
+        }
+
+        .market-context-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.7rem;
+        }
+
+        .mc-card {
+            background: rgba(10, 10, 10, 0.7);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            border-radius: 6px;
+            padding: 0.7rem 0.65rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .mc-card:hover {
+            border-color: rgba(57, 255, 20, 0.55);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.15);
+        }
+
+        .mc-label {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .mc-value {
+            color: var(--accent-green);
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: monospace;
+            text-shadow: 0 0 6px rgba(57, 255, 20, 0.35);
+            line-height: 1.1;
+        }
+
+        .mc-footer {
+            margin-top: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            min-height: 0.7rem;
+        }
+
+        @media (max-width: 1024px) {
+            .market-context-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .mc-value {
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .market-context-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .top-bar {
             width: 100% !important;
             display: flex !important;
@@ -415,6 +501,39 @@
                     <p id="company-industry" class="company-industry">Industry Name</p>
                 </div>
 
+                <!-- Market Context — populated from OSIRIS ingestion's cached metrics
+                     (zero new API calls beyond what Osiris already fetches). -->
+                <div class="market-context-section">
+                    <h2>MARKET CONTEXT</h2>
+                    <div class="market-context-grid">
+                        <div class="mc-card">
+                            <span class="mc-label">Current Price</span>
+                            <span class="mc-value" id="mc-current-price">—</span>
+                        </div>
+                        <div class="mc-card">
+                            <span class="mc-label">52-Week Range</span>
+                            <span class="mc-value" id="mc-52w-range">—</span>
+                        </div>
+                        <div class="mc-card">
+                            <span class="mc-label">1Y Realized Vol</span>
+                            <span class="mc-value" id="mc-realized-vol">—</span>
+                        </div>
+                        <div class="mc-card">
+                            <span class="mc-label">Beta vs SPY</span>
+                            <span class="mc-value" id="mc-beta">—</span>
+                        </div>
+                        <div class="mc-card">
+                            <span class="mc-label">TTM Div Yield</span>
+                            <span class="mc-value" id="mc-div-yield">—</span>
+                        </div>
+                        <div class="mc-card">
+                            <span class="mc-label">Last Dividend</span>
+                            <span class="mc-value" id="mc-last-div">—</span>
+                        </div>
+                    </div>
+                    <div class="mc-footer" id="mc-footer"></div>
+                </div>
+
                 <div class="stats-table-container">
                     <h2>FINANCIAL RATIOS</h2>
                     <table class="stats-table">
@@ -537,7 +656,85 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="script.min.js"></script>
-    <script>
+    <script type="module">
+        // FinVault report.html script — converted to a module so it can pull
+        // live ticker metrics from osirisIngestion (shared IndexedDB cache,
+        // no extra API calls beyond what Osiris already does on a 24h TTL).
+        import { osirisIngestion } from './components/osiris/osirisIngestion.js';
+
+        // FinVault tickers carry exchange prefixes (NYSE:XOM, BME:IBE).
+        // Map to Yahoo-compatible symbols for osirisIngestion's proxy calls.
+        function toYahooSymbol(ticker) {
+            if (!ticker) return null;
+            if (!ticker.includes(':')) return ticker;
+            const [exchange, symbol] = ticker.split(':');
+            const ex = exchange.toUpperCase();
+            if (ex === 'NYSE' || ex === 'NASDAQ' || ex === 'AMEX') return symbol;
+            if (ex === 'BME') return symbol + '.MC';   // Madrid (Iberdrola)
+            if (ex === 'LON') return symbol + '.L';    // London
+            if (ex === 'XETR' || ex === 'FWB') return symbol + '.DE'; // Frankfurt
+            return symbol; // generic fallback
+        }
+
+        async function loadMarketContext(ticker) {
+            const yahooSym = toYahooSymbol(ticker);
+            const footer = document.getElementById('mc-footer');
+            if (!yahooSym) return;
+            try {
+                const [metrics, history] = await Promise.all([
+                    osirisIngestion.getTickerMetrics(yahooSym),
+                    osirisIngestion.getHistoricalData(yahooSym)
+                ]);
+
+                if (typeof metrics.currentPrice === 'number') {
+                    document.getElementById('mc-current-price').textContent = '$' + metrics.currentPrice.toFixed(2);
+                }
+
+                if (Array.isArray(history) && history.length > 0) {
+                    let min = Infinity, max = -Infinity;
+                    for (const p of history) {
+                        if (p.adjClose < min) min = p.adjClose;
+                        if (p.adjClose > max) max = p.adjClose;
+                    }
+                    document.getElementById('mc-52w-range').textContent =
+                        '$' + min.toFixed(0) + ' – $' + max.toFixed(0);
+                }
+
+                if (typeof metrics.realizedSigma === 'number') {
+                    document.getElementById('mc-realized-vol').textContent =
+                        (metrics.realizedSigma * 100).toFixed(1) + '%';
+                }
+
+                if (typeof metrics.beta === 'number') {
+                    document.getElementById('mc-beta').textContent = metrics.beta.toFixed(2);
+                }
+
+                if (typeof metrics.dividendYield === 'number' && metrics.dividendYield > 0) {
+                    document.getElementById('mc-div-yield').textContent =
+                        (metrics.dividendYield * 100).toFixed(2) + '%';
+                } else if (metrics.dividendYield === 0) {
+                    document.getElementById('mc-div-yield').textContent = '—';
+                }
+
+                if (metrics.lastDividend && typeof metrics.lastDividend.amount === 'number') {
+                    const d = metrics.lastDividend;
+                    let dateStr = '';
+                    if (d.date) {
+                        const dt = new Date(d.date);
+                        dateStr = ' (' + dt.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) + ')';
+                    }
+                    document.getElementById('mc-last-div').textContent = '$' + d.amount.toFixed(2) + dateStr;
+                }
+
+                if (footer && metrics.latestDate) {
+                    footer.textContent = '> data as of ' + metrics.latestDate + '  ·  symbol: ' + yahooSym;
+                }
+            } catch (err) {
+                console.warn('[FinVault] Market Context failed for ' + ticker + ':', err);
+                if (footer) footer.textContent = '> live data unavailable for ' + yahooSym;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const company = urlParams.get('company');
@@ -704,6 +901,11 @@
                     companyDisplayName.textContent = data.name;
                     companyIndustry.textContent = data.industry;
                     document.title = `${data.name} Report - NovaSect`;
+
+                    // Fire-and-forget: populate Market Context panel from
+                    // osirisIngestion's cached metrics. Failures don't block
+                    // the rest of the page render.
+                    if (data.ticker) loadMarketContext(data.ticker);
 
                     if (data.stats && data.stats.length > 0) {
                         const rows = tbody.querySelectorAll('tr');

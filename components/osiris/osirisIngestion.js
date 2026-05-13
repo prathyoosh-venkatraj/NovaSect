@@ -230,11 +230,17 @@ export const osirisIngestion = {
 
     async getTickerMetrics(ticker) {
         const record = await this._getRecord(ticker);
+        // Last dividend = most recent entry in the ascending-sorted dividends array.
+        const divs = Array.isArray(record.dividends) ? record.dividends : [];
+        const lastDividend = divs.length > 0
+            ? { amount: divs[divs.length - 1].amount, date: divs[divs.length - 1].date }
+            : null;
         return {
             beta: record.beta,
             dividendYield: record.dividendYield,
             realizedSigma: record.realizedSigma,
             longTermMeanPrice: record.longTermMeanPrice ?? null,
+            lastDividend: lastDividend,
             latestDate: record.latestDate,
             currentPrice: record.currentPrice
         };
