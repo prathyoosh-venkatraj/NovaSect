@@ -596,6 +596,97 @@
             }
         }
 
+        /* ── Fundamentals Highlights ─────────────────────────────────
+           TTM growth + valuation metrics from Finnhub /stock/metric.
+           Complements (does not duplicate) the static FINANCIAL RATIOS
+           table — these are live, time-dynamic numbers. */
+        .fundamentals-section {
+            background: rgba(1, 10, 1, 0.9);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 10px;
+            padding: 1.3rem 1.5rem;
+            box-shadow: 0 0 18px rgba(57, 255, 20, 0.1) inset;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .fundamentals-section h2 {
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0 0 1rem 0;
+            font-size: 1.05rem;
+            text-shadow: 0 0 5px var(--accent-green);
+        }
+
+        .fundamentals-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.7rem;
+        }
+
+        .fh-card {
+            background: rgba(10, 10, 10, 0.7);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            border-radius: 6px;
+            padding: 0.7rem 0.65rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .fh-card:hover {
+            border-color: rgba(57, 255, 20, 0.55);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.15);
+        }
+
+        .fh-label {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .fh-value {
+            color: var(--accent-green);
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: monospace;
+            text-shadow: 0 0 6px rgba(57, 255, 20, 0.35);
+            line-height: 1.1;
+        }
+
+        .fh-value.fh-positive {
+            color: #39FF14;
+        }
+        .fh-value.fh-negative {
+            color: #FF6464;
+            text-shadow: 0 0 6px rgba(255, 100, 100, 0.5);
+        }
+
+        .fh-footer {
+            margin-top: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            min-height: 0.7rem;
+        }
+
+        @media (max-width: 1024px) {
+            .fundamentals-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .fundamentals-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .top-bar {
             width: 100% !important;
             display: flex !important;
@@ -860,6 +951,38 @@
                     <div class="peer-footer" id="peer-footer"></div>
                 </div>
 
+                <!-- Fundamentals Highlights — Finnhub /stock/metric (TTM growth + valuation) -->
+                <div class="fundamentals-section">
+                    <h2>FUNDAMENTALS HIGHLIGHTS</h2>
+                    <div class="fundamentals-grid">
+                        <div class="fh-card">
+                            <span class="fh-label">52W Return</span>
+                            <span class="fh-value" id="fh-52w-return">—</span>
+                        </div>
+                        <div class="fh-card">
+                            <span class="fh-label">Revenue Growth 5Y</span>
+                            <span class="fh-value" id="fh-revenue-growth">—</span>
+                        </div>
+                        <div class="fh-card">
+                            <span class="fh-label">EPS Growth 5Y</span>
+                            <span class="fh-value" id="fh-eps-growth">—</span>
+                        </div>
+                        <div class="fh-card">
+                            <span class="fh-label">Operating Margin TTM</span>
+                            <span class="fh-value" id="fh-op-margin">—</span>
+                        </div>
+                        <div class="fh-card">
+                            <span class="fh-label">Price / Book</span>
+                            <span class="fh-value" id="fh-pb">—</span>
+                        </div>
+                        <div class="fh-card">
+                            <span class="fh-label">EV / EBITDA TTM</span>
+                            <span class="fh-value" id="fh-ev-ebitda">—</span>
+                        </div>
+                    </div>
+                    <div class="fh-footer" id="fh-footer"></div>
+                </div>
+
                 <div class="stats-table-container">
                     <h2>FINANCIAL RATIOS</h2>
                     <table class="stats-table">
@@ -1077,6 +1200,77 @@
             } catch (err) {
                 console.warn('[FinVault] News feed failed for ' + ticker + ':', err);
                 feedEl.innerHTML = '<div class="news-empty">News unavailable</div>';
+            }
+        }
+
+        // ── Fundamentals Highlights ──────────────────────────────────
+        // Finnhub /stock/metric returns TTM/annual/5Y growth + valuation
+        // metrics in a flat shape. Some fields have slashes in their keys
+        // ("currentEv/ebitdaTTM") so bracket notation is required.
+
+        function fmtPercent(v, signed) {
+            if (typeof v !== 'number' || !isFinite(v)) return null;
+            const sign = (signed && v > 0) ? '+' : '';
+            return sign + v.toFixed(1) + '%';
+        }
+
+        function fmtRatio(v) {
+            if (typeof v !== 'number' || !isFinite(v) || v <= 0) return null;
+            return v.toFixed(2) + 'x';
+        }
+
+        function applyFh(id, value, opts = {}) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (value === null || value === undefined) { el.textContent = '—'; return; }
+            el.textContent = value;
+            if (opts.colorOnSign && opts.rawNumber != null) {
+                el.classList.remove('fh-positive', 'fh-negative');
+                el.classList.add(opts.rawNumber >= 0 ? 'fh-positive' : 'fh-negative');
+            }
+        }
+
+        async function loadFundamentals(ticker) {
+            const yahooSym = toYahooSymbol(ticker);
+            const footer = document.getElementById('fh-footer');
+            if (!yahooSym) return;
+
+            try {
+                const res = await fetch('/api/finnhub-proxy?endpoint=stock/metric&symbol=' +
+                    encodeURIComponent(yahooSym) + '&metric=all');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const payload = await res.json();
+                const m = payload && payload.metric ? payload.metric : null;
+                if (!m) {
+                    if (footer) footer.textContent = '> fundamentals unavailable for ' + yahooSym;
+                    return;
+                }
+
+                const fiftyTwoW = m['52WeekPriceReturnDaily'];
+                applyFh('fh-52w-return', fmtPercent(fiftyTwoW, true), { colorOnSign: true, rawNumber: fiftyTwoW });
+
+                const revG = m.revenueGrowth5Y;
+                applyFh('fh-revenue-growth', fmtPercent(revG, true), { colorOnSign: true, rawNumber: revG });
+
+                const epsG = m.epsGrowth5Y;
+                applyFh('fh-eps-growth', fmtPercent(epsG, true), { colorOnSign: true, rawNumber: epsG });
+
+                const opMargin = m.operatingMarginTTM;
+                applyFh('fh-op-margin', fmtPercent(opMargin, false));
+
+                const pb = m.pbAnnual;
+                applyFh('fh-pb', fmtRatio(pb));
+
+                const evEbitda = m['currentEv/ebitdaTTM'];
+                applyFh('fh-ev-ebitda', fmtRatio(evEbitda));
+
+                if (footer) {
+                    const period = m.fiscalYearEnd || '';
+                    footer.textContent = '> Finnhub TTM/5Y · ' + yahooSym + (period ? '  ·  fiscal y/e ' + period : '');
+                }
+            } catch (err) {
+                console.warn('[FinVault] Fundamentals failed for ' + ticker + ':', err);
+                if (footer) footer.textContent = '> fundamentals unavailable for ' + yahooSym;
             }
         }
 
@@ -1455,14 +1649,15 @@
                     document.title = `${data.name} Report - NovaSect`;
 
                     // Fire-and-forget: populate Market Context + Forward
-                    // Estimates + News Feed + Peer Snapshot from cached /
-                    // Finnhub data. Failures don't block the rest of the
-                    // page render.
+                    // Estimates + News Feed + Peer Snapshot + Fundamentals
+                    // from cached / Finnhub data. Failures don't block the
+                    // rest of the page render.
                     if (data.ticker) {
                         loadMarketContext(data.ticker);
                         loadForwardEstimates(data.ticker);
                         loadNewsFeed(data.ticker);
                         loadPeerComparison(data.ticker, PEERS[company.toLowerCase()] || []);
+                        loadFundamentals(data.ticker);
                     }
 
                     if (data.stats && data.stats.length > 0) {
