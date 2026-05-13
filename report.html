@@ -135,12 +135,14 @@
             position: relative;
         }
 
+        /* Compact section headings — the data column is now ~60% width
+           so titles don't need the full-page emphasis they had before. */
         .stats-table-container h2 {
             color: var(--accent-green);
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
+            letter-spacing: 1.5px;
+            margin-bottom: 1rem;
+            font-size: 1.05rem;
             text-shadow: 0 0 5px var(--accent-green);
         }
 
@@ -164,17 +166,19 @@
             width: 100%;
             border-collapse: collapse;
             color: var(--accent-green);
+            font-size: 0.85rem;
         }
 
         .stats-table th, .stats-table td {
             text-align: left;
-            padding: 0.8rem 0;
-            border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+            padding: 0.42rem 0;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.18);
         }
 
         .stats-table th {
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
             opacity: 0.7;
         }
 
@@ -184,6 +188,52 @@
 
         .stats-table tr:last-child td {
             border-bottom: none;
+        }
+
+        /* Tighter stats container — was sized for a full-page treatment */
+        .stats-table-container {
+            padding: 1.3rem 1.5rem;
+        }
+
+        /* Compact overrides for stock chart + multiples — these classes
+           live in style.css with full-page sizing; below we tighten them
+           for the sidebar layout. data-column's flex `gap: 2rem` handles
+           vertical spacing, so margin-top is reset to 0. */
+        .stock-chart-section {
+            margin-top: 0 !important;
+            padding: 1rem !important;
+            height: 340px !important;
+        }
+
+        .multiples-container {
+            margin-top: 0 !important;
+            padding: 1.2rem 1.5rem !important;
+        }
+
+        .multiples-title {
+            font-size: 1.05rem !important;
+            letter-spacing: 1.5px !important;
+            margin-bottom: 1rem !important;
+            text-align: left !important;
+        }
+
+        .multiples-grid {
+            gap: 0.7rem !important;
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .multiple-card {
+            padding: 0.8rem 0.4rem !important;
+        }
+
+        .multiple-label {
+            font-size: 0.6rem !important;
+            margin-bottom: 0.35rem !important;
+            letter-spacing: 1px;
+        }
+
+        .multiple-value {
+            font-size: 1.3rem !important;
         }
 
         .top-bar {
@@ -290,6 +340,24 @@
             .stats-table-container {
                 padding: 1.5rem;
             }
+
+            /* Mobile: data column is full-width, so loosen the compacted
+               sidebar sizing slightly for legibility on phones. */
+            .stats-table {
+                font-size: 0.9rem;
+            }
+            .stats-table th, .stats-table td {
+                padding: 0.55rem 0;
+            }
+            .stock-chart-section {
+                height: 400px !important;
+            }
+            .multiples-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .multiple-value {
+                font-size: 1.45rem !important;
+            }
         }
 
         @media (max-width: 480px) {
@@ -298,7 +366,7 @@
             }
             .stats-table td, .stats-table th {
                 font-size: 0.8rem;
-                padding: 0.6rem 0;
+                padding: 0.5rem 0;
             }
         }
     </style>
