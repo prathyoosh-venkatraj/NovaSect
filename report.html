@@ -1260,11 +1260,13 @@
             },
             'northropgrumman': {
                 description: 'Northrop Grumman is an American multinational aerospace & defense technology company. Major programs include the B-21 Raider stealth bomber, the Sentinel (GBSD) nuclear ICBM, the James Webb Space Telescope, and a broad portfolio of national security space systems. One of the most space-exposed primes.',
+                // Revenue shares from 2025 10-K (segment-level sales pre-elimination ~$44.3B,
+                // consolidated $41.95B).
                 segments: [
-                    { name: 'Aeronautics Systems', share: 30 },
+                    { name: 'Aeronautics Systems', share: 29 },
                     { name: 'Mission Systems', share: 28 },
-                    { name: 'Space Systems', share: 28 },
-                    { name: 'Defense Systems', share: 14 }
+                    { name: 'Space Systems', share: 24 },
+                    { name: 'Defense Systems', share: 18 }
                 ]
             },
             'rtx': {
@@ -1279,29 +1281,35 @@
             },
             'l3harris': {
                 description: 'L3Harris Technologies is an American defense contractor and IT services provider focused on tactical communications, electronic warfare, ISR (intelligence/surveillance/reconnaissance), space systems, and integrated mission systems. Formed by the 2019 merger of L3 Technologies and Harris Corporation; acquired Aerojet Rocketdyne in 2023.',
+                // Revenue shares from 2025 10-K (segment revenue pre-elimination ~$22.1B,
+                // consolidated $21.87B).
                 segments: [
                     { name: 'Space & Airborne Systems', share: 31 },
-                    { name: 'Integrated Mission Systems', share: 28 },
-                    { name: 'Communications Systems', share: 25 },
-                    { name: 'Aerojet Rocketdyne', share: 16 }
+                    { name: 'Integrated Mission Systems', share: 30 },
+                    { name: 'Communications Systems', share: 26 },
+                    { name: 'Aerojet Rocketdyne', share: 13 }
                 ]
             },
             'rheinmetall': {
-                description: 'Rheinmetall AG is a German industrial group headquartered in Düsseldorf and Germany\'s largest manufacturer of army equipment. The Vehicle Systems business produces armored vehicles (Leopard 2, Puma IFV); Weapon and Ammunition produces small-arms and large-caliber munitions. Revenue has expanded rapidly amid post-2022 European rearmament.',
+                description: 'Rheinmetall AG is a German industrial group headquartered in Düsseldorf and Germany\'s largest manufacturer of army equipment. Vehicle Systems produces armored vehicles (Leopard 2, Puma IFV); Weapon and Ammunition produces small-arms and large-caliber munitions; Electronic Solutions covers air defense and C4I. Revenue has expanded rapidly amid post-2022 European rearmament. The civilian Power Systems business is being divested and classified as discontinued operations.',
+                // Revenue shares from 2025 Annual Report (continuing operations only,
+                // segment-level €11.0B; Group total €9.94B after intersegment elims).
+                // Power Systems excluded — held for sale.
                 segments: [
-                    { name: 'Vehicle Systems', share: 40 },
-                    { name: 'Weapon & Ammunition', share: 30 },
-                    { name: 'Electronic Solutions', share: 15 },
-                    { name: 'Power Systems', share: 15 }
+                    { name: 'Vehicle Systems', share: 45 },
+                    { name: 'Weapon & Ammunition', share: 32 },
+                    { name: 'Electronic Solutions', share: 23 }
                 ]
             },
             'generaldynamics': {
                 description: 'General Dynamics is an American publicly traded aerospace & defense company headquartered in Reston, Virginia. Major programs include Gulfstream business jets, Virginia-class submarines, Abrams main battle tanks, and Stryker armored vehicles, along with mission-critical IT services. Balanced across air, sea, and land defense plus commercial aviation.',
+                // Revenue shares from 2025 10-K narrative ("Revenue for the X segment was
+                // Y% of our consolidated revenue in 2025"). Consolidated revenue $52.55B.
                 segments: [
-                    { name: 'Marine Systems', share: 27 },
-                    { name: 'Technologies (IT)', share: 27 },
-                    { name: 'Aerospace (Gulfstream)', share: 24 },
-                    { name: 'Combat Systems', share: 22 }
+                    { name: 'Marine Systems', share: 32 },
+                    { name: 'Technologies (IT)', share: 26 },
+                    { name: 'Aerospace (Gulfstream)', share: 25 },
+                    { name: 'Combat Systems', share: 17 }
                 ]
             }
         };
@@ -1756,7 +1764,7 @@
                             dividendYield: '5.1%',
                             dividendAmount: 6.52
                         },
-                        stats: ['1.15', '0.72', '1.02', '0.71', '0.18', '0.41', '15.1x', '11.1x', '9.53x', '5.23x', '0.65x', '10.4%', '6.5%', '4.2%', '7.3%']
+                        stats: ['1.15', '0.86', '1.02', '0.69', '0.21', '0.13', '17.2x', '11.5x', '9.52x', '5.23x', '0.63x', '11.4%', '6.7%', '4.2%', '7.1%']
                     },
                     'exxonmobil': {
                         name: 'ExxonMobil',
@@ -1812,7 +1820,7 @@
                             dividendYield: '1.3%',
                             dividendAmount: 9.24
                         },
-                        stats: []
+                        stats: ['1.10', '1.01', '0.34', '2.08', '0.94', '0.31', '6.78x', '24.3x', '31.7x', '11.5x', '0.83x', '10.8%', '10.0%', '8.3%', '26.2%']
                     },
                     'rtx': {
                         name: 'RTX Corp',
@@ -1840,7 +1848,7 @@
                             dividendYield: '1.6%',
                             dividendAmount: 5.00
                         },
-                        stats: ['1.19', '0.98', '0.43', '1.10', '0.51', '0.52', '3.54x', '12.9x', '17.6x', '7.3x', '0.53x', '9.7%', '7.3%', '3.9%', '8.2%']
+                        stats: ['1.19', '1.02', '0.43', '1.10', '0.53', '0.25', '3.53x', '12.7x', '17.9x', '7.27x', '0.53x', '9.7%', '7.3%', '3.9%', '8.2%']
                     },
                     'generaldynamics': {
                         name: 'General Dynamics',
@@ -1854,7 +1862,7 @@
                             dividendYield: '1.7%',
                             dividendAmount: 6.36
                         },
-                        stats: ['1.44', '0.87', '0.30', '1.23', '0.22', '0.55', '17.1', '5.5x', '19.6x', '14.9x', '0.94x', '10.2%', '8.0%', '7.5%', '17.8%']
+                        stats: ['1.20', '0.68', '0.22', '1.99', '0.23', '0.08', '14.5x', '1.21x', '5.14x', '4.49x', '0.64x', '17.0%', '11.8%', '7.6%', '23.3%']
                     },
                     'rheinmetall': {
                         name: 'Rheinmetall',
@@ -1868,7 +1876,7 @@
                             dividendYield: '0.77%',
                             dividendAmount: 11.50
                         },
-                        stats: ['1.20', '0.68', '0.25', '1.99', 'Net cash', '0.08', '14.5x', '1.9x', '5.1x', '3.67x', '0.65x', '18.5%', '11.8%', '5.2%', '16.2%']
+                        stats: ['1.44', '0.89', '0.30', '1.23', '0.31', '0.14', '17.1x', '4.71x', '19.5x', '14.81x', '0.93x', '10.2%', '8.0%', '7.4%', '17.7%']
                     }
                 };
 
