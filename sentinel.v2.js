@@ -252,6 +252,98 @@ const CreditEngine = {
 };
 
 /**
+ * Spread driver decomposition — splits the instrument spread into its
+ * macro / market / vol / residual / seniority / tenure contributions so the
+ * Sentinel Brief can show what is actually moving each name. Mirrors the
+ * exact math in CreditEngine.calculateCurrentSpread so the parts reconcile
+ * to the displayed spread.
+ */
+function getSpreadDrivers(company, isInstrumentMod = true) {
+    const sensitivity = company.type === 'IG' ? 0.35 : 1.0;
+    const stress = currentBetaScaling;
+
+    const vix = (SovereignRegistry.VIX && SovereignRegistry.VIX.date !== 'FALLBACK')
+        ? SovereignRegistry.VIX.value : 15.0;
+    const cFactor = Math.min(0.8, Math.max(0, (vix - 25) / 25));
+    const effSectorBeta = (1 - cFactor) * company.sectorBeta + cFactor;
+    const effMarketBeta = (1 - cFactor) * company.marketBeta + cFactor;
+
+    const sectorVol = (SectorRegistry[company.sector] && SectorRegistry[company.sector].date !== 'FALLBACK')
+        ? SectorRegistry[company.sector].volatility : 20.0;
+
+    const proxyVol = (sectorVol * effSectorBeta) + company.residual;
+    const mertonScalar = 1.5 + 1.0 / (1 + Math.exp(-0.4 * (proxyVol - 35)));
+
+    const ratingIdx = SovereignRegistry[company.rating];
+    const ratingDateOk = ratingIdx && ratingIdx.date !== 'FALLBACK';
+    const ratingIndexBps = ratingDateOk ? Math.round(ratingIdx.value * 100) : null;
+    const anchor = Math.max(company.baseSpread, ratingIndexBps || 0);
+
+    // Volatility leg splits cleanly because proxyVol = sectorVol*effBeta + residual.
+    const volPureBps = Math.round(sectorVol * effSectorBeta * mertonScalar * stress * sensitivity);
+    const residualBps = Math.round(company.residual * mertonScalar * stress * sensitivity);
+    const marketBps = Math.round(effMarketBeta * 50 * stress * sensitivity);
+
+    const baseTotal = anchor + marketBps + volPureBps + residualBps;
+
+    // Instrument modifiers (seniority + tenure compound multiplicatively).
+    const isSubordinated = (isInstrumentMod && selectedSeniority === 'Subordinated');
+    const subMult = isSubordinated ? (1.5 + (baseTotal / 200)) : 1.0;
+    const senMult = (isInstrumentMod && !isSubordinated) ? SENIORITY_MULTIPLIERS[selectedSeniority] : 1.0;
+    const tenureMult = isInstrumentMod ? (1 + (selectedTenure - 10) * 0.03) : 1.0;
+
+    const seniorityBps = Math.round(baseTotal * (subMult * senMult - 1));
+    const afterSeniority = baseTotal * subMult * senMult;
+    const tenureBps = Math.round(afterSeniority * (tenureMult - 1));
+
+    const total = baseTotal + seniorityBps + tenureBps;
+    const pct = (bps) => total > 0 ? Math.round((bps / total) * 100) : 0;
+
+    return {
+        anchor, anchorPct: pct(anchor),
+        market: marketBps, marketPct: pct(marketBps),
+        volPure: volPureBps, volPurePct: pct(volPureBps),
+        residual: residualBps, residualPct: pct(residualBps),
+        seniority: seniorityBps, seniorityPct: pct(seniorityBps),
+        tenure: tenureBps, tenurePct: pct(tenureBps),
+        total,
+        proxyVol, mertonScalar,
+        ratingIndexBps,
+        regime: proxyVol > 35 ? 'CONVEX' : 'LINEAR'
+    };
+}
+
+function getPeerRank(company) {
+    const peers = COMPANIES.filter(c => c.sector === company.sector && c.type === company.type);
+    const sorted = [...peers].sort((a, b) =>
+        (a._lastBaseSpread || a.baseSpread) - (b._lastBaseSpread || b.baseSpread)
+    );
+    const rank = sorted.findIndex(c => c.ticker === company.ticker) + 1;
+    return { rank, total: peers.length };
+}
+
+const SPREAD_HISTORY_MAX = 5; // minutes of rolling history
+function snapshotSpreadHistory() {
+    COMPANIES.forEach(c => {
+        const cur = c._lastBaseSpread || c.baseSpread;
+        c._spreadHistory = c._spreadHistory || [];
+        c._spreadHistory.push(cur);
+        if (c._spreadHistory.length > SPREAD_HISTORY_MAX) c._spreadHistory.shift();
+    });
+}
+
+function getTrend(company) {
+    const hist = company._spreadHistory || [];
+    const cur = company._lastBaseSpread || company.baseSpread;
+    if (hist.length < 2) return { direction: 'building', delta: 0, minutes: hist.length };
+    const oldest = hist[0];
+    const delta = cur - oldest;
+    const minutes = hist.length;
+    if (Math.abs(delta) < 5) return { direction: 'stable', delta, minutes };
+    return { direction: delta > 0 ? 'widening' : 'tightening', delta, minutes };
+}
+
+/**
  * FRED API Live Sync
  */
 async function fetchSovereignAnchors() {
@@ -442,6 +534,12 @@ function init() {
     // Refresh staleness indicators every minute so the "synced Xh Ym ago"
     // text counts up live without waiting for the next data sync.
     setInterval(updateStalenessIndicators, 60 * 1000);
+
+    // Spread-history snapshots feed the Sentinel Brief's Trend row.
+    // First snapshot at ~6s gives the batch loop one full pass to populate
+    // _lastBaseSpread on every card before we start sampling.
+    setTimeout(snapshotSpreadHistory, 6000);
+    setInterval(snapshotSpreadHistory, 60 * 1000);
 }
 
 function setupEventListeners() {
@@ -856,39 +954,204 @@ async function updateModal() {
         modalContent.classList.remove('critical-risk');
     }
     
-    // Sentinel Brief Generation
-    const proxyVol = activeModalCompany._lastProxyVol || 20.0;
-    const briefText = generateSentinelBrief(activeModalCompany, instrumentSpread, delta, proxyVol);
+    // Sentinel Brief — structured layout
     const briefEl = document.getElementById('sentinel-brief');
-    if (briefEl) briefEl.innerText = briefText;
+    if (briefEl) {
+        const briefData = buildSentinelBrief(activeModalCompany, instrumentSpread);
+        briefEl.innerHTML = renderSentinelBrief(briefData);
+    }
 
     renderWaterfall(activeModalCompany);
 }
 
-function generateSentinelBrief(company, spread, delta, proxyVol) {
-    const isDistress = proxyVol > 35;
-    const isVolSpike = company._marketPulse === 'VOL SPIKE' || company._marketPulse === 'CONVEX TRIGGER';
-    const isDeteriorating = delta > 150;
-    
-    let sentence1 = `${company.ticker} is currently indexing a synthetic proxy volatility of ${parseFloat(proxyVol).toFixed(2)}%, mapping to a structurally implied credit spread of ${spread} bps. `;
-    
-    let sentence2 = '';
-    if (isDistress || isVolSpike) {
-        sentence2 = `The underlying Merton scalar has shifted into a CONVEX distress phase, applying a significant non-linear risk premium over the base ${company.rating} ICE BofA index curve. `;
+/**
+ * Sentinel Brief — structured layout (headline + spread/yield/peer rows +
+ * driver bars + trend/regime/watch). Builds a data object, then a renderer
+ * turns it into HTML. Keeps presentation separable from the underlying math.
+ */
+function buildSentinelBrief(company, instrumentSpread) {
+    const drivers = getSpreadDrivers(company, true);
+    const peer = getPeerRank(company);
+    const trend = getTrend(company);
+    const isDistress = drivers.proxyVol > 35;
+
+    const benchmark = getBenchmark(company);
+    const benchmarkPct = CreditEngine.getBaseRate(company);
+    const yieldStr = CreditEngine.calculateYield(company, instrumentSpread);
+    const yieldPct = parseFloat(yieldStr);
+    const spreadVsBench = Math.round((yieldPct - benchmarkPct) * 100);
+
+    const ratingIndexBps = drivers.ratingIndexBps;
+    const issuerPremium = ratingIndexBps !== null ? instrumentSpread - ratingIndexBps : null;
+
+    // Headline — state-dependent, plain-English first
+    let headline;
+    if (isDistress) {
+        const mult = ratingIndexBps && ratingIndexBps > 0
+            ? `${(instrumentSpread / ratingIndexBps).toFixed(1)}× the ${company.rating} index average`
+            : `well above benchmark`;
+        headline = `Vol-driven distress — losses now compound rather than scale linearly. Spread ${mult}.`;
+    } else if (Math.abs(trend.delta) > 50 && trend.minutes >= 2) {
+        const verb = trend.direction === 'widening' ? 'Widening' : 'Tightening';
+        const sign = trend.delta > 0 ? '+' : '';
+        headline = `${verb} rapidly — ${sign}${trend.delta} bps over last ${trend.minutes} min.`;
+    } else if (peer.total >= 4 && peer.rank / peer.total > 0.75) {
+        headline = `Wider than ${peer.total - peer.rank} of ${peer.total - 1} ${company.sector} ${company.type} peers — elevated relative pricing.`;
+    } else if (ratingIndexBps !== null) {
+        headline = `Pricing in line with ${company.rating} benchmark — no idiosyncratic stress.`;
     } else {
-        sentence2 = `The instrument profile remains in the STABLE linear elasticity range, closely tracking the baseline macro anchor without requiring systemic risk compression adjustments. `;
+        headline = `Awaiting FRED rating-index sync — brief running on static anchors.`;
     }
-    
-    let sentence3 = '';
-    if (isDeteriorating) {
-        sentence3 = `WARNING: Structural deterioration detected; idiosyncratic residual drag is actively compounding the baseline macroeconomic drift.`;
-    } else if (isDistress) {
-        sentence3 = `Continuous real-time VIX telemetry and YFinance calibration is active to smooth the excessive noise ceiling.`;
+
+    // Watch — forward-looking, conditional
+    let watch;
+    if (isDistress) {
+        watch = `Spread > 1000 bps would trigger systemic contagion banner.`;
+    } else if (drivers.proxyVol > 28) {
+        const vix = (SovereignRegistry.VIX && SovereignRegistry.VIX.date !== 'FALLBACK') ? SovereignRegistry.VIX.value : 15.0;
+        watch = `VIX > 30 (currently ${vix.toFixed(1)}) would push this name into convex regime.`;
     } else {
-        sentence3 = `Calibration integrity confirmed via periodic Hub-and-Spoke validations, maintaining low variance against live benchmark yields.`;
+        const sectorThreshold = company.sectorBeta > 0 ? Math.round(35 / company.sectorBeta) : 35;
+        watch = `Stable regime — would require sector vol > ${sectorThreshold}% to enter distress.`;
     }
-    
-    return sentence1 + sentence2 + sentence3;
+
+    return {
+        headline,
+        isDistress,
+        spread: instrumentSpread,
+        baseSpread: drivers.total - drivers.seniority - drivers.tenure,
+        ratingIndexBps,
+        ratingLabel: company.rating,
+        issuerPremium,
+        yieldPct,
+        benchmark,
+        benchmarkPct,
+        spreadVsBench,
+        peer,
+        peerLabel: `${company.sector} ${company.type}`,
+        drivers,
+        trend,
+        watch,
+        lastCalibrated: company._lastCalibrated || null
+    };
+}
+
+function driverBar(label, pct) {
+    const cells = 22;
+    const filled = Math.max(0, Math.min(cells, Math.round((pct / 100) * cells)));
+    const bar = '▓'.repeat(filled) + '░'.repeat(cells - filled);
+    return `
+        <div class="flex items-center gap-3 text-[10px] leading-tight">
+            <span class="text-neon-green/70 font-mono whitespace-nowrap">${bar}</span>
+            <span class="text-gray-400 flex-1">${label}</span>
+            <span class="text-white font-bold w-10 text-right">${pct}%</span>
+        </div>`;
+}
+
+function ordinalSuffix(n) {
+    const v = n % 100;
+    if (v >= 11 && v <= 13) return n + 'th';
+    switch (n % 10) {
+        case 1: return n + 'st';
+        case 2: return n + 'nd';
+        case 3: return n + 'rd';
+        default: return n + 'th';
+    }
+}
+
+function renderSentinelBrief(d) {
+    const stateClasses = d.isDistress
+        ? 'text-red-400 border-red-500/30 bg-red-500/10'
+        : 'text-neon-green border-neon-green/30 bg-neon-green/10';
+    const stateIcon = d.isDistress ? '⚠' : '●';
+    const stateLabel = d.isDistress ? 'ELEVATED' : 'STABLE';
+
+    const indexRow = (d.ratingIndexBps !== null)
+        ? `vs ${d.ratingLabel} index ${d.ratingIndexBps} bps · ${d.issuerPremium >= 0 ? '+' : ''}${d.issuerPremium} bps issuer`
+        : `vs ${d.ratingLabel} index (awaiting FRED sync)`;
+
+    let peerSuffix;
+    if (d.peer.total === 1) peerSuffix = 'sole name in bucket';
+    else if (d.peer.rank === 1) peerSuffix = `tightest in ${d.peerLabel}`;
+    else if (d.peer.rank === d.peer.total) peerSuffix = `widest in ${d.peerLabel}`;
+    else peerSuffix = `${ordinalSuffix(d.peer.rank)}-tightest in ${d.peerLabel}`;
+
+    let trendText, trendColor;
+    if (d.trend.direction === 'building') {
+        trendText = 'Building history…';
+        trendColor = 'text-gray-500';
+    } else if (d.trend.direction === 'stable') {
+        trendText = `Stable — ±${Math.abs(d.trend.delta)} bps over last ${d.trend.minutes} min`;
+        trendColor = 'text-gray-400';
+    } else {
+        const arrow = d.trend.direction === 'widening' ? '↑' : '↓';
+        const verb = d.trend.direction === 'widening' ? 'Widening' : 'Tightening';
+        const sign = d.trend.delta > 0 ? '+' : '';
+        trendText = `${verb} ${arrow} ${sign}${d.trend.delta} bps over last ${d.trend.minutes} min`;
+        trendColor = d.trend.direction === 'widening' ? 'text-amber-400' : 'text-neon-green';
+    }
+
+    const regimeRow = d.isDistress ? `
+        <div class="flex justify-between gap-3 text-[10px]">
+            <span class="text-gray-500 uppercase tracking-widest shrink-0">Regime</span>
+            <span class="text-amber-400 text-right">Convex — vol > 35% threshold; further shocks drive disproportionate widening</span>
+        </div>` : '';
+
+    // Only show instrument-mod drivers when non-zero (default seniority + 10Y tenure = 0)
+    const seniorityBar = Math.abs(d.drivers.seniority) > 2 ? driverBar('Seniority delta', d.drivers.seniorityPct) : '';
+    const tenureBar = Math.abs(d.drivers.tenure) > 2 ? driverBar('Duration delta', d.drivers.tenurePct) : '';
+
+    return `
+        <div class="space-y-3">
+            <div class="flex items-center gap-2">
+                <span class="${stateClasses} px-1.5 py-0.5 rounded border text-[9px] tracking-widest uppercase font-bold">${stateIcon} ${stateLabel}</span>
+            </div>
+            <p class="text-neon-green leading-snug">${d.headline}</p>
+
+            <div class="space-y-1 pt-2 border-t border-white/5">
+                <div class="grid grid-cols-[80px_70px_1fr] gap-2 text-[10px] items-baseline">
+                    <span class="text-gray-500 uppercase tracking-widest">Spread</span>
+                    <span class="text-white font-bold">${d.spread} bps</span>
+                    <span class="text-gray-500">${indexRow}</span>
+                </div>
+                <div class="grid grid-cols-[80px_70px_1fr] gap-2 text-[10px] items-baseline">
+                    <span class="text-gray-500 uppercase tracking-widest">Yield</span>
+                    <span class="text-white font-bold">${d.yieldPct.toFixed(2)}%</span>
+                    <span class="text-gray-500">vs ${d.benchmark} 10Y ${d.benchmarkPct.toFixed(2)}% · +${d.spreadVsBench} bps</span>
+                </div>
+                <div class="grid grid-cols-[80px_70px_1fr] gap-2 text-[10px] items-baseline">
+                    <span class="text-gray-500 uppercase tracking-widest">Peer Rank</span>
+                    <span class="text-white font-bold">${d.peer.rank} / ${d.peer.total}</span>
+                    <span class="text-gray-500">${peerSuffix}</span>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-white/5 space-y-1">
+                <div class="text-[9px] text-gray-500 uppercase tracking-widest mb-1.5">Drivers</div>
+                ${driverBar('Anchor (rating floor)', d.drivers.anchorPct)}
+                ${driverBar('Market beta', d.drivers.marketPct)}
+                ${driverBar('Volatility premium', d.drivers.volPurePct)}
+                ${driverBar('Calibrated residual', d.drivers.residualPct)}
+                ${seniorityBar}
+                ${tenureBar}
+            </div>
+
+            <div class="space-y-1 pt-2 border-t border-white/5">
+                <div class="flex justify-between gap-3 text-[10px]">
+                    <span class="text-gray-500 uppercase tracking-widest shrink-0">Trend</span>
+                    <span class="${trendColor} text-right">${trendText}</span>
+                </div>
+                ${regimeRow}
+                <div class="flex justify-between gap-3 text-[10px]">
+                    <span class="text-gray-500 uppercase tracking-widest shrink-0">Watch</span>
+                    <span class="text-gray-400 text-right">${d.watch}</span>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-white/5 text-[9px] text-gray-600 tracking-widest uppercase">
+                Last calibrated ${d.lastCalibrated || '—'}
+            </div>
+        </div>`;
 }
 
 // Waterfall rendering (retained/stable)
