@@ -36,9 +36,25 @@ const CACHE_TTL = {
     'stock/financials-reported':  86400    // 24h   — quarterly reports
 };
 
+// Look up the Finnhub key from any of several common naming conventions.
+// Vercel env vars are case-sensitive on Linux, so we cover both casings
+// and a final substring scan as a safety net.
+function resolveFinnhubKey() {
+    const candidates = ['FINNHUB_API_KEY', 'FINNHUB', 'finnhub', 'finnhub_api_key', 'Finnhub'];
+    for (const name of candidates) {
+        if (process.env[name]) return process.env[name];
+    }
+    for (const name of Object.keys(process.env)) {
+        if (name.toLowerCase().includes('finnhub') && process.env[name]) {
+            return process.env[name];
+        }
+    }
+    return null;
+}
+
 export default async function handler(req, res) {
     const { endpoint, ...params } = req.query;
-    const apiKey = process.env.FINNHUB_API_KEY || process.env.FINNHUB;
+    const apiKey = resolveFinnhubKey();
 
     if (!endpoint) {
         return res.status(400).json({ error: 'E400: Missing endpoint' });
