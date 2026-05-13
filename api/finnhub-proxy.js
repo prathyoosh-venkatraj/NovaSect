@@ -22,7 +22,8 @@ const ALLOWED_ENDPOINTS = new Set([
     'stock/price-target',
     'stock/earnings',
     'stock/insider-transactions',
-    'stock/financials-reported'
+    'stock/financials-reported',
+    'stock/metric'                  // flat fundamentals (revenue, margins, etc.)
 ]);
 
 // Cache TTL (seconds) per endpoint. News refreshes faster than profile data.
@@ -33,7 +34,8 @@ const CACHE_TTL = {
     'stock/price-target':         21600,   // 6h
     'stock/earnings':             21600,   // 6h
     'stock/insider-transactions':  3600,   // 1h    — Form 4 filings
-    'stock/financials-reported':  86400    // 24h   — quarterly reports
+    'stock/financials-reported':  86400,   // 24h   — quarterly reports
+    'stock/metric':               21600    // 6h    — TTM metrics, slow movers
 };
 
 // Look up the Finnhub key from any of several common naming conventions.
