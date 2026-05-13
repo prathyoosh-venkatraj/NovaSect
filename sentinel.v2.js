@@ -124,9 +124,46 @@ let activeModalCompany = null;
 let waterfallChart = null;
 let selectedSeniority = 'Unsecured';
 let selectedTenure = 10;
-let currentSectorActive = 'Alpha'; 
+let currentSectorActive = 'Alpha';
 let activeFilters = { sector: 'all', risk: 'all' };
 let activeSort = 'default';
+
+// Staleness tracking — macro feeds refresh every 24h; expose age so the user
+// knows whether the values they're looking at are minutes old or nearly stale.
+let lastFredSync = null;
+let lastAlphaSync = null;
+const MACRO_REFRESH_MS = 24 * 60 * 60 * 1000;
+
+function formatAge(ts) {
+    if (!ts) return 'never';
+    const ms = Date.now() - ts;
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if (h === 0) return `${m}m ago`;
+    return `${h}h ${m}m ago`;
+}
+
+function formatCountdown(ts) {
+    if (!ts) return '--';
+    const remaining = MACRO_REFRESH_MS - (Date.now() - ts);
+    if (remaining <= 0) return 'due now';
+    const h = Math.floor(remaining / 3600000);
+    const m = Math.floor((remaining % 3600000) / 60000);
+    return `${h}h ${m}m`;
+}
+
+function updateStalenessIndicators() {
+    const fredEl = document.getElementById('fred-indicator');
+    const alphaEl = document.getElementById('alpha-indicator');
+    if (fredEl && lastFredSync) {
+        const d = SovereignRegistry.UST && SovereignRegistry.UST.date !== 'FALLBACK' ? SovereignRegistry.UST.date : '--';
+        fredEl.innerText = `Sovereign Anchors: FRED Live (v. ${d}) · synced ${formatAge(lastFredSync)} · refresh in ${formatCountdown(lastFredSync)}`;
+    }
+    if (alphaEl && lastAlphaSync) {
+        const d = SectorRegistry.Energy && SectorRegistry.Energy.date !== 'FALLBACK' ? SectorRegistry.Energy.date : '--';
+        alphaEl.innerText = `Sector Alpha: AlphaVantage Live (v. ${d}) · synced ${formatAge(lastAlphaSync)} · refresh in ${formatCountdown(lastAlphaSync)}`;
+    }
+}
 
 /**
  * Helper: Identify Benchmark
@@ -147,10 +184,18 @@ const CreditEngine = {
             const sensitivity = company.type === 'IG' ? 0.35 : 1.0;
             const stressMultiplier = currentBetaScaling;
             
-            // Leg 1: Macro Anchor (FRED Base)
-            const liveMacroSpread = (SovereignRegistry[company.rating] && SovereignRegistry[company.rating].value !== 'FALLBACK')
-                ? Math.round(SovereignRegistry[company.rating].value * 100) 
-                : company.baseSpread;
+            // Leg 1: Macro Anchor — use ICE BofA rating-index OAS as a market-wide
+            // FLOOR, not a replacement for the company-specific baseSpread. The
+            // index reflects bucket-average OAS (e.g. BBB index ~125 bps), so it
+            // can pull static baseSpreads up during bucket repricing but must not
+            // crush idiosyncratic spreads (e.g. RHM.DE @ 380 bps). Previous bug:
+            // the `value !== 'FALLBACK'` check was always true (value is numeric,
+            // 'FALLBACK' lives on `date`), so baseSpread was silently overwritten.
+            const ratingIdx = SovereignRegistry[company.rating];
+            const ratingIndexBps = (ratingIdx && ratingIdx.date !== 'FALLBACK')
+                ? Math.round(ratingIdx.value * 100)
+                : 0;
+            const liveMacroSpread = Math.max(company.baseSpread, ratingIndexBps);
             
             // Leg A: Proxy Volatility with VIX Beta-Shift
             const vix = SovereignRegistry.VIX && SovereignRegistry.VIX.value !== 'FALLBACK' ? SovereignRegistry.VIX.value : 15.0;
@@ -214,7 +259,6 @@ async function fetchSovereignAnchors() {
     console.log('Initiating FRED Live Sync...');
     
     let synchronizedCount = 0;
-    let latestDate = null;
     let lastErr = null;
 
     for (const [type, seriesId] of Object.entries(FRED_SERIES)) {
@@ -225,11 +269,10 @@ async function fetchSovereignAnchors() {
                 lastErr = data.error || response.status;
                 throw new Error(`Proxy error: ${lastErr}`);
             }
-            
+
             if (data.value && !isNaN(data.value)) {
                 SovereignRegistry[type].value = data.value;
                 SovereignRegistry[type].date = data.date;
-                latestDate = data.date;
                 synchronizedCount++;
                 console.log(`Synced ${type}: ${data.value}% (v. ${data.date})`);
             }
@@ -240,11 +283,12 @@ async function fetchSovereignAnchors() {
 
     if (synchronizedCount > 0) {
         COMPANIES.forEach(c => c.residual = 0);
+        lastFredSync = Date.now();
         if (indicator) {
-            indicator.innerText = `Sovereign Anchors: FRED Live (v. ${latestDate})`;
             indicator.classList.remove('text-gray-500');
             indicator.classList.add('text-neon-green');
         }
+        updateStalenessIndicators();
         triggerGlobalRefresh();
     } else {
         if (indicator) indicator.innerText = `Sovereign Anchors: System Fallback (Offline${lastErr ? ':' + lastErr : ''})`;
@@ -278,11 +322,12 @@ async function fetchSectorVolatility() {
 
     const indicator = document.getElementById('alpha-indicator');
     if (synchronizedCount > 0) {
+        lastAlphaSync = Date.now();
         if (indicator) {
-            indicator.innerText = `Sector Alpha: AlphaVantage Live (v. ${SectorRegistry['Energy'].date || 'Sync'})`;
             indicator.classList.remove('text-gray-500');
             indicator.classList.add('text-neon-green');
         }
+        updateStalenessIndicators();
         triggerGlobalRefresh();
     } else {
         if (indicator) indicator.innerText = `Sector Alpha: AlphaVantage Fallback (Offline)`;
@@ -393,6 +438,10 @@ function init() {
     
     // Auto-Calibrate every 2 hours
     setInterval(runAutoCalibration, 2 * 60 * 60 * 1000);
+
+    // Refresh staleness indicators every minute so the "synced Xh Ym ago"
+    // text counts up live without waiting for the next data sync.
+    setInterval(updateStalenessIndicators, 60 * 1000);
 }
 
 function setupEventListeners() {
@@ -697,7 +746,9 @@ async function cycleSectorBatch() {
 
 async function refreshFocus() {
     if (activeModalCompany) {
-        activeModalCompany.residual = activeModalCompany.residual + (Math.random() * 1.0 - 0.5);
+        // Same bounded OU jitter as cycleSectorBatch — prevents the focused
+        // company's residual from drifting unboundedly while the modal is open.
+        activeModalCompany.residual = activeModalCompany.residual * 0.95 + (Math.random() * 1.0 - 0.5);
         await updateCardData(activeModalCompany.ticker);
         updateModal();
         activeModalCompany.lastUpdated = Date.now();
@@ -720,10 +771,19 @@ async function throttleBackground() {
     }
 }
 
+// RAF-coalesced: rapid slider drags fire `input` events at ~60Hz, each of which
+// previously triggered a full 62-card recompute. Now multiple calls within the
+// same frame collapse to one refresh.
+let _refreshPending = false;
 function triggerGlobalRefresh() {
-    COMPANIES.forEach(c => updateCardData(c.ticker));
-    if (activeModalCompany) updateModal();
-    scanForContagion();
+    if (_refreshPending) return;
+    _refreshPending = true;
+    requestAnimationFrame(() => {
+        _refreshPending = false;
+        COMPANIES.forEach(c => updateCardData(c.ticker));
+        if (activeModalCompany) updateModal();
+        scanForContagion();
+    });
 }
 
 /**
@@ -834,7 +894,8 @@ function generateSentinelBrief(company, spread, delta, proxyVol) {
 // Waterfall rendering (retained/stable)
 function renderWaterfall(company) {
     const ctx = document.getElementById('waterfall-chart').getContext('2d');
-    const sensitivity = company.type === 'IG' ? 0.15 : 1.2;
+    // Keep in sync with CreditEngine.calculateCurrentSpread.
+    const sensitivity = company.type === 'IG' ? 0.35 : 1.0;
     const stressFactor = currentBetaScaling;
     const isSubordinated = selectedSeniority === 'Subordinated';
     const subMultiplier = isSubordinated ? 2.0 : 1.0;
