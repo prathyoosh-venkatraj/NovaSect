@@ -404,6 +404,87 @@
             text-transform: uppercase;
         }
 
+        /* ── Peer Snapshot ───────────────────────────────────────────
+           3-column comparison: focal ticker + 2 peers, side by side.
+           Same 5 metrics for each (all from osirisIngestion). */
+        .peer-comparison-section {
+            background: rgba(1, 10, 1, 0.9);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 10px;
+            padding: 1.3rem 1.5rem;
+            box-shadow: 0 0 18px rgba(57, 255, 20, 0.1) inset;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .peer-comparison-section h2 {
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0 0 1rem 0;
+            font-size: 1.05rem;
+            text-shadow: 0 0 5px var(--accent-green);
+        }
+
+        .peer-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: var(--accent-green);
+            font-size: 0.83rem;
+        }
+
+        .peer-table th,
+        .peer-table td {
+            text-align: left;
+            padding: 0.42rem 0.4rem;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.16);
+        }
+
+        .peer-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .peer-table th {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.75;
+            color: rgba(57, 255, 20, 0.85);
+        }
+
+        .peer-table th.peer-col-focal,
+        .peer-table td.peer-col-focal {
+            color: var(--accent-green);
+            font-weight: 700;
+            text-shadow: 0 0 4px rgba(57, 255, 20, 0.4);
+        }
+
+        .peer-table th.peer-metric-col,
+        .peer-table td.peer-metric-col {
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: normal;
+        }
+
+        .peer-loading {
+            text-align: center !important;
+            color: rgba(255, 255, 255, 0.4) !important;
+            font-family: 'JetBrains Mono', monospace !important;
+            font-size: 0.7rem !important;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 1rem !important;
+        }
+
+        .peer-footer {
+            margin-top: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            min-height: 0.7rem;
+        }
+
         .top-bar {
             width: 100% !important;
             display: flex !important;
@@ -624,6 +705,27 @@
                     </div>
                 </div>
 
+                <!-- Peer Snapshot — same metrics for focal company + 2 peers
+                     side-by-side. All data comes from osirisIngestion (Yahoo
+                     proxy + cached SPY benchmark) — no new APIs. -->
+                <div class="peer-comparison-section" id="peer-comparison-section">
+                    <h2>PEER SNAPSHOT</h2>
+                    <table class="peer-table">
+                        <thead>
+                            <tr>
+                                <th class="peer-metric-col">Metric</th>
+                                <th class="peer-col-focal" id="peer-h-focal">—</th>
+                                <th class="peer-col-1" id="peer-h-1">—</th>
+                                <th class="peer-col-2" id="peer-h-2">—</th>
+                            </tr>
+                        </thead>
+                        <tbody id="peer-tbody">
+                            <tr><td colspan="4" class="peer-loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="peer-footer" id="peer-footer"></div>
+                </div>
+
                 <div class="stats-table-container">
                     <h2>FINANCIAL RATIOS</h2>
                     <table class="stats-table">
@@ -752,6 +854,21 @@
         // no extra API calls beyond what Osiris already does on a 24h TTL).
         import { osirisIngestion } from './components/osiris/osirisIngestion.js';
 
+        // Peer ticker map — hand-picked per company. 2 peers each, chosen by
+        // sector/business-mix similarity. Format: FinVault-style (with
+        // exchange prefix) so the same toYahooSymbol() helper applies.
+        const PEERS = {
+            'chevron':         ['NYSE:XOM', 'NYSE:COP'],
+            'exxonmobil':      ['NYSE:CVX', 'NYSE:COP'],
+            'iberdrola':       ['NYSE:NEE', 'NYSE:DUK'],
+            'lockheedmartin':  ['NYSE:NOC', 'NYSE:RTX'],
+            'northropgrumman': ['NYSE:LMT', 'NYSE:RTX'],
+            'rtx':             ['NYSE:LMT', 'NYSE:NOC'],
+            'l3harris':        ['NYSE:LMT', 'NYSE:NOC'],
+            'rheinmetall':     ['LON:BA',   'NYSE:LMT'],
+            'generaldynamics': ['NYSE:LMT', 'NYSE:NOC']
+        };
+
         // FinVault tickers carry exchange prefixes (NYSE:XOM, BME:IBE).
         // Map to Yahoo-compatible symbols for osirisIngestion's proxy calls.
         function toYahooSymbol(ticker) {
@@ -826,6 +943,67 @@
             } catch (err) {
                 console.warn('[FinVault] News feed failed for ' + ticker + ':', err);
                 feedEl.innerHTML = '<div class="news-empty">News unavailable</div>';
+            }
+        }
+
+        // ── Peer Snapshot ────────────────────────────────────────────
+        // Fetches same 5 metrics for focal + 2 peers in parallel from
+        // osirisIngestion.getTickerMetrics(). All values share the same
+        // 24h IndexedDB + edge cache as Market Context.
+
+        async function loadPeerComparison(focalTicker, peerTickers) {
+            const tbody = document.getElementById('peer-tbody');
+            const section = document.getElementById('peer-comparison-section');
+            if (!tbody || !focalTicker || !Array.isArray(peerTickers) || peerTickers.length === 0) {
+                if (section) section.style.display = 'none';
+                return;
+            }
+
+            const focalSym = toYahooSymbol(focalTicker);
+            const peerSyms = peerTickers.map(toYahooSymbol).filter(s => s);
+            const allSyms = [focalSym, ...peerSyms];
+
+            // Update column headers
+            const headerEls = [
+                document.getElementById('peer-h-focal'),
+                document.getElementById('peer-h-1'),
+                document.getElementById('peer-h-2')
+            ];
+            allSyms.forEach((sym, i) => { if (headerEls[i]) headerEls[i].textContent = sym; });
+
+            const rows = [
+                { label: 'Current Price',   fmt: m => (typeof m?.currentPrice === 'number') ? '$' + m.currentPrice.toFixed(2) : '—' },
+                { label: 'Beta vs SPY',     fmt: m => (typeof m?.beta === 'number') ? m.beta.toFixed(2) : '—' },
+                { label: '1Y Realized Vol', fmt: m => (typeof m?.realizedSigma === 'number') ? (m.realizedSigma * 100).toFixed(1) + '%' : '—' },
+                { label: 'TTM Div Yield',   fmt: m => (typeof m?.dividendYield === 'number' && m.dividendYield > 0) ? (m.dividendYield * 100).toFixed(2) + '%' : '—' },
+                { label: '1Y Mean Price',   fmt: m => (typeof m?.longTermMeanPrice === 'number') ? '$' + m.longTermMeanPrice.toFixed(2) : '—' }
+            ];
+
+            try {
+                const metricsArr = await Promise.all(
+                    allSyms.map(sym =>
+                        osirisIngestion.getTickerMetrics(sym).catch(err => {
+                            console.warn('[FinVault] peer metric failed for ' + sym + ':', err);
+                            return null;
+                        })
+                    )
+                );
+
+                tbody.innerHTML = rows.map(row => {
+                    const cells = metricsArr.map((m, idx) => {
+                        const cls = idx === 0 ? ' class="peer-col-focal"' : '';
+                        return '<td' + cls + '>' + row.fmt(m) + '</td>';
+                    }).join('');
+                    return '<tr><td class="peer-metric-col">' + row.label + '</td>' + cells + '</tr>';
+                }).join('');
+
+                const footer = document.getElementById('peer-footer');
+                if (footer) {
+                    footer.textContent = '> focal: ' + focalSym + '  ·  peers: ' + peerSyms.join(' · ');
+                }
+            } catch (err) {
+                console.warn('[FinVault] Peer comparison failed:', err);
+                tbody.innerHTML = '<tr><td colspan="4" class="peer-loading">Peer data unavailable</td></tr>';
             }
         }
 
@@ -1056,11 +1234,12 @@
                     document.title = `${data.name} Report - NovaSect`;
 
                     // Fire-and-forget: populate Market Context + News Feed
-                    // from cached / Finnhub data. Failures don't block the
-                    // rest of the page render.
+                    // + Peer Snapshot from cached / Finnhub data. Failures
+                    // don't block the rest of the page render.
                     if (data.ticker) {
                         loadMarketContext(data.ticker);
                         loadNewsFeed(data.ticker);
+                        loadPeerComparison(data.ticker, PEERS[company.toLowerCase()] || []);
                     }
 
                     if (data.stats && data.stats.length > 0) {
