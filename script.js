@@ -136,18 +136,36 @@ function initHeroThreeJS(container) {
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Animation loop
+    // Animation loop — gated by IntersectionObserver so the hero render
+    // stops while scrolled off-screen, saving CPU/GPU on the rest of the page.
+    let isVisible = true;
+    let running = false;
+
+    const observer = new IntersectionObserver((entries) => {
+        isVisible = entries[0].isIntersecting;
+        if (isVisible && !running) {
+            running = true;
+            animate();
+        }
+    }, { threshold: 0 });
+    observer.observe(container);
+
     function animate() {
+        if (!isVisible) {
+            running = false;
+            return;
+        }
         requestAnimationFrame(animate);
-        
+
         // Multi-axis mathematical rotation
         if (window.knotMesh) {
             window.knotMesh.rotation.x += 0.002;
             window.knotMesh.rotation.y += 0.005;
         }
-        
+
         renderer.render(scene, camera);
     }
+    running = true;
     animate();
 }
 
@@ -182,12 +200,33 @@ function initSecondaryThreeJS(container) {
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
+    // IntersectionObserver gating: only render the wireframe sphere while
+    // its container is on-screen. On long pages (report.html, energy.html
+    // etc.) the secondary scene was previously rendering at 60fps even when
+    // scrolled fully out of view.
+    let isVisible = true;
+    let running = false;
+
+    const observer = new IntersectionObserver((entries) => {
+        isVisible = entries[0].isIntersecting;
+        if (isVisible && !running) {
+            running = true;
+            animate();
+        }
+    }, { threshold: 0 });
+    observer.observe(container);
+
     function animate() {
+        if (!isVisible) {
+            running = false;
+            return;
+        }
         requestAnimationFrame(animate);
         bgMesh.rotation.y += 0.0008;
         bgMesh.rotation.x += 0.0004;
         renderer.render(scene, camera);
     }
+    running = true;
     animate();
 }
 

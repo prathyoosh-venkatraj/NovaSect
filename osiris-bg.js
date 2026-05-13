@@ -109,8 +109,27 @@
         hovering = false;
     });
 
-    // ---- Main loop ----
+    // ---- Main loop (IntersectionObserver-gated) ----
+    // RAF chain only runs while the OSIRIS section is on-screen. Saves CPU
+    // when the user is at the top of the page (NOVASECT/hero/ENTER THE VAULT)
+    // and the OSIRIS section is scrolled out of view.
+    let isVisible = true;
+    let running = false;
+
+    const visibilityObserver = new IntersectionObserver((entries) => {
+        isVisible = entries[0].isIntersecting;
+        if (isVisible && !running) {
+            running = true;
+            frame();
+        }
+    }, { threshold: 0 });
+    visibilityObserver.observe(section);
+
     function frame() {
+        if (!isVisible) {
+            running = false;
+            return;
+        }
         if (width > 0 && height > 0) {
             ctx.fillStyle = hovering ? 'rgba(0, 0, 0, 0.025)' : 'rgba(0, 0, 0, 0.05)';
             ctx.fillRect(0, 0, width, height);
@@ -118,6 +137,7 @@
         }
         requestAnimationFrame(frame);
     }
+    running = true;
     frame();
 
     // ---- Hover sim counter ("RUNNING SIMULATION...") ----
