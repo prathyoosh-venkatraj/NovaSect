@@ -322,6 +322,88 @@
             }
         }
 
+        /* ── News Feed (Finnhub) ─────────────────────────────────────
+           Last 30 days of company-tagged headlines, top 8 sorted by
+           datetime descending. Each item links out to the source. */
+        .news-feed-section {
+            background: rgba(1, 10, 1, 0.9);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 10px;
+            padding: 1.3rem 1.5rem;
+            box-shadow: 0 0 18px rgba(57, 255, 20, 0.1) inset;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .news-feed-section h2 {
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0 0 1rem 0;
+            font-size: 1.05rem;
+            text-shadow: 0 0 5px var(--accent-green);
+        }
+
+        .news-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .news-item {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            padding: 0.65rem 0.7rem;
+            background: rgba(10, 10, 10, 0.7);
+            border: 1px solid rgba(57, 255, 20, 0.18);
+            border-radius: 6px;
+            transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+        }
+
+        .news-item:hover {
+            border-color: rgba(57, 255, 20, 0.55);
+            transform: translateX(2px);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.12);
+        }
+
+        .news-headline {
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.85rem;
+            line-height: 1.35;
+            margin-bottom: 0.45rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 500;
+        }
+
+        .news-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .news-source {
+            color: rgba(57, 255, 20, 0.7);
+        }
+
+        .news-date {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .news-loading,
+        .news-empty {
+            color: rgba(255, 255, 255, 0.4);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 1.2rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
         .top-bar {
             width: 100% !important;
             display: flex !important;
@@ -534,6 +616,14 @@
                     <div class="mc-footer" id="mc-footer"></div>
                 </div>
 
+                <!-- Recent News — last 30 days via Finnhub /company-news -->
+                <div class="news-feed-section">
+                    <h2>RECENT NEWS</h2>
+                    <div id="news-feed" class="news-feed">
+                        <div class="news-loading">Loading...</div>
+                    </div>
+                </div>
+
                 <div class="stats-table-container">
                     <h2>FINANCIAL RATIOS</h2>
                     <table class="stats-table">
@@ -674,6 +764,69 @@
             if (ex === 'LON') return symbol + '.L';    // London
             if (ex === 'XETR' || ex === 'FWB') return symbol + '.DE'; // Frankfurt
             return symbol; // generic fallback
+        }
+
+        // ── News Feed ────────────────────────────────────────────────
+        // Fetches last 30 days of company-tagged news via the Finnhub
+        // proxy, sorts by datetime desc, renders top 8. Failures show
+        // a small "News unavailable" placeholder instead of breaking.
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function relativeDate(unixSec) {
+            if (!unixSec) return '';
+            const then = new Date(unixSec * 1000);
+            const now = new Date();
+            const diffH = (now - then) / 3600000;
+            if (diffH < 1) return Math.max(1, Math.round(diffH * 60)) + 'm ago';
+            if (diffH < 24) return Math.round(diffH) + 'h ago';
+            const diffD = Math.round(diffH / 24);
+            if (diffD < 7) return diffD + 'd ago';
+            return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        async function loadNewsFeed(ticker) {
+            const yahooSym = toYahooSymbol(ticker);
+            const feedEl = document.getElementById('news-feed');
+            if (!feedEl || !yahooSym) return;
+
+            const today = new Date();
+            const past = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+            const toDate = today.toISOString().split('T')[0];
+            const fromDate = past.toISOString().split('T')[0];
+
+            try {
+                const url = '/api/finnhub-proxy?endpoint=company-news&symbol=' +
+                    encodeURIComponent(yahooSym) + '&from=' + fromDate + '&to=' + toDate;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('finnhub-proxy ' + res.status);
+                const items = await res.json();
+
+                if (!Array.isArray(items) || items.length === 0) {
+                    feedEl.innerHTML = '<div class="news-empty">No recent news</div>';
+                    return;
+                }
+
+                items.sort((a, b) => (b.datetime || 0) - (a.datetime || 0));
+                const top = items.slice(0, 8);
+
+                feedEl.innerHTML = top.map(item => (
+                    '<a href="' + escapeHtml(item.url || '#') + '" target="_blank" rel="noopener noreferrer" class="news-item">' +
+                        '<div class="news-headline">' + escapeHtml(item.headline || 'Untitled') + '</div>' +
+                        '<div class="news-meta">' +
+                            '<span class="news-source">' + escapeHtml(item.source || 'Unknown') + '</span>' +
+                            '<span class="news-date">' + relativeDate(item.datetime) + '</span>' +
+                        '</div>' +
+                    '</a>'
+                )).join('');
+            } catch (err) {
+                console.warn('[FinVault] News feed failed for ' + ticker + ':', err);
+                feedEl.innerHTML = '<div class="news-empty">News unavailable</div>';
+            }
         }
 
         async function loadMarketContext(ticker) {
@@ -902,10 +1055,13 @@
                     companyIndustry.textContent = data.industry;
                     document.title = `${data.name} Report - NovaSect`;
 
-                    // Fire-and-forget: populate Market Context panel from
-                    // osirisIngestion's cached metrics. Failures don't block
-                    // the rest of the page render.
-                    if (data.ticker) loadMarketContext(data.ticker);
+                    // Fire-and-forget: populate Market Context + News Feed
+                    // from cached / Finnhub data. Failures don't block the
+                    // rest of the page render.
+                    if (data.ticker) {
+                        loadMarketContext(data.ticker);
+                        loadNewsFeed(data.ticker);
+                    }
 
                     if (data.stats && data.stats.length > 0) {
                         const rows = tbody.querySelectorAll('tr');
