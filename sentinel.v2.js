@@ -4,67 +4,67 @@
  */
 
 const COMPANIES = [
-    { ticker: 'XOM', name: 'Exxon Mobil', sector: 'Energy', type: 'IG', rating: 'AA', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.8, sectorBeta: 1.1, residual: 0, lastUpdated: 0 },
-    { ticker: 'SHEL', name: 'Shell PLC', sector: 'Energy', type: 'IG', rating: 'A', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 140, marketBeta: 0.9, sectorBeta: 1.2, residual: 0, lastUpdated: 0 },
-    { ticker: 'CVX', name: 'Chevron Corp', sector: 'Energy', type: 'IG', rating: 'AA', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 0.7, sectorBeta: 1.0, residual: 0, lastUpdated: 0 },
-    { ticker: 'IBE.MC', name: 'Iberdrola', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'ES', base_rate_type: 'BUND', baseSpread: 110, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'EQNR', name: 'Equinor', sector: 'Energy', type: 'IG', rating: 'AA', region: 'EU', country: 'NO', base_rate_type: 'BUND', baseSpread: 155, marketBeta: 1.1, sectorBeta: 1.4, residual: 0, lastUpdated: 0 },
-    { ticker: 'MPC', name: 'Marathon Petroleum', sector: 'Energy', type: 'HY', rating: 'HY', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 360, marketBeta: 1.3, sectorBeta: 1.6, residual: 0, lastUpdated: 0 },
-    { ticker: 'LMT', name: 'Lockheed Martin', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 145, marketBeta: 0.6, sectorBeta: 0.4, residual: 0, lastUpdated: 0 },
-    { ticker: 'LDO.MI', name: 'Leonardo SpA', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'EU', country: 'IT', base_rate_type: 'BUND', baseSpread: 185, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'GD', name: 'General Dynamics', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 135, marketBeta: 0.6, sectorBeta: 0.5, residual: 0, lastUpdated: 0 },
-    { ticker: 'LHX', name: 'L3Harris Tech', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 165, marketBeta: 0.8, sectorBeta: 0.6, residual: 0, lastUpdated: 0 },
-    { ticker: 'NOC', name: 'Northrop Grumman', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 140, marketBeta: 0.5, sectorBeta: 0.4, residual: 0, lastUpdated: 0 },
-    { ticker: 'RTX', name: 'RTX Corp', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 175, marketBeta: 0.9, sectorBeta: 0.7, residual: 0, lastUpdated: 0 },
-    { ticker: 'RHM.DE', name: 'Rheinmetall AG', sector: 'Industrials', type: 'HY', rating: 'HY', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 380, marketBeta: 1.4, sectorBeta: 1.2, residual: 0, lastUpdated: 0 },
-    { ticker: 'BA', name: 'Boeing Co', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 210, marketBeta: 1.2, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'AIR.PA', name: 'Airbus SE', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 150, marketBeta: 0.9, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'NGE.PA', name: 'Engie', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'IT', base_rate_type: 'BUND', baseSpread: 120, marketBeta: 0.6, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'ENEL.MI', name: 'Enel SpA', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'IT', base_rate_type: 'BUND', baseSpread: 135, marketBeta: 0.7, sectorBeta: 1.0, residual: 0, lastUpdated: 0 },
-    { ticker: 'NEE', name: 'NextEra Energy', sector: 'Utilities', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 115, marketBeta: 0.4, sectorBeta: 0.7, residual: 0, lastUpdated: 0 },
-    { ticker: 'DUK', name: 'Duke Energy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'BP', name: 'BP PLC', sector: 'Energy', type: 'IG', rating: 'A', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 145, marketBeta: 0.9, sectorBeta: 1.1, residual: 0, lastUpdated: 0 },
-    { ticker: 'TTE', name: 'TotalEnergies', sector: 'Energy', type: 'IG', rating: 'A', region: 'EU', country: 'FR', base_rate_type: 'BUND', baseSpread: 135, marketBeta: 0.8, sectorBeta: 1.0, residual: 0, lastUpdated: 0 },
-    { ticker: 'COP', name: 'ConocoPhillips', sector: 'Energy', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 0.9, sectorBeta: 1.0, residual: 0, lastUpdated: 0 },
-    { ticker: 'EOG', name: 'EOG Resources', sector: 'Energy', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 120, marketBeta: 1.1, sectorBeta: 1.2, residual: 0, lastUpdated: 0 },
-    { ticker: 'SLB', name: 'Schlumberger', sector: 'Energy', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 140, marketBeta: 1.2, sectorBeta: 1.3, residual: 0, lastUpdated: 0 },
-    { ticker: 'HAL', name: 'Halliburton', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 160, marketBeta: 1.3, sectorBeta: 1.4, residual: 0, lastUpdated: 0 },
-    { ticker: 'BKR', name: 'Baker Hughes', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 150, marketBeta: 1.1, sectorBeta: 1.2, residual: 0, lastUpdated: 0 },
-    { ticker: 'VLO', name: 'Valero Energy', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 170, marketBeta: 1.0, sectorBeta: 1.1, residual: 0, lastUpdated: 0 },
-    { ticker: 'PSX', name: 'Phillips 66', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 165, marketBeta: 1.0, sectorBeta: 1.1, residual: 0, lastUpdated: 0 },
-    { ticker: 'OXY', name: 'Occidental', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 190, marketBeta: 1.4, sectorBeta: 1.5, residual: 0, lastUpdated: 0 },
-    { ticker: 'WMB', name: 'Williams Cos', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 155, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'KMI', name: 'Kinder Morgan', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 145, marketBeta: 0.7, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'SO', name: 'Southern Co', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'D', name: 'Dominion Energy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 140, marketBeta: 0.6, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'AEP', name: 'American Electric', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 135, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'EXC', name: 'Exelon Corp', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.6, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'SRE', name: 'Sempra Energy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 0.6, sectorBeta: 0.7, residual: 0, lastUpdated: 0 },
-    { ticker: 'XEL', name: 'Xcel Energy', sector: 'Utilities', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 115, marketBeta: 0.5, sectorBeta: 0.7, residual: 0, lastUpdated: 0 },
-    { ticker: 'PCG', name: 'PG&E Corp', sector: 'Utilities', type: 'HY', rating: 'HY', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 310, marketBeta: 0.9, sectorBeta: 1.2, residual: 0, lastUpdated: 0 },
-    { ticker: 'PEG', name: 'Public Service', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'WEC', name: 'WEC Energy', sector: 'Utilities', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 110, marketBeta: 0.4, sectorBeta: 0.6, residual: 0, lastUpdated: 0 },
-    { ticker: 'AWK', name: 'American Water', sector: 'Utilities', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 105, marketBeta: 0.4, sectorBeta: 0.5, residual: 0, lastUpdated: 0 },
-    { ticker: 'ENI.MI', name: 'Eni SpA', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'EU', country: 'IT', base_rate_type: 'BUND', baseSpread: 160, marketBeta: 0.9, sectorBeta: 1.1, residual: 0, lastUpdated: 0 },
-    { ticker: 'EDF.PA', name: 'EDF', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'FR', base_rate_type: 'BUND', baseSpread: 150, marketBeta: 0.7, sectorBeta: 1.0, residual: 0, lastUpdated: 0 },
-    { ticker: 'SSE.L', name: 'SSE PLC', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 140, marketBeta: 0.6, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'NG.L', name: 'National Grid', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 130, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'GE', name: 'GE Aerospace', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 120, marketBeta: 1.1, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'HON', name: 'Honeywell', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 110, marketBeta: 0.9, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'UPS', name: 'United Parcel', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 135, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'UNP', name: 'Union Pacific', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.8, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'CAT', name: 'Caterpillar', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 140, marketBeta: 1.1, sectorBeta: 1.0, residual: 0, lastUpdated: 0 },
-    { ticker: 'DE', name: 'Deere & Co', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 1.0, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'LUV', name: 'Southwest Air', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 180, marketBeta: 1.2, sectorBeta: 1.3, residual: 0, lastUpdated: 0 },
-    { ticker: 'DAL', name: 'Delta Air Lines', sector: 'Industrials', type: 'HY', rating: 'HY', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 320, marketBeta: 1.4, sectorBeta: 1.5, residual: 0, lastUpdated: 0 },
-    { ticker: 'MMM', name: '3M Company', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 150, marketBeta: 0.9, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'EMR', name: 'Emerson Electric', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 115, marketBeta: 0.8, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'ETN', name: 'Eaton Corp', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 120, marketBeta: 0.9, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'SAF.PA', name: 'Safran SA', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'EU', country: 'FR', base_rate_type: 'BUND', baseSpread: 140, marketBeta: 1.0, sectorBeta: 0.9, residual: 0, lastUpdated: 0 },
-    { ticker: 'RR.L', name: 'Rolls-Royce', sector: 'Industrials', type: 'HY', rating: 'HY', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 380, marketBeta: 1.5, sectorBeta: 1.4, residual: 0, lastUpdated: 0 },
-    { ticker: 'VOW3.DE', name: 'Volkswagen', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 170, marketBeta: 1.2, sectorBeta: 1.1, residual: 0, lastUpdated: 0 },
-    { ticker: 'SIE.DE', name: 'Siemens AG', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 115, marketBeta: 0.9, sectorBeta: 0.8, residual: 0, lastUpdated: 0 },
-    { ticker: 'DTE.DE', name: 'Deutsche Post', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 125, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0 }
+    { ticker: 'XOM', name: 'Exxon Mobil', sector: 'Energy', type: 'IG', rating: 'AA', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.8, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'SHEL', name: 'Shell PLC', sector: 'Energy', type: 'IG', rating: 'A', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 140, marketBeta: 0.9, sectorBeta: 1.2, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'CVX', name: 'Chevron Corp', sector: 'Energy', type: 'IG', rating: 'AA', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 0.7, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'IBE.MC', name: 'Iberdrola', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'ES', base_rate_type: 'BUND', baseSpread: 110, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'EQNR', name: 'Equinor', sector: 'Energy', type: 'IG', rating: 'AA', region: 'EU', country: 'NO', base_rate_type: 'BUND', baseSpread: 155, marketBeta: 1.1, sectorBeta: 1.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'MPC', name: 'Marathon Petroleum', sector: 'Energy', type: 'HY', rating: 'HY', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 360, marketBeta: 1.3, sectorBeta: 1.6, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'LMT', name: 'Lockheed Martin', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 145, marketBeta: 0.6, sectorBeta: 0.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'LDO.MI', name: 'Leonardo SpA', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'EU', country: 'IT', base_rate_type: 'BUND', baseSpread: 185, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'GD', name: 'General Dynamics', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 135, marketBeta: 0.6, sectorBeta: 0.5, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'LHX', name: 'L3Harris Tech', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 165, marketBeta: 0.8, sectorBeta: 0.6, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'NOC', name: 'Northrop Grumman', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 140, marketBeta: 0.5, sectorBeta: 0.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'RTX', name: 'RTX Corp', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 175, marketBeta: 0.9, sectorBeta: 0.7, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'RHM.DE', name: 'Rheinmetall AG', sector: 'Industrials', type: 'HY', rating: 'HY', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 380, marketBeta: 1.4, sectorBeta: 1.2, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'BA', name: 'Boeing Co', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 210, marketBeta: 1.2, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'AIR.PA', name: 'Airbus SE', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 150, marketBeta: 0.9, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'NGE.PA', name: 'Engie', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'IT', base_rate_type: 'BUND', baseSpread: 120, marketBeta: 0.6, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'ENEL.MI', name: 'Enel SpA', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'IT', base_rate_type: 'BUND', baseSpread: 135, marketBeta: 0.7, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'NEE', name: 'NextEra Energy', sector: 'Utilities', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 115, marketBeta: 0.4, sectorBeta: 0.7, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'DUK', name: 'Duke Energy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'BP', name: 'BP PLC', sector: 'Energy', type: 'IG', rating: 'A', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 145, marketBeta: 0.9, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'TTE', name: 'TotalEnergies', sector: 'Energy', type: 'IG', rating: 'A', region: 'EU', country: 'FR', base_rate_type: 'BUND', baseSpread: 135, marketBeta: 0.8, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'COP', name: 'ConocoPhillips', sector: 'Energy', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 0.9, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'EOG', name: 'EOG Resources', sector: 'Energy', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 120, marketBeta: 1.1, sectorBeta: 1.2, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'SLB', name: 'Schlumberger', sector: 'Energy', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 140, marketBeta: 1.2, sectorBeta: 1.3, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'HAL', name: 'Halliburton', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 160, marketBeta: 1.3, sectorBeta: 1.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'BKR', name: 'Baker Hughes', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 150, marketBeta: 1.1, sectorBeta: 1.2, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'VLO', name: 'Valero Energy', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 170, marketBeta: 1.0, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'PSX', name: 'Phillips 66', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 165, marketBeta: 1.0, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'OXY', name: 'Occidental', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 190, marketBeta: 1.4, sectorBeta: 1.5, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'WMB', name: 'Williams Cos', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 155, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'KMI', name: 'Kinder Morgan', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 145, marketBeta: 0.7, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'SO', name: 'Southern Co', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'D', name: 'Dominion Energy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 140, marketBeta: 0.6, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'AEP', name: 'American Electric', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 135, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'EXC', name: 'Exelon Corp', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.6, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'SRE', name: 'Sempra Energy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 0.6, sectorBeta: 0.7, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'XEL', name: 'Xcel Energy', sector: 'Utilities', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 115, marketBeta: 0.5, sectorBeta: 0.7, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'PCG', name: 'PG&E Corp', sector: 'Utilities', type: 'HY', rating: 'HY', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 310, marketBeta: 0.9, sectorBeta: 1.2, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'PEG', name: 'Public Service', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'WEC', name: 'WEC Energy', sector: 'Utilities', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 110, marketBeta: 0.4, sectorBeta: 0.6, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'AWK', name: 'American Water', sector: 'Utilities', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 105, marketBeta: 0.4, sectorBeta: 0.5, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'ENI.MI', name: 'Eni SpA', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'EU', country: 'IT', base_rate_type: 'BUND', baseSpread: 160, marketBeta: 0.9, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'EDF.PA', name: 'EDF', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'FR', base_rate_type: 'BUND', baseSpread: 150, marketBeta: 0.7, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'SSE.L', name: 'SSE PLC', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 140, marketBeta: 0.6, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'NG.L', name: 'National Grid', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 130, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'GE', name: 'GE Aerospace', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 120, marketBeta: 1.1, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'HON', name: 'Honeywell', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 110, marketBeta: 0.9, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'UPS', name: 'United Parcel', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 135, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'UNP', name: 'Union Pacific', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.8, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'CAT', name: 'Caterpillar', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 140, marketBeta: 1.1, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'DE', name: 'Deere & Co', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 130, marketBeta: 1.0, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'LUV', name: 'Southwest Air', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 180, marketBeta: 1.2, sectorBeta: 1.3, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'DAL', name: 'Delta Air Lines', sector: 'Industrials', type: 'HY', rating: 'HY', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 320, marketBeta: 1.4, sectorBeta: 1.5, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'MMM', name: '3M Company', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 150, marketBeta: 0.9, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'EMR', name: 'Emerson Electric', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 115, marketBeta: 0.8, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'ETN', name: 'Eaton Corp', sector: 'Industrials', type: 'IG', rating: 'A', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 120, marketBeta: 0.9, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'SAF.PA', name: 'Safran SA', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'EU', country: 'FR', base_rate_type: 'BUND', baseSpread: 140, marketBeta: 1.0, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'RR.L', name: 'Rolls-Royce', sector: 'Industrials', type: 'HY', rating: 'HY', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 380, marketBeta: 1.5, sectorBeta: 1.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'VOW3.DE', name: 'Volkswagen', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 170, marketBeta: 1.2, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'SIE.DE', name: 'Siemens AG', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 115, marketBeta: 0.9, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'DTE.DE', name: 'Deutsche Post', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 125, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' }
 ];
 
 // Configuration
@@ -77,6 +77,25 @@ const FAST_REFRESH_MS = 5000;
 
 const SOVEREIGN_SPREADS = { 'US': 0, 'DE': 0, 'NO': 45, 'ES': 80, 'IT': 145, 'UK': 0 };
 const SENIORITY_MULTIPLIERS = { 'Secured': 0.85, 'Unsecured': 1.0, 'Subordinated': 1.5 };
+
+// Per-rating baseSpread sanity bands (bps). Loose enough to admit
+// reasonable issuer-specific variation, tight enough to catch transcription
+// errors (e.g. 1250 instead of 125). Out-of-band entries log a console
+// warning at load time. See SENTINEL-CALIBRATION.md for the procedure.
+const RATING_BANDS = {
+    AAA: { min: 30,  max: 150 },
+    AA:  { min: 50,  max: 200 },
+    A:   { min: 70,  max: 250 },
+    BBB: { min: 100, max: 350 },
+    BB:  { min: 200, max: 500 },
+    B:   { min: 350, max: 700 },
+    HY:  { min: 200, max: 700 }
+};
+
+// Staleness tiers for the quarterly verification cadence.
+const VERIF_FRESH_DAYS = 60;   // green: just refreshed, within current quarter
+const VERIF_AGING_DAYS = 90;   // amber: refresh due before quarter ends
+                               // red: anything beyond 90 days (overdue)
 
 // FRED Configuration & Sovereign Registry
 const FRED_SERIES = {
@@ -344,6 +363,50 @@ function getTrend(company) {
 }
 
 /**
+ * Anchor verification — quarterly cadence. lastVerified is the date the
+ * rating bucket AND baseSpread were last manually re-checked against a
+ * primary source (see SENTINEL-CALIBRATION.md).
+ */
+function daysSince(dateStr) {
+    if (!dateStr) return Infinity;
+    const ms = new Date(dateStr).getTime();
+    if (isNaN(ms)) return Infinity;
+    return Math.floor((Date.now() - ms) / 86400000);
+}
+
+function getVerificationStatus(company) {
+    const days = daysSince(company.lastVerified);
+    if (days < VERIF_FRESH_DAYS) return { tier: 'fresh', days, color: 'text-neon-green', label: `${days}d ago` };
+    if (days < VERIF_AGING_DAYS) return { tier: 'aging', days, color: 'text-amber-400', label: `${days}d ago — refresh due` };
+    return { tier: 'stale', days, color: 'text-red-400', label: `${days}d ago — OVERDUE` };
+}
+
+/**
+ * Load-time validation — flags transcription errors (out-of-band baseSpread)
+ * and missing rating buckets. Runs once at init; results land in the console
+ * so a developer notices stale or fat-fingered values without crashing the UI.
+ */
+function validateAnchors() {
+    const issues = [];
+    COMPANIES.forEach(c => {
+        const band = RATING_BANDS[c.rating];
+        if (!band) {
+            issues.push(`${c.ticker} (${c.rating}): no validation band for rating bucket`);
+            return;
+        }
+        if (c.baseSpread < band.min || c.baseSpread > band.max) {
+            issues.push(`${c.ticker} (${c.rating}): baseSpread ${c.baseSpread} bps outside [${band.min}, ${band.max}]`);
+        }
+    });
+    if (issues.length === 0) {
+        console.log(`[Sentinel] ${COMPANIES.length} baseSpreads validated within rating bands.`);
+    } else {
+        console.warn(`[Sentinel] ${issues.length} anchor validation issue(s):`);
+        issues.forEach(i => console.warn('  · ' + i));
+    }
+}
+
+/**
  * FRED API Live Sync
  */
 async function fetchSovereignAnchors() {
@@ -511,6 +574,7 @@ async function runAutoCalibration() {
  * Initialization
  */
 function init() {
+    validateAnchors();
     setupEventListeners();
     renderGrid(); // Render instantly with fallbacks
     startHighScaleEngine();
@@ -644,10 +708,11 @@ function renderGrid(filterText = '') {
 
 function createCard(company) {
     const card = document.createElement('div');
-    card.className = 'bg-card-bg neon-border rounded-lg p-5 cursor-pointer flex flex-col transition-all group animate-in fade-in duration-300';
+    card.className = 'bg-card-bg neon-border rounded-lg p-5 cursor-pointer flex flex-col transition-all group animate-in fade-in duration-300 relative';
     card.id = `card-${company.ticker}`;
     card.setAttribute('onclick', `openModal('${company.ticker}')`);
     card.innerHTML = `
+        <span class="stale-dot hidden absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]" title="Anchor refresh overdue — see SENTINEL-CALIBRATION.md"></span>
         <div class="flex justify-between items-start mb-4">
             <div>
                 <h3 class="font-black text-xl tracking-tight">${company.ticker}</h3>
@@ -767,9 +832,17 @@ async function updateCardData(ticker) {
     const riskPercentage = Math.min(Math.round((spread / 1000) * 100), 100);
     const barFill = card.querySelector('.risk-bar-fill');
     const percentDisp = card.querySelector('.percentage-val');
-    
+
     if (barFill) barFill.style.width = `${riskPercentage}%`;
     if (percentDisp) percentDisp.innerText = `${riskPercentage}%`;
+
+    // Anchor-staleness dot — visible only when verification is overdue.
+    const staleDot = card.querySelector('.stale-dot');
+    if (staleDot) {
+        const verif = getVerificationStatus(company);
+        if (verif.tier === 'stale') staleDot.classList.remove('hidden');
+        else staleDot.classList.add('hidden');
+    }
 }
 
 /**
@@ -1032,7 +1105,9 @@ function buildSentinelBrief(company, instrumentSpread) {
         drivers,
         trend,
         watch,
-        lastCalibrated: company._lastCalibrated || null
+        lastCalibrated: company._lastCalibrated || null,
+        verification: getVerificationStatus(company),
+        verifiedOn: company.lastVerified || null
     };
 }
 
@@ -1148,8 +1223,9 @@ function renderSentinelBrief(d) {
                 </div>
             </div>
 
-            <div class="pt-2 border-t border-white/5 text-[9px] text-gray-600 tracking-widest uppercase">
-                Last calibrated ${d.lastCalibrated || '—'}
+            <div class="pt-2 border-t border-white/5 text-[9px] text-gray-600 tracking-widest uppercase space-y-0.5">
+                <div>Last calibrated ${d.lastCalibrated || '—'} <span class="text-gray-700 normal-case tracking-normal">· auto vol-residual sync</span></div>
+                <div>Rating + anchor verified <span class="${d.verification.color}">${d.verification.label}</span> <span class="text-gray-700 normal-case tracking-normal">· quarterly cadence</span></div>
             </div>
         </div>`;
 }
