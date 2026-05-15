@@ -387,4 +387,41 @@ PURPOSE: REAL-TIME CREDIT SOLVENCY MONITORING / DYNAMIC STRESS-TESTING / FISCAL_
             typeWriterSentinel();
         });
     }
+
+    const osirisBtn = document.getElementById('tool-osiris-btn');
+    const osirisLog = document.getElementById('osiris-log');
+
+    if (osirisBtn && osirisLog) {
+        const osirisLogText = `OSIRIS_FORECAST // PATH_03
+SOURCE: LIVE_YFINANCE_HISTORICAL_TIMESERIES / FRED_RISK-FREE_ANCHOR / SPY_BENCHMARK_RETURNS
+ANALYSIS_PARAM: ORNSTEIN-UHLENBECK_MEAN_REVERSION / GBM_POISSON_JUMP_DIFFUSION / 5000-PATH_MONTE_CARLO.
+SECTOR_FOCUS: [ENERGY] [UTILITIES] [INDUSTRIALS].
+PURPOSE: STOCHASTIC PRICE PATH SIMULATION / VOLATILITY-BOUND FORECASTING / TICKER-LEVEL DISTRIBUTIONAL OUTLOOK`;
+
+        let isOsirisTyping = false;
+
+        osirisBtn.addEventListener('click', () => {
+            if (isOsirisTyping) return;
+
+            isOsirisTyping = true;
+            osirisLog.style.display = 'block';
+            osirisLog.innerHTML = '';
+
+            let k = 0;
+            const speed = 25;
+
+            function typeWriterOsiris() {
+                if (k < osirisLogText.length) {
+                    k++;
+                    let currentText = osirisLogText.substring(0, k);
+                    osirisLog.innerHTML = currentText.replace(/(SOURCE|ANALYSIS_PARAM|SECTOR_FOCUS|PURPOSE)/g, '<span class="term-highlight">$1</span>');
+                    setTimeout(typeWriterOsiris, speed);
+                } else {
+                    isOsirisTyping = false;
+                }
+            }
+
+            typeWriterOsiris();
+        });
+    }
 }
