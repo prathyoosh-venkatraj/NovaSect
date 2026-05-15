@@ -74,7 +74,17 @@ const COMPANIES = [
     { ticker: 'WDS.AX', name: 'Woodside Energy', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'APAC', country: 'AU', base_rate_type: 'UST', baseSpread: 140, marketBeta: 1.1, sectorBeta: 1.2, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
     { ticker: 'REP.MC', name: 'Repsol', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'EU', country: 'ES', base_rate_type: 'BUND', baseSpread: 150, marketBeta: 1.0, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
     { ticker: 'DVN', name: 'Devon Energy', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 175, marketBeta: 1.3, sectorBeta: 1.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
-    { ticker: 'FANG', name: 'Diamondback Energy', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 185, marketBeta: 1.3, sectorBeta: 1.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' }
+    { ticker: 'FANG', name: 'Diamondback Energy', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 185, marketBeta: 1.3, sectorBeta: 1.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    // === v1.6 Global Diversification (Utilities) — added 2026-05 ===
+    // Post-Fukushima turnaround (9501.T), EM generator (NTPC.NS),
+    // APAC mid-cap (ORG.AX), EU energy-transition (EOAN.DE, RWE.DE),
+    // US climate-exposed (ETR).
+    { ticker: '9501.T', name: 'Tokyo Electric Power', sector: 'Utilities', type: 'HY', rating: 'HY', region: 'APAC', country: 'JP', base_rate_type: 'UST', baseSpread: 280, marketBeta: 1.0, sectorBeta: 1.3, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'NTPC.NS', name: 'NTPC', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EM', country: 'IN', base_rate_type: 'UST', baseSpread: 120, marketBeta: 0.9, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'ORG.AX', name: 'Origin Energy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'APAC', country: 'AU', base_rate_type: 'UST', baseSpread: 145, marketBeta: 0.8, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'EOAN.DE', name: 'E.ON', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 130, marketBeta: 0.6, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'RWE.DE', name: 'RWE', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 140, marketBeta: 0.7, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'ETR', name: 'Entergy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 135, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' }
 ];
 
 // Configuration
