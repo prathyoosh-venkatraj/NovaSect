@@ -84,7 +84,20 @@ const COMPANIES = [
     { ticker: 'ORG.AX', name: 'Origin Energy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'APAC', country: 'AU', base_rate_type: 'UST', baseSpread: 145, marketBeta: 0.8, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
     { ticker: 'EOAN.DE', name: 'E.ON', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 130, marketBeta: 0.6, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
     { ticker: 'RWE.DE', name: 'RWE', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 140, marketBeta: 0.7, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
-    { ticker: 'ETR', name: 'Entergy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 135, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' }
+    { ticker: 'ETR', name: 'Entergy', sector: 'Utilities', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 135, marketBeta: 0.5, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    // === v1.6 Global Diversification (Industrials) — added 2026-05 ===
+    // UK / FR defense (BA.L, HO.PA), APAC heavy industry (7011.T, 6301.T),
+    // EM growth (LT.NS, EMBJ3.SA), Nordic industrial (ATCO-A.ST, VOLV-B.ST),
+    // US aerospace growth (HWM).
+    { ticker: 'BA.L', name: 'BAE Systems', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 155, marketBeta: 0.7, sectorBeta: 0.7, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'HO.PA', name: 'Thales', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'FR', base_rate_type: 'BUND', baseSpread: 145, marketBeta: 0.8, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: '7011.T', name: 'Mitsubishi Heavy', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'APAC', country: 'JP', base_rate_type: 'UST', baseSpread: 160, marketBeta: 0.9, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: '6301.T', name: 'Komatsu', sector: 'Industrials', type: 'IG', rating: 'A', region: 'APAC', country: 'JP', base_rate_type: 'UST', baseSpread: 130, marketBeta: 1.0, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'LT.NS', name: 'Larsen & Toubro', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'EM', country: 'IN', base_rate_type: 'UST', baseSpread: 130, marketBeta: 1.1, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'EMBJ3.SA', name: 'Embraer', sector: 'Industrials', type: 'HY', rating: 'HY', region: 'EM', country: 'BR', base_rate_type: 'UST', baseSpread: 250, marketBeta: 1.2, sectorBeta: 1.3, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'ATCO-A.ST', name: 'Atlas Copco', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'SE', base_rate_type: 'BUND', baseSpread: 110, marketBeta: 0.9, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'VOLV-B.ST', name: 'Volvo Group', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'SE', base_rate_type: 'BUND', baseSpread: 130, marketBeta: 1.1, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'HWM', name: 'Howmet Aerospace', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 150, marketBeta: 1.0, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' }
 ];
 
 // Configuration

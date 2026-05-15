@@ -1,5 +1,5 @@
 {
-  "version": "1.6-global-utilities",
+  "version": "1.6-global",
   "defaultPaths": 5000,
   "timeHorizonDays": 252,
   "notes": "beta, dividendYield, longTermMeanPrice are auto-computed in osirisIngestion. Drift = US10Y - dividendYield. OU mean target = 1y arithmetic mean. Phase 4: GBM industrials use positively-skewed lognormal jumps (jumpMu > 0). Operational-shock multiplier scales BOTH jumpFrequencyLambda AND jumpMu. v1.5 expands the universe from 8 to 61 names to match Sentinel. Per-ticker reversionSpeedTheta / jumpFrequencyLambda / jumpMu / baselineVolatility are sub-sector defaults; creditRating mirrors Sentinel's rating bucket. International (.MI/.PA/.L/.DE/.MC) tickers depend on Yahoo coverage and may need fallback handling during the API-usage review.",
@@ -63,20 +63,28 @@
       "physics": "Geometric Brownian Motion + Jump Diffusion",
       "description": "Unbound variance cones subject to lumpy, contract-driven Poisson jumps with positive skew (contract wins outweigh losses in expected magnitude).",
       "tickers": [
+        { "symbol": "6301.T",  "name": "Komatsu",             "jumpFrequencyLambda": 6, "jumpMu": 0.010, "baselineVolatility": 0.26, "creditRating": "A",   "ratingLastVerified": "2026-05" },
+        { "symbol": "7011.T",  "name": "Mitsubishi Heavy",    "jumpFrequencyLambda": 5, "jumpMu": 0.014, "baselineVolatility": 0.28, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
         { "symbol": "AIR.PA",  "name": "Airbus SE",           "jumpFrequencyLambda": 5, "jumpMu": 0.012, "baselineVolatility": 0.30, "creditRating": "A",   "ratingLastVerified": "2026-05" },
+        { "symbol": "ATCO-A.ST","name": "Atlas Copco",         "jumpFrequencyLambda": 5, "jumpMu": 0.010, "baselineVolatility": 0.22, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "BA",      "name": "Boeing Co",           "jumpFrequencyLambda": 6, "jumpMu": 0.008, "baselineVolatility": 0.34, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
+        { "symbol": "BA.L",    "name": "BAE Systems",         "jumpFrequencyLambda": 4, "jumpMu": 0.015, "baselineVolatility": 0.22, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
         { "symbol": "CAT",     "name": "Caterpillar Inc",     "jumpFrequencyLambda": 6, "jumpMu": 0.010, "baselineVolatility": 0.26, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "DAL",     "name": "Delta Air Lines",     "jumpFrequencyLambda": 7, "jumpMu": 0.008, "baselineVolatility": 0.32, "creditRating": "HY",  "ratingLastVerified": "2026-05" },
         { "symbol": "DE",      "name": "Deere & Co",          "jumpFrequencyLambda": 6, "jumpMu": 0.010, "baselineVolatility": 0.25, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "DHL.DE",  "name": "DHL Group",           "jumpFrequencyLambda": 6, "jumpMu": 0.008, "baselineVolatility": 0.28, "creditRating": "A",   "ratingLastVerified": "2026-05" },
+        { "symbol": "EMBJ3.SA","name": "Embraer",             "jumpFrequencyLambda": 5, "jumpMu": 0.012, "baselineVolatility": 0.32, "creditRating": "HY",  "ratingLastVerified": "2026-05" },
         { "symbol": "EMR",     "name": "Emerson Electric",    "jumpFrequencyLambda": 5, "jumpMu": 0.010, "baselineVolatility": 0.24, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "ETN",     "name": "Eaton Corp",          "jumpFrequencyLambda": 5, "jumpMu": 0.010, "baselineVolatility": 0.24, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "GD",      "name": "General Dynamics",    "jumpFrequencyLambda": 4, "jumpMu": 0.015, "baselineVolatility": 0.22, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "GE",      "name": "GE Aerospace",        "jumpFrequencyLambda": 5, "jumpMu": 0.014, "baselineVolatility": 0.30, "creditRating": "A",   "ratingLastVerified": "2026-05" },
+        { "symbol": "HO.PA",   "name": "Thales",              "jumpFrequencyLambda": 4, "jumpMu": 0.015, "baselineVolatility": 0.24, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "HON",     "name": "Honeywell",           "jumpFrequencyLambda": 5, "jumpMu": 0.010, "baselineVolatility": 0.22, "creditRating": "A",   "ratingLastVerified": "2026-05" },
+        { "symbol": "HWM",     "name": "Howmet Aerospace",    "jumpFrequencyLambda": 5, "jumpMu": 0.012, "baselineVolatility": 0.26, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
         { "symbol": "LDO.MI",  "name": "Leonardo SpA",        "jumpFrequencyLambda": 5, "jumpMu": 0.020, "baselineVolatility": 0.30, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
         { "symbol": "LHX",     "name": "L3Harris Tech",       "jumpFrequencyLambda": 4, "jumpMu": 0.014, "baselineVolatility": 0.23, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
         { "symbol": "LMT",     "name": "Lockheed Martin",     "jumpFrequencyLambda": 4, "jumpMu": 0.015, "baselineVolatility": 0.21, "creditRating": "A",   "ratingLastVerified": "2026-05" },
+        { "symbol": "LT.NS",   "name": "Larsen & Toubro",     "jumpFrequencyLambda": 5, "jumpMu": 0.014, "baselineVolatility": 0.26, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
         { "symbol": "LUV",     "name": "Southwest Air",       "jumpFrequencyLambda": 6, "jumpMu": 0.008, "baselineVolatility": 0.30, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
         { "symbol": "MMM",     "name": "3M Company",          "jumpFrequencyLambda": 6, "jumpMu": 0.008, "baselineVolatility": 0.24, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
         { "symbol": "NOC",     "name": "Northrop Grumman",    "jumpFrequencyLambda": 4, "jumpMu": 0.015, "baselineVolatility": 0.21, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
@@ -87,6 +95,7 @@
         { "symbol": "SIE.DE",  "name": "Siemens AG",          "jumpFrequencyLambda": 5, "jumpMu": 0.010, "baselineVolatility": 0.24, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "UNP",     "name": "Union Pacific",       "jumpFrequencyLambda": 5, "jumpMu": 0.008, "baselineVolatility": 0.24, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "UPS",     "name": "United Parcel",       "jumpFrequencyLambda": 5, "jumpMu": 0.008, "baselineVolatility": 0.24, "creditRating": "A",   "ratingLastVerified": "2026-05" },
+        { "symbol": "VOLV-B.ST","name": "Volvo Group",         "jumpFrequencyLambda": 6, "jumpMu": 0.008, "baselineVolatility": 0.26, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "VOW3.DE", "name": "Volkswagen",          "jumpFrequencyLambda": 7, "jumpMu": 0.008, "baselineVolatility": 0.32, "creditRating": "BBB", "ratingLastVerified": "2026-05" }
       ]
     }
