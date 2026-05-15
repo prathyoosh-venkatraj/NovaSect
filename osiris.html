@@ -127,6 +127,163 @@
             }
         }
 
+        /* === Searchable ticker combobox === */
+        .osiris-combobox {
+            position: relative;
+            width: 100%;
+        }
+        .osiris-combobox-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 30, 0, 0.4);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+            padding: 0 12px;
+            height: 40px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            cursor: text;
+        }
+        .osiris-combobox-input-wrapper:focus-within {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 12px rgba(0, 255, 0, 0.25);
+        }
+        .osiris-combobox-icon {
+            color: rgba(0, 255, 0, 0.5);
+            font-size: 1em;
+            margin-right: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .osiris-combobox-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            flex: 1;
+            color: var(--accent-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            letter-spacing: 0.5px;
+        }
+        .osiris-combobox-input::placeholder {
+            color: rgba(0, 255, 0, 0.35);
+            letter-spacing: 1px;
+        }
+        .osiris-combobox-chevron {
+            color: rgba(0, 255, 0, 0.5);
+            margin-left: 8px;
+            font-size: 0.7em;
+            transition: transform 0.2s ease;
+        }
+        .osiris-combobox.is-open .osiris-combobox-chevron {
+            transform: rotate(180deg);
+        }
+        .osiris-combobox-panel {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: rgba(0, 18, 0, 0.97);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5),
+                        0 0 20px rgba(0, 255, 0, 0.15);
+            z-index: 100;
+            overflow: hidden;
+        }
+        .osiris-combobox-chips {
+            display: flex;
+            gap: 6px;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.15);
+        }
+        .osiris-chip {
+            background: transparent;
+            color: rgba(0, 255, 0, 0.6);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            padding: 4px 10px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.7em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+        .osiris-chip:hover {
+            background: rgba(0, 255, 0, 0.1);
+            color: var(--accent-green);
+        }
+        .osiris-chip.active {
+            background: rgba(0, 255, 0, 0.18);
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+        }
+        .osiris-combobox-list {
+            max-height: 340px;
+            overflow-y: auto;
+            list-style: none;
+            margin: 0;
+            padding: 4px 0;
+        }
+        .osiris-combobox-item {
+            display: grid;
+            grid-template-columns: 100px 1fr auto;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            border-left: 2px solid transparent;
+        }
+        .osiris-combobox-item.is-active {
+            background: rgba(0, 255, 0, 0.1);
+            border-left-color: var(--accent-green);
+        }
+        .osiris-combobox-item-ticker {
+            color: var(--accent-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .osiris-combobox-item-name {
+            color: rgba(255, 255, 255, 0.78);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.82em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .osiris-combobox-item-cohort {
+            color: rgba(0, 255, 0, 0.5);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.62em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+        .osiris-combobox-empty {
+            padding: 18px;
+            text-align: center;
+            color: rgba(0, 255, 0, 0.4);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+        }
+        .osiris-combobox-list::-webkit-scrollbar { width: 8px; }
+        .osiris-combobox-list::-webkit-scrollbar-track { background: rgba(0, 30, 0, 0.5); }
+        .osiris-combobox-list::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 0, 0.3);
+            border-radius: 4px;
+        }
+        .osiris-combobox-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 0, 0.5);
+        }
+
         .time-pill.active {
             background: rgba(0, 255, 0, 0.2);
             box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
@@ -205,8 +362,34 @@
             <div class="osiris-controls-wrapper" style="background: rgba(0, 255, 0, 0.05); border: 1px solid rgba(0, 255, 0, 0.2); padding: 20px; border-radius: 4px;">
                 <div class="osiris-controls" style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 20px; border: none; padding: 0; background: transparent;">
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
-                        <label for="osiris-ticker-select" style="color: var(--accent-green); font-family: monospace; font-size: 0.9em;">TARGET TICKER:</label>
-                        <select id="osiris-ticker-select" class="osiris-input" style="width: 100%;">
+                        <label for="osiris-combobox-input" style="color: var(--accent-green); font-family: monospace; font-size: 0.9em;">TARGET TICKER:</label>
+
+                        <div id="osiris-ticker-combobox" class="osiris-combobox">
+                            <div class="osiris-combobox-input-wrapper">
+                                <span class="osiris-combobox-icon" aria-hidden="true">⌕</span>
+                                <input type="text"
+                                       id="osiris-combobox-input"
+                                       class="osiris-combobox-input"
+                                       placeholder="Search ticker or company name…"
+                                       autocomplete="off"
+                                       role="combobox"
+                                       aria-expanded="false"
+                                       aria-controls="osiris-combobox-list"
+                                       aria-autocomplete="list">
+                                <span class="osiris-combobox-chevron" aria-hidden="true">▾</span>
+                            </div>
+                            <div id="osiris-combobox-panel" class="osiris-combobox-panel" hidden>
+                                <div class="osiris-combobox-chips" role="tablist">
+                                    <button type="button" class="osiris-chip active" data-cohort="all">All</button>
+                                    <button type="button" class="osiris-chip" data-cohort="energy_and_utilities">Energy / Util</button>
+                                    <button type="button" class="osiris-chip" data-cohort="industrials_and_defense">Industrials</button>
+                                </div>
+                                <ul id="osiris-combobox-list" class="osiris-combobox-list" role="listbox"></ul>
+                            </div>
+                        </div>
+
+                        <!-- Hidden source of truth; existing osiris.js reads .value and listens for 'change' here. -->
+                        <select id="osiris-ticker-select" class="osiris-input" style="display: none;" aria-hidden="true" tabindex="-1">
                             <optgroup label="ENERGY & UTILITIES // OU MEAN-REVERSION">
                                 <option value="2222.SR">2222.SR - Saudi Aramco</option>
                                 <option value="9501.T">9501.T - Tokyo Electric Power</option>

@@ -111,6 +111,223 @@ class OsirisOrchestrator {
                 this.runSimulation(tickerSelect.value);
             });
         }
+
+        // Wrap the (now hidden) <select> in a searchable combobox.
+        this.initCombobox();
+    }
+
+    /**
+     * Searchable ticker combobox. Items are sourced from the hidden
+     * <select>'s options; selection writes back to the <select>.value and
+     * dispatches a 'change' event so the existing syncUIState handler fires
+     * automatically — no change to the simulation pipeline.
+     *
+     * Match priority: exact ticker > ticker prefix > name-word prefix >
+     * ticker substring > name substring.
+     */
+    initCombobox() {
+        const combobox = document.getElementById('osiris-ticker-combobox');
+        const input = document.getElementById('osiris-combobox-input');
+        const panel = document.getElementById('osiris-combobox-panel');
+        const list = document.getElementById('osiris-combobox-list');
+        const chips = combobox ? combobox.querySelectorAll('.osiris-chip') : [];
+        const hiddenSelect = document.getElementById('osiris-ticker-select');
+        if (!combobox || !input || !panel || !list || !hiddenSelect) return;
+
+        const cohortMap = {
+            'ENERGY & UTILITIES // OU MEAN-REVERSION':
+                { key: 'energy_and_utilities', display: 'Energy/Util' },
+            'INDUSTRIALS & DEFENSE // GBM + POISSON JUMPS':
+                { key: 'industrials_and_defense', display: 'Industrials' }
+        };
+
+        const items = [];
+        Array.from(hiddenSelect.querySelectorAll('optgroup')).forEach(group => {
+            const meta = cohortMap[group.label] || { key: 'unknown', display: group.label };
+            Array.from(group.querySelectorAll('option')).forEach(opt => {
+                const text = opt.textContent.trim();
+                const sep = text.indexOf(' - ');
+                items.push({
+                    symbol: opt.value,
+                    ticker: sep > -1 ? text.slice(0, sep).trim() : opt.value,
+                    name: sep > -1 ? text.slice(sep + 3).trim() : '',
+                    cohort: meta.key,
+                    cohortDisplay: meta.display
+                });
+            });
+        });
+
+        let activeCohort = 'all';
+        let activeIndex = 0;
+        let currentResults = [];
+        let justSelected = false;
+
+        const escapeHtml = (s) => s.replace(/[&<>"']/g, c =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        function rankMatch(item, q) {
+            const t = item.ticker.toLowerCase();
+            const n = item.name.toLowerCase();
+            if (t === q) return 100;
+            if (t.startsWith(q)) return 80;
+            const words = n.split(/[\s\-,&]+/).filter(Boolean);
+            if (words.some(w => w.startsWith(q))) return 60;
+            if (t.includes(q)) return 40;
+            if (n.includes(q)) return 20;
+            return -1;
+        }
+
+        function compute() {
+            const raw = input.value.trim();
+            const display = hiddenSelect.value
+                ? items.find(i => i.symbol === hiddenSelect.value)
+                : null;
+            // Treat the input as a fresh query unless it matches the current
+            // selection display verbatim (which means the user hasn't typed yet).
+            const isCurrentDisplay = display && raw === `${display.ticker} - ${display.name}`;
+            const q = isCurrentDisplay ? '' : raw.toLowerCase();
+
+            let pool = activeCohort === 'all'
+                ? items
+                : items.filter(i => i.cohort === activeCohort);
+
+            if (!q) {
+                currentResults = pool.slice().sort((a, b) => a.ticker.localeCompare(b.ticker));
+            } else {
+                currentResults = pool
+                    .map(i => ({ item: i, r: rankMatch(i, q) }))
+                    .filter(x => x.r >= 0)
+                    .sort((a, b) => b.r - a.r || a.item.ticker.localeCompare(b.item.ticker))
+                    .map(x => x.item);
+            }
+            activeIndex = 0;
+            render();
+        }
+
+        function render() {
+            list.innerHTML = '';
+            if (currentResults.length === 0) {
+                const empty = document.createElement('li');
+                empty.className = 'osiris-combobox-empty';
+                empty.textContent = 'No tickers match';
+                list.appendChild(empty);
+                return;
+            }
+            currentResults.forEach((item, idx) => {
+                const li = document.createElement('li');
+                li.className = 'osiris-combobox-item' + (idx === activeIndex ? ' is-active' : '');
+                li.setAttribute('role', 'option');
+                li.setAttribute('data-symbol', item.symbol);
+                li.innerHTML = `
+                    <span class="osiris-combobox-item-ticker">${escapeHtml(item.ticker)}</span>
+                    <span class="osiris-combobox-item-name">${escapeHtml(item.name)}</span>
+                    <span class="osiris-combobox-item-cohort">${escapeHtml(item.cohortDisplay)}</span>
+                `;
+                li.addEventListener('mouseenter', () => {
+                    activeIndex = idx;
+                    updateActiveStyling();
+                });
+                // mousedown (not click) so we beat the input's blur handler
+                li.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    selectItem(item);
+                });
+                list.appendChild(li);
+            });
+        }
+
+        function updateActiveStyling() {
+            Array.from(list.children).forEach((el, idx) => {
+                if (el.classList) el.classList.toggle('is-active', idx === activeIndex);
+            });
+            const active = list.children[activeIndex];
+            if (active && active.scrollIntoView) {
+                active.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function openPanel() {
+            panel.hidden = false;
+            combobox.classList.add('is-open');
+            input.setAttribute('aria-expanded', 'true');
+            compute();
+        }
+
+        function closePanel(restore = true) {
+            panel.hidden = true;
+            combobox.classList.remove('is-open');
+            input.setAttribute('aria-expanded', 'false');
+            if (restore && !justSelected && hiddenSelect.value) {
+                const cur = items.find(i => i.symbol === hiddenSelect.value);
+                if (cur) input.value = `${cur.ticker} - ${cur.name}`;
+            }
+            justSelected = false;
+        }
+
+        function selectItem(item) {
+            justSelected = true;
+            input.value = `${item.ticker} - ${item.name}`;
+            if (hiddenSelect.value !== item.symbol) {
+                hiddenSelect.value = item.symbol;
+                hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            closePanel(false);
+            input.blur();
+        }
+
+        // Prefill with current selection (or first option if none).
+        const initial = hiddenSelect.value
+            ? items.find(i => i.symbol === hiddenSelect.value)
+            : items[0];
+        if (initial) {
+            input.value = `${initial.ticker} - ${initial.name}`;
+            if (!hiddenSelect.value) hiddenSelect.value = initial.symbol;
+        }
+
+        input.addEventListener('focus', () => { openPanel(); input.select(); });
+        input.addEventListener('click', openPanel);
+        input.addEventListener('input', compute);
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (panel.hidden) { openPanel(); return; }
+                if (activeIndex < currentResults.length - 1) {
+                    activeIndex++;
+                    updateActiveStyling();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (activeIndex > 0) {
+                    activeIndex--;
+                    updateActiveStyling();
+                }
+            } else if (e.key === 'Enter') {
+                if (!panel.hidden && currentResults[activeIndex]) {
+                    e.preventDefault();
+                    selectItem(currentResults[activeIndex]);
+                }
+            } else if (e.key === 'Escape') {
+                closePanel();
+                input.blur();
+            }
+        });
+
+        chips.forEach(chip => {
+            chip.addEventListener('mousedown', (e) => {
+                // mousedown prevents input blur on chip click
+                e.preventDefault();
+                chips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                activeCohort = chip.getAttribute('data-cohort');
+                compute();
+                input.focus();
+            });
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            if (!combobox.contains(e.target) && !panel.hidden) closePanel();
+        });
     }
 
     syncUIState(tickerSymbol) {
