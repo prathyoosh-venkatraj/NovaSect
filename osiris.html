@@ -89,6 +89,44 @@
             box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
         }
 
+        /* Primary CTA — the simulation trigger. Visually dominant so the user
+           knows where the action is, with a gentle pulse to draw the eye. */
+        .osiris-btn-primary {
+            background: rgba(0, 255, 0, 0.18);
+            border: 2px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 12px 28px;
+            font-size: 0.95em;
+            letter-spacing: 2.5px;
+            box-shadow: 0 0 14px rgba(0, 255, 0, 0.35),
+                        inset 0 0 10px rgba(0, 255, 0, 0.08);
+            animation: osiris-primary-pulse 2.4s ease-in-out infinite;
+            text-shadow: 0 0 6px rgba(0, 255, 0, 0.4);
+        }
+
+        .osiris-btn-primary:hover {
+            background: rgba(0, 255, 0, 0.28);
+            box-shadow: 0 0 24px rgba(0, 255, 0, 0.6),
+                        inset 0 0 14px rgba(0, 255, 0, 0.15);
+            animation-play-state: paused;
+        }
+
+        .osiris-btn-primary:active {
+            transform: translateY(1px);
+            background: rgba(0, 255, 0, 0.35);
+        }
+
+        @keyframes osiris-primary-pulse {
+            0%, 100% {
+                box-shadow: 0 0 14px rgba(0, 255, 0, 0.35),
+                            inset 0 0 10px rgba(0, 255, 0, 0.08);
+            }
+            50% {
+                box-shadow: 0 0 22px rgba(0, 255, 0, 0.55),
+                            inset 0 0 14px rgba(0, 255, 0, 0.14);
+            }
+        }
+
         .time-pill.active {
             background: rgba(0, 255, 0, 0.2);
             box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
@@ -258,7 +296,7 @@
                             </optgroup>
                         </select>
                     </div>
-                    <button id="osiris-trigger-btn" class="osiris-btn" style="height: 40px;">INITIATE SIMULATION</button>
+                    <button id="osiris-trigger-btn" class="osiris-btn osiris-btn-primary" style="height: 44px;">▶ INITIATE SIMULATION</button>
                 </div>
 
                 <div id="osiris-metadata-readout" style="font-family: monospace; color: rgba(0, 200, 255, 0.8); font-size: 0.85em; margin-bottom: 20px; letter-spacing: 1px;">

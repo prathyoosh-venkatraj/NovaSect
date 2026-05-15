@@ -62,29 +62,27 @@ class OsirisOrchestrator {
 
         const timePills = document.querySelectorAll('.time-pill');
         const customDaysInput = document.getElementById('osiris-custom-days');
-        const volatilityRegime = document.getElementById('osiris-volatility-regime');
-        const operationalShock = document.getElementById('osiris-operational-shock');
+        // volatilityRegime / operationalShock are read directly inside
+        // runSimulation via getElementById — no need to bind locally.
 
         sliderVol.addEventListener('input', (e) => valVol.innerText = e.target.value);
         sliderPhysics.addEventListener('input', (e) => valPhysics.innerText = e.target.value);
         sliderHorizon.addEventListener('input', (e) => valHorizon.innerText = e.target.value);
 
-        let debounceTimer = null;
-        const triggerSimulationDebounced = () => {
-            if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                this.runSimulation(tickerSelect.value);
-            }, 150);
-        };
+        // Controls only set state; the simulation fires exclusively on the
+        // INITIATE SIMULATION button click. Previously six different controls
+        // auto-triggered simulations on change — surprising UX, especially
+        // for the time-horizon pills which fire mid-deliberation.
 
+        let syncDebounceTimer = null;
         tickerSelect.addEventListener('change', (e) => {
-            if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
+            if (syncDebounceTimer) clearTimeout(syncDebounceTimer);
+            syncDebounceTimer = setTimeout(() => {
                 this.syncUIState(e.target.value);
             }, 150);
         });
 
-        // Phase 1 Events
+        // Time horizon controls
         timePills.forEach(pill => {
             pill.addEventListener('click', (e) => {
                 timePills.forEach(p => p.classList.remove('active'));
@@ -93,27 +91,20 @@ class OsirisOrchestrator {
                 customDaysInput.value = days;
                 sliderHorizon.value = days;
                 valHorizon.innerText = days;
-                triggerSimulationDebounced();
             });
         });
 
         customDaysInput.addEventListener('input', (e) => {
             timePills.forEach(p => p.classList.remove('active'));
-            let val = parseInt(e.target.value, 10);
+            const val = parseInt(e.target.value, 10);
             if (!isNaN(val)) {
                 sliderHorizon.value = val;
                 valHorizon.innerText = val;
-                triggerSimulationDebounced();
             }
         });
 
-        // Phase 2 Events
-        volatilityRegime.addEventListener('change', triggerSimulationDebounced);
-        operationalShock.addEventListener('change', triggerSimulationDebounced);
-
-        // Raw slider overrides
-        sliderVol.addEventListener('change', triggerSimulationDebounced);
-        sliderPhysics.addEventListener('change', triggerSimulationDebounced);
+        // Regime / shock / raw slider overrides — state only.
+        // (No simulation auto-trigger; user must click the button.)
 
         if (triggerBtn) {
             triggerBtn.addEventListener('click', () => {
