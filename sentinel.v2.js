@@ -64,7 +64,17 @@ const COMPANIES = [
     { ticker: 'RR.L', name: 'Rolls-Royce', sector: 'Industrials', type: 'HY', rating: 'HY', region: 'EU', country: 'UK', base_rate_type: 'GILT', baseSpread: 380, marketBeta: 1.5, sectorBeta: 1.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
     { ticker: 'VOW3.DE', name: 'Volkswagen', sector: 'Industrials', type: 'IG', rating: 'BBB', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 170, marketBeta: 1.2, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
     { ticker: 'SIE.DE', name: 'Siemens AG', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 115, marketBeta: 0.9, sectorBeta: 0.8, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
-    { ticker: 'DTE.DE', name: 'Deutsche Post', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 125, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' }
+    { ticker: 'DHL.DE', name: 'DHL Group', sector: 'Industrials', type: 'IG', rating: 'A', region: 'EU', country: 'DE', base_rate_type: 'BUND', baseSpread: 125, marketBeta: 0.8, sectorBeta: 0.9, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    // === v1.6 Global Diversification (Energy) — added 2026-05 ===
+    // State-owned EM (PBR, 2222.SR), EM growth (RELIANCE.NS), DM mid-caps
+    // (REP.MC, DVN, FANG), APAC LNG pure-play (WDS.AX).
+    { ticker: 'PBR', name: 'Petrobras', sector: 'Energy', type: 'HY', rating: 'HY', region: 'EM', country: 'BR', base_rate_type: 'UST', baseSpread: 220, marketBeta: 1.4, sectorBeta: 1.5, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: '2222.SR', name: 'Saudi Aramco', sector: 'Energy', type: 'IG', rating: 'A', region: 'ME', country: 'SA', base_rate_type: 'UST', baseSpread: 100, marketBeta: 0.6, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'RELIANCE.NS', name: 'Reliance Industries', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'EM', country: 'IN', base_rate_type: 'UST', baseSpread: 150, marketBeta: 1.1, sectorBeta: 1.0, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'WDS.AX', name: 'Woodside Energy', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'APAC', country: 'AU', base_rate_type: 'UST', baseSpread: 140, marketBeta: 1.1, sectorBeta: 1.2, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'REP.MC', name: 'Repsol', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'EU', country: 'ES', base_rate_type: 'BUND', baseSpread: 150, marketBeta: 1.0, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'DVN', name: 'Devon Energy', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 175, marketBeta: 1.3, sectorBeta: 1.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' },
+    { ticker: 'FANG', name: 'Diamondback Energy', sector: 'Energy', type: 'IG', rating: 'BBB', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 185, marketBeta: 1.3, sectorBeta: 1.4, residual: 0, lastUpdated: 0, lastVerified: '2025-01-01' }
 ];
 
 // Configuration
@@ -75,7 +85,7 @@ const BATCH_SIZE = 5;
 const SLOW_REFRESH_MS = 60000;
 const FAST_REFRESH_MS = 5000;
 
-const SOVEREIGN_SPREADS = { 'US': 0, 'DE': 0, 'NO': 45, 'ES': 80, 'IT': 145, 'UK': 0 };
+const SOVEREIGN_SPREADS = { 'US': 0, 'DE': 0, 'FR': 0, 'NO': 45, 'ES': 80, 'IT': 145, 'UK': 0, 'SE': 0, 'AU': 0, 'JP': 0, 'SA': 100, 'BR': 250, 'IN': 250 };
 const SENIORITY_MULTIPLIERS = { 'Secured': 0.85, 'Unsecured': 1.0, 'Subordinated': 1.5 };
 
 // Per-rating baseSpread sanity bands (bps). Loose enough to admit
