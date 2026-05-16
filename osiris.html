@@ -335,43 +335,33 @@
         }
 
         /* === Ambient background layers ========================================
-           Three coordinated layers behind <main> that texture the dark canvas
-           without interfering with any interaction or layout. Order from back
-           to front (all behind main):
-             1. .osiris-bg-grid    — static dotted grid (CSS-only)
-             2. .osiris-bg-paths   — animated stochastic paths (canvas)
-             3. .osiris-bg-vignette — radial darkening at the edges */
-        .osiris-bg-grid,
-        .osiris-bg-vignette,
-        .osiris-bg-paths {
+           Two layers behind <main>, both pointer-events:none:
+             1. .osiris-bg-matrix   — falling-character animation (canvas)
+             2. .osiris-bg-vignette — radial darkening so the corners frame the
+                                      controls panel rather than competing.
+           Vertical falling chars deliberately avoid any horizontal-path motion
+           so they don't visually compete with the simulation graph itself. */
+        .osiris-bg-matrix,
+        .osiris-bg-vignette {
             position: fixed;
             inset: 0;
             pointer-events: none;
-        }
-        .osiris-bg-grid {
             z-index: 0;
-            background-image:
-                radial-gradient(circle, rgba(57, 255, 20, 0.05) 1px, transparent 1.5px);
-            background-size: 56px 56px;
-            opacity: 0.85;
+        }
+        .osiris-bg-matrix {
+            opacity: 0.55;
         }
         .osiris-bg-vignette {
-            z-index: 0;
             background: radial-gradient(ellipse 75% 55% at 50% 42%,
                                         transparent 0%,
-                                        rgba(0, 0, 0, 0.55) 95%);
-        }
-        .osiris-bg-paths {
-            z-index: 0;
-            opacity: 0.85;
+                                        rgba(0, 0, 0, 0.6) 95%);
         }
         main {
             position: relative;
             z-index: 1;
         }
-        /* Respect users who've opted out of motion. */
         @media (prefers-reduced-motion: reduce) {
-            .osiris-bg-paths { display: none; }
+            .osiris-bg-matrix { display: none; }
         }
 
         /* === Mobile layout (≤768px) ============================================
@@ -379,13 +369,10 @@
            overriding them from CSS requires !important. Scoped strictly to the
            viewport breakpoint — desktop behaviour is unchanged. */
         @media (max-width: 768px) {
-            /* Skip the animated path canvas on mobile (battery + already-busy
-               controls panel). Keep the grid at slightly lower density. */
-            .osiris-bg-paths { display: none; }
-            .osiris-bg-grid {
-                background-size: 40px 40px;
-                opacity: 0.6;
-            }
+            /* Skip the matrix-rain canvas on mobile (battery + clutter). The
+               vignette stays — it costs nothing and the dark edges still help
+               focus the controls. */
+            .osiris-bg-matrix { display: none; }
             .osiris-container {
                 padding: 24px 12px;
                 gap: 16px;
@@ -490,8 +477,7 @@
     </header>
 
     <!-- Ambient background layers (purely decorative, pointer-events:none) -->
-    <div class="osiris-bg-grid" aria-hidden="true"></div>
-    <canvas class="osiris-bg-paths" aria-hidden="true"></canvas>
+    <canvas class="osiris-bg-matrix" aria-hidden="true"></canvas>
     <div class="osiris-bg-vignette" aria-hidden="true"></div>
 
     <main>
@@ -703,21 +689,28 @@
         </section>
     </main>
 
-    <!-- Ambient background: sparse stochastic paths drifting across the viewport.
-         ~10 concurrent Brownian walks with rare Poisson jumps; visually echoes
-         the Monte Carlo simulation the page runs. Disabled on mobile and when
+    <!-- Ambient background: classic Matrix-style falling characters. Vertical
+         motion deliberately distinct from any chart visualisation so it cannot
+         compete with the simulation graph below. Disabled on mobile and when
          the user prefers reduced motion. -->
     <script>
         (() => {
-            const canvas = document.querySelector('.osiris-bg-paths');
+            const canvas = document.querySelector('.osiris-bg-matrix');
             if (!canvas) return;
             if (window.innerWidth < 769) return;
             if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
             const ctx = canvas.getContext('2d');
+            const COL_WIDTH = 22;
+            const FONT_SIZE = 14;
+            // Mix of katakana (classic Matrix glyphs), Latin, digits, and a few
+            // symbols. Pure code feel — no Greek letters that might read as
+            // physics notation and pull the eye toward "graph meaning".
+            const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789{}<>/*+-';
             let cssW = 0, cssH = 0;
+            let columns = [];
 
-            function resize() {
+            function setup() {
                 const dpr = Math.min(window.devicePixelRatio || 1, 2);
                 cssW = window.innerWidth;
                 cssH = window.innerHeight;
@@ -726,77 +719,50 @@
                 canvas.style.width = cssW + 'px';
                 canvas.style.height = cssH + 'px';
                 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            }
-            resize();
-            window.addEventListener('resize', resize);
-
-            const MAX_PATHS = 11;
-            const PATH_LIFE = 11000;
-            const FADE = 1800;
-            const paths = [];
-            let last = performance.now();
-            let spawnTimer = 0;
-
-            function spawn(prebornAge = 0) {
-                paths.push({
-                    x: -40 + (prebornAge > 0 ? Math.random() * cssW : 0),
-                    y: Math.random() * cssH,
-                    drift: (Math.random() - 0.5) * 0.4,
-                    sigma: 0.5 + Math.random() * 1.4,
-                    speed: 0.45 + Math.random() * 1.3,
-                    born: performance.now() - prebornAge,
-                    jumpy: Math.random() < 0.18,
-                    points: []
-                });
-            }
-            // Pre-seed so the first second isn't visually empty.
-            for (let i = 0; i < 5; i++) spawn(Math.random() * 4000);
-
-            function frame(now) {
-                const dt = Math.min(now - last, 50);
-                last = now;
-                spawnTimer -= dt;
-                if (paths.length < MAX_PATHS && spawnTimer <= 0) {
-                    spawn();
-                    spawnTimer = 650 + Math.random() * 900;
-                }
-                // Slight trailing fade rather than hard clear — gives paths a
-                // ghosted-tail feel without compounding noise.
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.045)';
+                ctx.font = FONT_SIZE + 'px monospace';
+                ctx.textBaseline = 'top';
+                // Start the canvas opaque-black so the trailing-fade
+                // technique works immediately on the first frame.
+                ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, cssW, cssH);
 
-                for (let i = paths.length - 1; i >= 0; i--) {
-                    const p = paths[i];
-                    const age = now - p.born;
-                    p.x += p.speed;
-                    let jitter = (Math.random() - 0.5) * p.sigma * 2;
-                    // Rare Poisson jump for the ~18% of paths flagged "jumpy",
-                    // mirroring the GBM+jump cohort.
-                    if (p.jumpy && Math.random() < 0.005) {
-                        jitter += (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 14);
-                    }
-                    p.y += p.drift + jitter;
-                    p.points.push(p.x, p.y);
-                    if (p.points.length > 320) p.points.splice(0, 4);
+                const cols = Math.ceil(cssW / COL_WIDTH);
+                columns = [];
+                for (let i = 0; i < cols; i++) {
+                    columns.push({
+                        // Start each column at a random vertical offset so
+                        // they don't all begin in sync at the top.
+                        y: Math.floor(Math.random() * (cssH / FONT_SIZE)),
+                        next: 0,
+                        // Per-column cadence so the rain feels organic, not
+                        // a uniform marching band.
+                        cadence: 80 + Math.random() * 180
+                    });
+                }
+            }
+            setup();
+            window.addEventListener('resize', setup);
 
-                    let alpha = 0.13;
-                    if (age < FADE) alpha *= age / FADE;
-                    else if (age > PATH_LIFE - FADE) alpha *= (PATH_LIFE - age) / FADE;
+            function frame(now) {
+                // Trailing fade — overlay slight black each frame so existing
+                // characters fade out smoothly behind the falling head.
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.085)';
+                ctx.fillRect(0, 0, cssW, cssH);
+                ctx.fillStyle = 'rgba(120, 230, 120, 0.55)';
 
-                    if (alpha > 0 && p.points.length > 4) {
-                        ctx.strokeStyle = 'rgba(57, 255, 20, ' + alpha + ')';
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.moveTo(p.points[0], p.points[1]);
-                        for (let j = 2; j < p.points.length; j += 2) {
-                            ctx.lineTo(p.points[j], p.points[j + 1]);
-                        }
-                        ctx.stroke();
+                for (let i = 0; i < columns.length; i++) {
+                    const c = columns[i];
+                    if (now < c.next) continue;
+                    const ch = CHARS[Math.floor(Math.random() * CHARS.length)];
+                    ctx.fillText(ch, i * COL_WIDTH, c.y * FONT_SIZE);
+                    c.y += 1;
+                    // Once past the bottom, occasionally reset to the top so
+                    // columns stagger naturally over time.
+                    if (c.y * FONT_SIZE > cssH && Math.random() > 0.975) {
+                        c.y = 0;
+                        c.cadence = 80 + Math.random() * 180;
                     }
-
-                    if (age > PATH_LIFE || p.x > cssW + 60) {
-                        paths.splice(i, 1);
-                    }
+                    c.next = now + c.cadence;
                 }
                 requestAnimationFrame(frame);
             }
