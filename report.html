@@ -1994,13 +1994,21 @@
                         // UI Rendering Helper
                         const updateMultiplesUI = (price, isCached = false) => {
                             if (!price || !data.fundamentals) return;
-                            const trailingPE = data.fundamentals.trailingEPS ? (price / data.fundamentals.trailingEPS).toFixed(1) + 'x' : '--';
-                            const leadingPE = data.fundamentals.forwardEPS ? (price / data.fundamentals.forwardEPS).toFixed(1) + 'x' : '--';
-                            const priceFCF = data.fundamentals.fcfPerShare ? (price / data.fundamentals.fcfPerShare).toFixed(1) + 'x' : '--';
+                            const f = data.fundamentals;
 
-                            document.getElementById('val-trailing-pe').textContent = trailingPE;
-                            document.getElementById('val-leading-pe').textContent = leadingPE;
-                            document.getElementById('val-price-fcf').textContent = priceFCF;
+                            // Bloomberg/FactSet convention: a negative or zero
+                            // denominator produces 'N/M' (not meaningful), not a
+                            // misleading negative or infinite multiple. '--' is
+                            // reserved for genuinely missing inputs.
+                            const formatMultiple = (num, den) => {
+                                if (typeof num !== 'number' || typeof den !== 'number' || isNaN(num) || isNaN(den)) return '--';
+                                if (den <= 0) return 'N/M';
+                                return (num / den).toFixed(1) + 'x';
+                            };
+
+                            document.getElementById('val-trailing-pe').textContent = formatMultiple(price, f.trailingEPS);
+                            document.getElementById('val-leading-pe').textContent = formatMultiple(price, f.forwardEPS);
+                            document.getElementById('val-price-fcf').textContent = formatMultiple(price, f.fcfPerShare);
 
                             if (data.fundamentals.dividendAmount) {
                                 const liveYield = ((data.fundamentals.dividendAmount / price) * 100).toFixed(2) + '%';
