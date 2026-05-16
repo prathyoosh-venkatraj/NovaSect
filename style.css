@@ -1165,22 +1165,22 @@ body {
 }
 
 .promo-hdr {
+    /* Style matches .segments-heading (ENTER THE VAULT). Static — no
+       animated pulse and no hover-state override, so the heading does
+       not visually bleed into the adjacent section on hover. */
     font-family: var(--font-display);
     font-weight: 900;
-    font-size: 6.5rem;
-    color: #fff;
-    letter-spacing: 20px;
-    margin: 0;
+    font-size: 3rem;
     text-transform: uppercase;
+    letter-spacing: 4px;
+    margin: 0;
     line-height: 1;
-    /* Glow colour matches the text (white). Pulses gently at rest. */
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 30px rgba(255, 255, 255, 0.35);
-    animation: hdrGlow 4s ease-in-out infinite alternate;
-}
-
-@keyframes hdrGlow {
-    from { text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 30px rgba(255, 255, 255, 0.35); }
-    to   { text-shadow: 0 0 20px rgba(255, 255, 255, 0.95), 0 0 50px rgba(255, 255, 255, 0.6); }
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow:
+        0 0 3px rgba(255, 255, 255, 0.5),
+        0 0 8px rgba(57, 255, 20, 0.8),
+        0 0 15px rgba(57, 255, 20, 0.5),
+        0 0 30px rgba(57, 255, 20, 0.3);
 }
 
 .promo-desc {
@@ -1192,16 +1192,6 @@ body {
 
 .sentinel-promo-section:hover .mesh-robot-asset {
     opacity: 0.8; /* Subtle opacity increase without glow shadow */
-}
-
-.sentinel-promo-section:hover .promo-hdr {
-    /* No colour change — text stays white. Hover only intensifies the
-       white glow, in the same colour as the text. Pause the rest-state
-       pulse so the bright state holds steady while hovered. */
-    text-shadow: 0 0 22px rgba(255, 255, 255, 1),
-                 0 0 55px rgba(255, 255, 255, 0.75),
-                 0 0 100px rgba(255, 255, 255, 0.4);
-    animation: none;
 }
 
 @media (max-width: 768px) {
