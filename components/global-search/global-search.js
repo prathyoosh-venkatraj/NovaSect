@@ -120,10 +120,12 @@
        prominently — the cleanest way to make it the obvious primary
        affordance on phones. */
     .nav-links { gap: 0.85rem; }
-    .gs-wrap { margin-right: 0; flex: 1; max-width: 220px; }
+    /* Don't let the search wrap stretch to fill — keep a comfortable
+       gap between the logo and the search box. */
+    .gs-wrap { margin-right: 0; flex: 0 1 auto; max-width: 180px; }
     .gs-input-wrap {
-        width: 100%;
-        height: 36px;
+        width: 180px;
+        height: 34px;
         padding: 0 10px;
     }
     .gs-icon { font-size: 0.95em; margin-right: 7px; }
@@ -144,7 +146,8 @@
 }
 @media (max-width: 380px) {
     /* iPhone SE-class — search shrinks but stays visible. */
-    .gs-wrap { max-width: 160px; }
+    .gs-wrap { max-width: 150px; }
+    .gs-input-wrap { width: 150px; }
     .gs-panel { width: 280px; }
 }
 `;
