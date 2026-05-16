@@ -2360,16 +2360,37 @@
                         }
                     }
 
-                    // TradingView's free embed widget refuses to render certain
-                    // non-US exchanges even when their search API resolves them
-                    // ("This symbol is only available on TradingView"). For
-                    // those tickers we draw an in-house 1Y price line on a
-                    // canvas, using osirisIngestion's already-cached Yahoo data.
+                    // TradingView's free embed widget refuses to render most
+                    // non-US, non-major-EU exchanges even when their search
+                    // API resolves them ("This symbol is only available on
+                    // TradingView"). For those tickers we draw an in-house
+                    // 1Y price line on a canvas, using osirisIngestion's
+                    // already-cached Yahoo data.
+                    //
+                    // Empirically the free widget works for: NYSE / NASDAQ /
+                    // BME (Iberdrola, Naturgy, Repsol) / XETR (Rheinmetall,
+                    // RWE, E.ON, Volkswagen, Siemens, DHL) / LSE without a
+                    // trailing dot (Shell, SSE) — and is restricted for
+                    // basically everything else.
                     const RESTRICTED_TV_TICKERS = new Set([
+                        // Borsa Italiana
                         'MIL:ENI', 'MIL:ENEL', 'MIL:LDO',
+                        // Euronext Paris
                         'EURONEXT:ENGI', 'EURONEXT:AIR', 'EURONEXT:SAF', 'EURONEXT:HO',
+                        // Stockholm OMX
                         'OMXSTO:ATCO_A', 'OMXSTO:VOLV_B',
-                        'LSE:NG.', 'LSE:RR.'
+                        // LSE ordinary shares (trailing dot symbols)
+                        'LSE:NG.', 'LSE:RR.', 'LSE:BA.',
+                        // India NSE
+                        'NSE:RELIANCE', 'NSE:NTPC', 'NSE:LT',
+                        // Tokyo
+                        'TSE:9501', 'TSE:7011', 'TSE:6301',
+                        // Saudi
+                        'TADAWUL:2222',
+                        // Brazil
+                        'BMFBOVESPA:EMBJ3',
+                        // Australia
+                        'ASX:WDS', 'ASX:ORG'
                     ]);
 
                     if (data.ticker) {
