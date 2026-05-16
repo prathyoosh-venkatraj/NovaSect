@@ -631,13 +631,29 @@
                     osirisIngestion.getHistoricalData(yahoo).catch(() => null)
                 ]);
                 if (metrics) {
-                    setText('fv-price', fmtPrice(metrics.currentPrice));
+                    // Beta + div yield come from osirisIngestion (history-derived).
                     setText('fv-beta', typeof metrics.beta === 'number' ? metrics.beta.toFixed(2) : '—');
                     setText('fv-dy', typeof metrics.dividendYield === 'number' && metrics.dividendYield > 0
                         ? (metrics.dividendYield * 100).toFixed(2) + '%' : '—');
-                    // Stash for the hand-curated EV/EBITDA + P/B math
-                    // (needs live price × hand-curated shares).
-                    if (typeof metrics.currentPrice === 'number') window._briefLivePrice = metrics.currentPrice;
+                    // NOTE: currentPrice is intentionally NOT taken from osirisIngestion
+                    // here — the history endpoint has a 24h edge cache, so its
+                    // currentPrice can lag a full trading day. We use the same
+                    // 1h-cached default-mode proxy as the FinVault report below.
+                }
+
+                // ── Live price — shared with the FinVault report page ──
+                // Same /api/yahoo-proxy (default mode, 1h edge cache),
+                // same localStorage key (`novasect_cache_<SYMBOL>`), so
+                // both pages always read identical price → identical
+                // multiples math.
+                const livePrice = await fetchSharedLivePrice(yahoo);
+                if (typeof livePrice === 'number' && livePrice > 0) {
+                    setText('fv-price', fmtPrice(livePrice));
+                    window._briefLivePrice = livePrice;
+                } else if (metrics && typeof metrics.currentPrice === 'number') {
+                    // Fall back to osirisIngestion's value if shared fetch failed.
+                    setText('fv-price', fmtPrice(metrics.currentPrice));
+                    window._briefLivePrice = metrics.currentPrice;
                 }
                 if (Array.isArray(history) && history.length > 0) {
                     let mn = Infinity, mx = -Infinity;
@@ -757,6 +773,40 @@
 
         function isPresent(v) {
             return typeof v === 'number' && isFinite(v) && v !== 0;
+        }
+
+        // Live-price fetch that mirrors report.html's path exactly — same
+        // /api/yahoo-proxy?symbol=X endpoint (1h edge cache, returns
+        // meta.regularMarketPrice), same localStorage cache key, same TTL.
+        // Result: brief.html and report.html for the same ticker always
+        // read identical prices, so the P/E / EV / P/B math matches to
+        // the decimal regardless of which page was visited first.
+        async function fetchSharedLivePrice(yahoo) {
+            const cacheKey = 'novasect_cache_' + yahoo;
+            let cached = null;
+            try { cached = JSON.parse(localStorage.getItem(cacheKey) || 'null'); } catch (e) { /* ignore */ }
+            const fresh = cached && typeof cached.price === 'number' &&
+                          (Date.now() - cached.timestamp < 60 * 60 * 1000);
+            if (fresh) return cached.price;
+
+            try {
+                const res = await fetch('/api/yahoo-proxy?symbol=' + encodeURIComponent(yahoo));
+                if (!res.ok) throw new Error('yahoo-proxy ' + res.status);
+                const data = await res.json();
+                if (data && typeof data.price === 'number') {
+                    try {
+                        localStorage.setItem(cacheKey, JSON.stringify({
+                            price: data.price,
+                            timestamp: Date.now()
+                        }));
+                    } catch (e) { /* quota or private-mode — fine */ }
+                    return data.price;
+                }
+            } catch (e) {
+                console.warn('[Brief] shared live price fetch failed', e);
+            }
+            // Fall back to stale cache if a fresh fetch failed.
+            return cached && typeof cached.price === 'number' ? cached.price : null;
         }
 
         async function populateOsirisLive(entry) {
