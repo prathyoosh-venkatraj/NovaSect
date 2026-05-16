@@ -114,34 +114,39 @@
     font-size: 0.75rem;
 }
 @media (max-width: 768px) {
-    /* On mobile, drop the search onto its own row below Tools + About
-       us. Cleaner than squeezing four nav items into a single line at
-       a 360-380px viewport. */
-    .nav-links {
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        row-gap: 0.55rem;
-        column-gap: 1.25rem;
-    }
-    .gs-wrap {
-        order: 99;            /* forces search to the wrap position (new row) */
-        width: 100%;
-        margin-right: 0;
-    }
+    /* Keep the search inline in its original position (left of Tools)
+       and shrink it to fit. Tighten the surrounding nav gap so all
+       four elements share a single row without overflowing. */
+    .nav-links { gap: 1rem; }
+    .gs-wrap { margin-right: 0; }
     .gs-input-wrap {
-        width: 100%;
-        height: 34px;
+        width: 108px;
+        height: 32px;
+        padding: 0 8px;
     }
+    .gs-icon { font-size: 0.85em; margin-right: 5px; }
+    .gs-input {
+        font-size: 0.72rem;
+        letter-spacing: 0.2px;
+    }
+    /* Result panel still needs room to be scannable, so it stays wider
+       than the input. Anchored to right edge so it doesn't overflow off
+       the right of the viewport. */
     .gs-panel {
-        width: 100%;
+        width: 280px;
         right: 0;
         max-height: 320px;
     }
-    .gs-input { font-size: 0.82rem; }
     .gs-item { grid-template-columns: 70px 1fr auto; padding: 7px 10px; }
     .gs-ticker { font-size: 0.78rem; }
     .gs-name { font-size: 0.74rem; }
     .gs-sector { font-size: 0.55rem; }
+}
+@media (max-width: 380px) {
+    /* Extra-narrow phones — shrink the placeholder visibility further
+       so Tools + About us aren't pushed off the right edge. */
+    .gs-input-wrap { width: 88px; padding: 0 6px; }
+    .gs-icon { display: none; }
 }
 `;
 
