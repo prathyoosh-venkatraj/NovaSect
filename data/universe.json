@@ -1,0 +1,3002 @@
+{
+  "_meta": {
+    "generated": "2026-05-16",
+    "generator": "scripts/build-universe.js",
+    "count": 83,
+    "sources": [
+      "sentinel.v2.js",
+      "physics-config.json",
+      "report.html"
+    ]
+  },
+  "tickers": {
+    "XOM": {
+      "ticker": "XOM",
+      "name": "Exxon Mobil",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "XOM",
+        "tradingView": "NYSE:XOM"
+      },
+      "finvault": {
+        "slug": "exxonmobil",
+        "industry": "Integrated Oil & Gas",
+        "pdfReady": true,
+        "reportUrl": "report.html?company=exxonmobil"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "AA",
+        "baseSpread": 125,
+        "marketBeta": 0.8,
+        "sectorBeta": 1.1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.23,
+        "creditRating": "AA",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "SHEL": {
+      "ticker": "SHEL",
+      "name": "Shell PLC",
+      "sector": "Energy",
+      "region": "EU",
+      "country": "UK",
+      "exchanges": {
+        "yahoo": "SHEL",
+        "tradingView": "NYSE:SHEL"
+      },
+      "finvault": {
+        "slug": "shel",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=shel"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 140,
+        "marketBeta": 0.9,
+        "sectorBeta": 1.2,
+        "baseRateType": "GILT",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "CVX": {
+      "ticker": "CVX",
+      "name": "Chevron Corp",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "CVX",
+        "tradingView": "NYSE:CVX"
+      },
+      "finvault": {
+        "slug": "chevron",
+        "industry": "Integrated Oil & Gas",
+        "pdfReady": true,
+        "reportUrl": "report.html?company=chevron"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "AA",
+        "baseSpread": 130,
+        "marketBeta": 0.7,
+        "sectorBeta": 1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.12,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.24,
+        "creditRating": "AA",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "IBE.MC": {
+      "ticker": "IBE.MC",
+      "name": "Iberdrola",
+      "sector": "Utilities",
+      "region": "EU",
+      "country": "ES",
+      "exchanges": {
+        "yahoo": "IBE.MC",
+        "tradingView": "BME:IBE"
+      },
+      "finvault": {
+        "slug": "iberdrola",
+        "industry": "Integrated Utilities & Renewable Energy",
+        "pdfReady": true,
+        "reportUrl": "report.html?company=iberdrola"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 110,
+        "marketBeta": 0.5,
+        "sectorBeta": 0.8,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.18,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.18,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "EQNR": {
+      "ticker": "EQNR",
+      "name": "Equinor",
+      "sector": "Energy",
+      "region": "EU",
+      "country": "NO",
+      "exchanges": {
+        "yahoo": "EQNR",
+        "tradingView": "NYSE:EQNR"
+      },
+      "finvault": {
+        "slug": "eqnr",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=eqnr"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "AA",
+        "baseSpread": 155,
+        "marketBeta": 1.1,
+        "sectorBeta": 1.4,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.24,
+        "creditRating": "AA",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "MPC": {
+      "ticker": "MPC",
+      "name": "Marathon Petroleum",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "MPC",
+        "tradingView": "NYSE:MPC"
+      },
+      "finvault": {
+        "slug": "mpc",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=mpc"
+      },
+      "sentinel": {
+        "type": "HY",
+        "rating": "HY",
+        "baseSpread": 360,
+        "marketBeta": 1.3,
+        "sectorBeta": 1.6,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.12,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.26,
+        "creditRating": "HY",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "LMT": {
+      "ticker": "LMT",
+      "name": "Lockheed Martin",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "LMT",
+        "tradingView": "NYSE:LMT"
+      },
+      "finvault": {
+        "slug": "lockheedmartin",
+        "industry": "Aerospace & Defense",
+        "pdfReady": true,
+        "reportUrl": "report.html?company=lockheedmartin"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 145,
+        "marketBeta": 0.6,
+        "sectorBeta": 0.4,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 4,
+        "jumpMu": 0.015,
+        "baselineVolatility": 0.21,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "LDO.MI": {
+      "ticker": "LDO.MI",
+      "name": "Leonardo SpA",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "IT",
+      "exchanges": {
+        "yahoo": "LDO.MI",
+        "tradingView": "MIL:LDO"
+      },
+      "finvault": {
+        "slug": "ldo-mi",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=ldo-mi"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 185,
+        "marketBeta": 0.8,
+        "sectorBeta": 0.9,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.02,
+        "baselineVolatility": 0.3,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "GD": {
+      "ticker": "GD",
+      "name": "General Dynamics",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "GD",
+        "tradingView": "NYSE:GD"
+      },
+      "finvault": {
+        "slug": "generaldynamics",
+        "industry": "Aerospace & Defense",
+        "pdfReady": true,
+        "reportUrl": "report.html?company=generaldynamics"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 135,
+        "marketBeta": 0.6,
+        "sectorBeta": 0.5,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 4,
+        "jumpMu": 0.015,
+        "baselineVolatility": 0.22,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "LHX": {
+      "ticker": "LHX",
+      "name": "L3Harris Tech",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "LHX",
+        "tradingView": "NYSE:LHX"
+      },
+      "finvault": {
+        "slug": "l3harris",
+        "industry": "Aerospace & Defense",
+        "pdfReady": true,
+        "reportUrl": "report.html?company=l3harris"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 165,
+        "marketBeta": 0.8,
+        "sectorBeta": 0.6,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 4,
+        "jumpMu": 0.014,
+        "baselineVolatility": 0.23,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "NOC": {
+      "ticker": "NOC",
+      "name": "Northrop Grumman",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "NOC",
+        "tradingView": "NYSE:NOC"
+      },
+      "finvault": {
+        "slug": "northropgrumman",
+        "industry": "Aerospace & Defense",
+        "pdfReady": true,
+        "reportUrl": "report.html?company=northropgrumman"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 140,
+        "marketBeta": 0.5,
+        "sectorBeta": 0.4,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 4,
+        "jumpMu": 0.015,
+        "baselineVolatility": 0.21,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "RTX": {
+      "ticker": "RTX",
+      "name": "RTX Corp",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "RTX",
+        "tradingView": "NYSE:RTX"
+      },
+      "finvault": {
+        "slug": "rtx",
+        "industry": "Aerospace & Defense",
+        "pdfReady": true,
+        "reportUrl": "report.html?company=rtx"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 175,
+        "marketBeta": 0.9,
+        "sectorBeta": 0.7,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 4,
+        "jumpMu": 0.014,
+        "baselineVolatility": 0.22,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "RHM.DE": {
+      "ticker": "RHM.DE",
+      "name": "Rheinmetall AG",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "DE",
+      "exchanges": {
+        "yahoo": "RHM.DE",
+        "tradingView": "XETR:RHM"
+      },
+      "finvault": {
+        "slug": "rheinmetall",
+        "industry": "Aerospace & Defense",
+        "pdfReady": true,
+        "reportUrl": "report.html?company=rheinmetall"
+      },
+      "sentinel": {
+        "type": "HY",
+        "rating": "HY",
+        "baseSpread": 380,
+        "marketBeta": 1.4,
+        "sectorBeta": 1.2,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 6,
+        "jumpMu": 0.025,
+        "baselineVolatility": 0.35,
+        "creditRating": "HY",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "BA": {
+      "ticker": "BA",
+      "name": "Boeing Co",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "BA",
+        "tradingView": "NYSE:BA"
+      },
+      "finvault": {
+        "slug": "ba",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=ba"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 210,
+        "marketBeta": 1.2,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 6,
+        "jumpMu": 0.008,
+        "baselineVolatility": 0.34,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "AIR.PA": {
+      "ticker": "AIR.PA",
+      "name": "Airbus SE",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "DE",
+      "exchanges": {
+        "yahoo": "AIR.PA",
+        "tradingView": "EURONEXT:AIR"
+      },
+      "finvault": {
+        "slug": "air-pa",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=air-pa"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 150,
+        "marketBeta": 0.9,
+        "sectorBeta": 0.8,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.012,
+        "baselineVolatility": 0.3,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "ENGI.PA": {
+      "ticker": "ENGI.PA",
+      "name": "Engie",
+      "sector": "Utilities",
+      "region": "EU",
+      "country": "IT",
+      "exchanges": {
+        "yahoo": "ENGI.PA",
+        "tradingView": "EURONEXT:ENGI"
+      },
+      "finvault": {
+        "slug": "engi-pa",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=engi-pa"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 120,
+        "marketBeta": 0.6,
+        "sectorBeta": 0.9,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.18,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.18,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "ENEL.MI": {
+      "ticker": "ENEL.MI",
+      "name": "Enel SpA",
+      "sector": "Utilities",
+      "region": "EU",
+      "country": "IT",
+      "exchanges": {
+        "yahoo": "ENEL.MI",
+        "tradingView": "MIL:ENEL"
+      },
+      "finvault": {
+        "slug": "enel-mi",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=enel-mi"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 135,
+        "marketBeta": 0.7,
+        "sectorBeta": 1,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.18,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.18,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "NEE": {
+      "ticker": "NEE",
+      "name": "NextEra Energy",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "NEE",
+        "tradingView": "NYSE:NEE"
+      },
+      "finvault": {
+        "slug": "nee",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=nee"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 115,
+        "marketBeta": 0.4,
+        "sectorBeta": 0.7,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "DUK": {
+      "ticker": "DUK",
+      "name": "Duke Energy",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "DUK",
+        "tradingView": "NYSE:DUK"
+      },
+      "finvault": {
+        "slug": "duk",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=duk"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 125,
+        "marketBeta": 0.5,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "BP": {
+      "ticker": "BP",
+      "name": "BP PLC",
+      "sector": "Energy",
+      "region": "EU",
+      "country": "UK",
+      "exchanges": {
+        "yahoo": "BP",
+        "tradingView": "NYSE:BP"
+      },
+      "finvault": {
+        "slug": "bp",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=bp"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 145,
+        "marketBeta": 0.9,
+        "sectorBeta": 1.1,
+        "baseRateType": "GILT",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "TTE": {
+      "ticker": "TTE",
+      "name": "TotalEnergies",
+      "sector": "Energy",
+      "region": "EU",
+      "country": "FR",
+      "exchanges": {
+        "yahoo": "TTE",
+        "tradingView": "NYSE:TTE"
+      },
+      "finvault": {
+        "slug": "tte",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=tte"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 135,
+        "marketBeta": 0.8,
+        "sectorBeta": 1,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "COP": {
+      "ticker": "COP",
+      "name": "ConocoPhillips",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "COP",
+        "tradingView": "NYSE:COP"
+      },
+      "finvault": {
+        "slug": "cop",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=cop"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 130,
+        "marketBeta": 0.9,
+        "sectorBeta": 1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "EOG": {
+      "ticker": "EOG",
+      "name": "EOG Resources",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "EOG",
+        "tradingView": "NYSE:EOG"
+      },
+      "finvault": {
+        "slug": "eog",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=eog"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 120,
+        "marketBeta": 1.1,
+        "sectorBeta": 1.2,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "SLB": {
+      "ticker": "SLB",
+      "name": "SLB",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "SLB",
+        "tradingView": "NYSE:SLB"
+      },
+      "finvault": {
+        "slug": "slb",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=slb"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 140,
+        "marketBeta": 1.2,
+        "sectorBeta": 1.3,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.1,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.3,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "HAL": {
+      "ticker": "HAL",
+      "name": "Halliburton",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "HAL",
+        "tradingView": "NYSE:HAL"
+      },
+      "finvault": {
+        "slug": "hal",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=hal"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 160,
+        "marketBeta": 1.3,
+        "sectorBeta": 1.4,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.1,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.3,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "BKR": {
+      "ticker": "BKR",
+      "name": "Baker Hughes",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "BKR",
+        "tradingView": "NASDAQ:BKR"
+      },
+      "finvault": {
+        "slug": "bkr",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=bkr"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 150,
+        "marketBeta": 1.1,
+        "sectorBeta": 1.2,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.1,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.3,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "VLO": {
+      "ticker": "VLO",
+      "name": "Valero Energy",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "VLO",
+        "tradingView": "NYSE:VLO"
+      },
+      "finvault": {
+        "slug": "vlo",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=vlo"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 170,
+        "marketBeta": 1,
+        "sectorBeta": 1.1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.12,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.26,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "PSX": {
+      "ticker": "PSX",
+      "name": "Phillips 66",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "PSX",
+        "tradingView": "NYSE:PSX"
+      },
+      "finvault": {
+        "slug": "psx",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=psx"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 165,
+        "marketBeta": 1,
+        "sectorBeta": 1.1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.12,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.26,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "OXY": {
+      "ticker": "OXY",
+      "name": "Occidental",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "OXY",
+        "tradingView": "NYSE:OXY"
+      },
+      "finvault": {
+        "slug": "oxy",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=oxy"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 190,
+        "marketBeta": 1.4,
+        "sectorBeta": 1.5,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.1,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.3,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "WMB": {
+      "ticker": "WMB",
+      "name": "Williams Cos",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "WMB",
+        "tradingView": "NYSE:WMB"
+      },
+      "finvault": {
+        "slug": "wmb",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=wmb"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 155,
+        "marketBeta": 0.8,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.15,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.22,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "KMI": {
+      "ticker": "KMI",
+      "name": "Kinder Morgan",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "KMI",
+        "tradingView": "NYSE:KMI"
+      },
+      "finvault": {
+        "slug": "kmi",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=kmi"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 145,
+        "marketBeta": 0.7,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.15,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.22,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "SO": {
+      "ticker": "SO",
+      "name": "Southern Co",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "SO",
+        "tradingView": "NYSE:SO"
+      },
+      "finvault": {
+        "slug": "so",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=so"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 130,
+        "marketBeta": 0.5,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "D": {
+      "ticker": "D",
+      "name": "Dominion Energy",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "D",
+        "tradingView": "NYSE:D"
+      },
+      "finvault": {
+        "slug": "d",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=d"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 140,
+        "marketBeta": 0.6,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "AEP": {
+      "ticker": "AEP",
+      "name": "American Electric",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "AEP",
+        "tradingView": "NASDAQ:AEP"
+      },
+      "finvault": {
+        "slug": "aep",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=aep"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 135,
+        "marketBeta": 0.5,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "EXC": {
+      "ticker": "EXC",
+      "name": "Exelon Corp",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "EXC",
+        "tradingView": "NASDAQ:EXC"
+      },
+      "finvault": {
+        "slug": "exc",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=exc"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 125,
+        "marketBeta": 0.6,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "SRE": {
+      "ticker": "SRE",
+      "name": "Sempra Energy",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "SRE",
+        "tradingView": "NYSE:SRE"
+      },
+      "finvault": {
+        "slug": "sre",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=sre"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 130,
+        "marketBeta": 0.6,
+        "sectorBeta": 0.7,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "XEL": {
+      "ticker": "XEL",
+      "name": "Xcel Energy",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "XEL",
+        "tradingView": "NASDAQ:XEL"
+      },
+      "finvault": {
+        "slug": "xel",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=xel"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 115,
+        "marketBeta": 0.5,
+        "sectorBeta": 0.7,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "PCG": {
+      "ticker": "PCG",
+      "name": "PG&E Corp",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "PCG",
+        "tradingView": "NYSE:PCG"
+      },
+      "finvault": {
+        "slug": "pcg",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=pcg"
+      },
+      "sentinel": {
+        "type": "HY",
+        "rating": "HY",
+        "baseSpread": 310,
+        "marketBeta": 0.9,
+        "sectorBeta": 1.2,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.1,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.28,
+        "creditRating": "HY",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "PEG": {
+      "ticker": "PEG",
+      "name": "Public Service",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "PEG",
+        "tradingView": "NYSE:PEG"
+      },
+      "finvault": {
+        "slug": "peg",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=peg"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 125,
+        "marketBeta": 0.5,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "WEC": {
+      "ticker": "WEC",
+      "name": "WEC Energy",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "WEC",
+        "tradingView": "NYSE:WEC"
+      },
+      "finvault": {
+        "slug": "wec",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=wec"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 110,
+        "marketBeta": 0.4,
+        "sectorBeta": 0.6,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "AWK": {
+      "ticker": "AWK",
+      "name": "American Water",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "AWK",
+        "tradingView": "NYSE:AWK"
+      },
+      "finvault": {
+        "slug": "awk",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=awk"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 105,
+        "marketBeta": 0.4,
+        "sectorBeta": 0.5,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "ENI.MI": {
+      "ticker": "ENI.MI",
+      "name": "Eni SpA",
+      "sector": "Energy",
+      "region": "EU",
+      "country": "IT",
+      "exchanges": {
+        "yahoo": "ENI.MI",
+        "tradingView": "MIL:ENI"
+      },
+      "finvault": {
+        "slug": "eni-mi",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=eni-mi"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 160,
+        "marketBeta": 0.9,
+        "sectorBeta": 1.1,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.24,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "NTGY.MC": {
+      "ticker": "NTGY.MC",
+      "name": "Naturgy",
+      "sector": "Utilities",
+      "region": "EU",
+      "country": "ES",
+      "exchanges": {
+        "yahoo": "NTGY.MC",
+        "tradingView": "BME:NTGY"
+      },
+      "finvault": {
+        "slug": "ntgy-mc",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=ntgy-mc"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 150,
+        "marketBeta": 0.7,
+        "sectorBeta": 1,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.18,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.18,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "SSE.L": {
+      "ticker": "SSE.L",
+      "name": "SSE PLC",
+      "sector": "Utilities",
+      "region": "EU",
+      "country": "UK",
+      "exchanges": {
+        "yahoo": "SSE.L",
+        "tradingView": "LSE:SSE"
+      },
+      "finvault": {
+        "slug": "sse-l",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=sse-l"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 140,
+        "marketBeta": 0.6,
+        "sectorBeta": 0.9,
+        "baseRateType": "GILT",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.18,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.18,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "NG.L": {
+      "ticker": "NG.L",
+      "name": "National Grid",
+      "sector": "Utilities",
+      "region": "EU",
+      "country": "UK",
+      "exchanges": {
+        "yahoo": "NG.L",
+        "tradingView": "LSE:NG."
+      },
+      "finvault": {
+        "slug": "ng-l",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=ng-l"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 130,
+        "marketBeta": 0.5,
+        "sectorBeta": 0.8,
+        "baseRateType": "GILT",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.18,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.18,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "GE": {
+      "ticker": "GE",
+      "name": "GE Aerospace",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "GE",
+        "tradingView": "NYSE:GE"
+      },
+      "finvault": {
+        "slug": "ge",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=ge"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 120,
+        "marketBeta": 1.1,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.014,
+        "baselineVolatility": 0.3,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "HON": {
+      "ticker": "HON",
+      "name": "Honeywell",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "HON",
+        "tradingView": "NASDAQ:HON"
+      },
+      "finvault": {
+        "slug": "hon",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=hon"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 110,
+        "marketBeta": 0.9,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.01,
+        "baselineVolatility": 0.22,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "UPS": {
+      "ticker": "UPS",
+      "name": "United Parcel",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "UPS",
+        "tradingView": "NYSE:UPS"
+      },
+      "finvault": {
+        "slug": "ups",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=ups"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 135,
+        "marketBeta": 0.8,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.008,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "UNP": {
+      "ticker": "UNP",
+      "name": "Union Pacific",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "UNP",
+        "tradingView": "NYSE:UNP"
+      },
+      "finvault": {
+        "slug": "unp",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=unp"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 125,
+        "marketBeta": 0.8,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.008,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "CAT": {
+      "ticker": "CAT",
+      "name": "Caterpillar",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "CAT",
+        "tradingView": "NYSE:CAT"
+      },
+      "finvault": {
+        "slug": "cat",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=cat"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 140,
+        "marketBeta": 1.1,
+        "sectorBeta": 1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 6,
+        "jumpMu": 0.01,
+        "baselineVolatility": 0.26,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "DE": {
+      "ticker": "DE",
+      "name": "Deere & Co",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "DE",
+        "tradingView": "NYSE:DE"
+      },
+      "finvault": {
+        "slug": "de",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=de"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 130,
+        "marketBeta": 1,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 6,
+        "jumpMu": 0.01,
+        "baselineVolatility": 0.25,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "LUV": {
+      "ticker": "LUV",
+      "name": "Southwest Air",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "LUV",
+        "tradingView": "NYSE:LUV"
+      },
+      "finvault": {
+        "slug": "luv",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=luv"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 180,
+        "marketBeta": 1.2,
+        "sectorBeta": 1.3,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 6,
+        "jumpMu": 0.008,
+        "baselineVolatility": 0.3,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "DAL": {
+      "ticker": "DAL",
+      "name": "Delta Air Lines",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "DAL",
+        "tradingView": "NYSE:DAL"
+      },
+      "finvault": {
+        "slug": "dal",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=dal"
+      },
+      "sentinel": {
+        "type": "HY",
+        "rating": "HY",
+        "baseSpread": 320,
+        "marketBeta": 1.4,
+        "sectorBeta": 1.5,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 7,
+        "jumpMu": 0.008,
+        "baselineVolatility": 0.32,
+        "creditRating": "HY",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "MMM": {
+      "ticker": "MMM",
+      "name": "3M Company",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "MMM",
+        "tradingView": "NYSE:MMM"
+      },
+      "finvault": {
+        "slug": "mmm",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=mmm"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 150,
+        "marketBeta": 0.9,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 6,
+        "jumpMu": 0.008,
+        "baselineVolatility": 0.24,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "EMR": {
+      "ticker": "EMR",
+      "name": "Emerson Electric",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "EMR",
+        "tradingView": "NYSE:EMR"
+      },
+      "finvault": {
+        "slug": "emr",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=emr"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 115,
+        "marketBeta": 0.8,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.01,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "ETN": {
+      "ticker": "ETN",
+      "name": "Eaton Corp",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "ETN",
+        "tradingView": "NYSE:ETN"
+      },
+      "finvault": {
+        "slug": "etn",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=etn"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 120,
+        "marketBeta": 0.9,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.01,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "SAF.PA": {
+      "ticker": "SAF.PA",
+      "name": "Safran SA",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "FR",
+      "exchanges": {
+        "yahoo": "SAF.PA",
+        "tradingView": "EURONEXT:SAF"
+      },
+      "finvault": {
+        "slug": "saf-pa",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=saf-pa"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 140,
+        "marketBeta": 1,
+        "sectorBeta": 0.9,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.018,
+        "baselineVolatility": 0.26,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "RR.L": {
+      "ticker": "RR.L",
+      "name": "Rolls-Royce",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "UK",
+      "exchanges": {
+        "yahoo": "RR.L",
+        "tradingView": "LSE:RR."
+      },
+      "finvault": {
+        "slug": "rr-l",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=rr-l"
+      },
+      "sentinel": {
+        "type": "HY",
+        "rating": "HY",
+        "baseSpread": 380,
+        "marketBeta": 1.5,
+        "sectorBeta": 1.4,
+        "baseRateType": "GILT",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.015,
+        "baselineVolatility": 0.36,
+        "creditRating": "HY",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "VOW3.DE": {
+      "ticker": "VOW3.DE",
+      "name": "Volkswagen",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "DE",
+      "exchanges": {
+        "yahoo": "VOW3.DE",
+        "tradingView": "XETR:VOW3"
+      },
+      "finvault": {
+        "slug": "vow3-de",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=vow3-de"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 170,
+        "marketBeta": 1.2,
+        "sectorBeta": 1.1,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 7,
+        "jumpMu": 0.008,
+        "baselineVolatility": 0.32,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "SIE.DE": {
+      "ticker": "SIE.DE",
+      "name": "Siemens AG",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "DE",
+      "exchanges": {
+        "yahoo": "SIE.DE",
+        "tradingView": "XETR:SIE"
+      },
+      "finvault": {
+        "slug": "sie-de",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=sie-de"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 115,
+        "marketBeta": 0.9,
+        "sectorBeta": 0.8,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.01,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "DHL.DE": {
+      "ticker": "DHL.DE",
+      "name": "DHL Group",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "DE",
+      "exchanges": {
+        "yahoo": "DHL.DE",
+        "tradingView": "XETR:DHL"
+      },
+      "finvault": {
+        "slug": "dhl-de",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=dhl-de"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 125,
+        "marketBeta": 0.8,
+        "sectorBeta": 0.9,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 6,
+        "jumpMu": 0.008,
+        "baselineVolatility": 0.28,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "PBR": {
+      "ticker": "PBR",
+      "name": "Petrobras",
+      "sector": "Energy",
+      "region": "EM",
+      "country": "BR",
+      "exchanges": {
+        "yahoo": "PBR",
+        "tradingView": "NYSE:PBR"
+      },
+      "finvault": {
+        "slug": "pbr",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=pbr"
+      },
+      "sentinel": {
+        "type": "HY",
+        "rating": "HY",
+        "baseSpread": 220,
+        "marketBeta": 1.4,
+        "sectorBeta": 1.5,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.1,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.32,
+        "creditRating": "HY",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "2222.SR": {
+      "ticker": "2222.SR",
+      "name": "Saudi Aramco",
+      "sector": "Energy",
+      "region": "ME",
+      "country": "SA",
+      "exchanges": {
+        "yahoo": "2222.SR",
+        "tradingView": "TADAWUL:2222"
+      },
+      "finvault": {
+        "slug": "2222-sr",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=2222-sr"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 100,
+        "marketBeta": 0.6,
+        "sectorBeta": 1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.15,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.22,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "RELIANCE.NS": {
+      "ticker": "RELIANCE.NS",
+      "name": "Reliance Industries",
+      "sector": "Energy",
+      "region": "EM",
+      "country": "IN",
+      "exchanges": {
+        "yahoo": "RELIANCE.NS",
+        "tradingView": "NSE:RELIANCE"
+      },
+      "finvault": {
+        "slug": "reliance-ns",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=reliance-ns"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 150,
+        "marketBeta": 1.1,
+        "sectorBeta": 1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.12,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.28,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "WDS.AX": {
+      "ticker": "WDS.AX",
+      "name": "Woodside Energy",
+      "sector": "Energy",
+      "region": "APAC",
+      "country": "AU",
+      "exchanges": {
+        "yahoo": "WDS.AX",
+        "tradingView": "ASX:WDS"
+      },
+      "finvault": {
+        "slug": "wds-ax",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=wds-ax"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 140,
+        "marketBeta": 1.1,
+        "sectorBeta": 1.2,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.26,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "REP.MC": {
+      "ticker": "REP.MC",
+      "name": "Repsol",
+      "sector": "Energy",
+      "region": "EU",
+      "country": "ES",
+      "exchanges": {
+        "yahoo": "REP.MC",
+        "tradingView": "BME:REP"
+      },
+      "finvault": {
+        "slug": "rep-mc",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=rep-mc"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 150,
+        "marketBeta": 1,
+        "sectorBeta": 1.1,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.13,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.24,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "DVN": {
+      "ticker": "DVN",
+      "name": "Devon Energy",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "DVN",
+        "tradingView": "NYSE:DVN"
+      },
+      "finvault": {
+        "slug": "dvn",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=dvn"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 175,
+        "marketBeta": 1.3,
+        "sectorBeta": 1.4,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.1,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.32,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "FANG": {
+      "ticker": "FANG",
+      "name": "Diamondback Energy",
+      "sector": "Energy",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "FANG",
+        "tradingView": "NASDAQ:FANG"
+      },
+      "finvault": {
+        "slug": "fang",
+        "industry": "Energy",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=fang"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 185,
+        "marketBeta": 1.3,
+        "sectorBeta": 1.4,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.1,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.32,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "9501.T": {
+      "ticker": "9501.T",
+      "name": "Tokyo Electric Power",
+      "sector": "Utilities",
+      "region": "APAC",
+      "country": "JP",
+      "exchanges": {
+        "yahoo": "9501.T",
+        "tradingView": "TSE:9501"
+      },
+      "finvault": {
+        "slug": "9501-t",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=9501-t"
+      },
+      "sentinel": {
+        "type": "HY",
+        "rating": "HY",
+        "baseSpread": 280,
+        "marketBeta": 1,
+        "sectorBeta": 1.3,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.1,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.32,
+        "creditRating": "HY",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "NTPC.NS": {
+      "ticker": "NTPC.NS",
+      "name": "NTPC",
+      "sector": "Utilities",
+      "region": "EM",
+      "country": "IN",
+      "exchanges": {
+        "yahoo": "NTPC.NS",
+        "tradingView": "NSE:NTPC"
+      },
+      "finvault": {
+        "slug": "ntpc-ns",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=ntpc-ns"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 120,
+        "marketBeta": 0.9,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.15,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.22,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "ORG.AX": {
+      "ticker": "ORG.AX",
+      "name": "Origin Energy",
+      "sector": "Utilities",
+      "region": "APAC",
+      "country": "AU",
+      "exchanges": {
+        "yahoo": "ORG.AX",
+        "tradingView": "ASX:ORG"
+      },
+      "finvault": {
+        "slug": "org-ax",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=org-ax"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 145,
+        "marketBeta": 0.8,
+        "sectorBeta": 1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.16,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.2,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "EOAN.DE": {
+      "ticker": "EOAN.DE",
+      "name": "E.ON",
+      "sector": "Utilities",
+      "region": "EU",
+      "country": "DE",
+      "exchanges": {
+        "yahoo": "EOAN.DE",
+        "tradingView": "XETR:EOAN"
+      },
+      "finvault": {
+        "slug": "eoan-de",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=eoan-de"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 130,
+        "marketBeta": 0.6,
+        "sectorBeta": 0.9,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.18,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.18,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "RWE.DE": {
+      "ticker": "RWE.DE",
+      "name": "RWE",
+      "sector": "Utilities",
+      "region": "EU",
+      "country": "DE",
+      "exchanges": {
+        "yahoo": "RWE.DE",
+        "tradingView": "XETR:RWE"
+      },
+      "finvault": {
+        "slug": "rwe-de",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=rwe-de"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 140,
+        "marketBeta": 0.7,
+        "sectorBeta": 1,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.16,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.2,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "ETR": {
+      "ticker": "ETR",
+      "name": "Entergy",
+      "sector": "Utilities",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "ETR",
+        "tradingView": "NYSE:ETR"
+      },
+      "finvault": {
+        "slug": "etr",
+        "industry": "Utilities",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=etr"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 135,
+        "marketBeta": 0.5,
+        "sectorBeta": 0.8,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "energy_and_utilities",
+        "physics": "Ornstein-Uhlenbeck",
+        "reversionSpeedTheta": 0.2,
+        "jumpFrequencyLambda": null,
+        "jumpMu": null,
+        "baselineVolatility": 0.15,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "BA.L": {
+      "ticker": "BA.L",
+      "name": "BAE Systems",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "UK",
+      "exchanges": {
+        "yahoo": "BA.L",
+        "tradingView": "LSE:BA."
+      },
+      "finvault": {
+        "slug": "ba-l",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=ba-l"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 155,
+        "marketBeta": 0.7,
+        "sectorBeta": 0.7,
+        "baseRateType": "GILT",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 4,
+        "jumpMu": 0.015,
+        "baselineVolatility": 0.22,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "HO.PA": {
+      "ticker": "HO.PA",
+      "name": "Thales",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "FR",
+      "exchanges": {
+        "yahoo": "HO.PA",
+        "tradingView": "EURONEXT:HO"
+      },
+      "finvault": {
+        "slug": "ho-pa",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=ho-pa"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 145,
+        "marketBeta": 0.8,
+        "sectorBeta": 0.8,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 4,
+        "jumpMu": 0.015,
+        "baselineVolatility": 0.24,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "7011.T": {
+      "ticker": "7011.T",
+      "name": "Mitsubishi Heavy",
+      "sector": "Industrials",
+      "region": "APAC",
+      "country": "JP",
+      "exchanges": {
+        "yahoo": "7011.T",
+        "tradingView": "TSE:7011"
+      },
+      "finvault": {
+        "slug": "7011-t",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=7011-t"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 160,
+        "marketBeta": 0.9,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.014,
+        "baselineVolatility": 0.28,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "6301.T": {
+      "ticker": "6301.T",
+      "name": "Komatsu",
+      "sector": "Industrials",
+      "region": "APAC",
+      "country": "JP",
+      "exchanges": {
+        "yahoo": "6301.T",
+        "tradingView": "TSE:6301"
+      },
+      "finvault": {
+        "slug": "6301-t",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=6301-t"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 130,
+        "marketBeta": 1,
+        "sectorBeta": 1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 6,
+        "jumpMu": 0.01,
+        "baselineVolatility": 0.26,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "LT.NS": {
+      "ticker": "LT.NS",
+      "name": "Larsen & Toubro",
+      "sector": "Industrials",
+      "region": "EM",
+      "country": "IN",
+      "exchanges": {
+        "yahoo": "LT.NS",
+        "tradingView": "NSE:LT"
+      },
+      "finvault": {
+        "slug": "lt-ns",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=lt-ns"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 130,
+        "marketBeta": 1.1,
+        "sectorBeta": 1,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.014,
+        "baselineVolatility": 0.26,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "EMBJ3.SA": {
+      "ticker": "EMBJ3.SA",
+      "name": "Embraer",
+      "sector": "Industrials",
+      "region": "EM",
+      "country": "BR",
+      "exchanges": {
+        "yahoo": "EMBJ3.SA",
+        "tradingView": "BMFBOVESPA:EMBJ3"
+      },
+      "finvault": {
+        "slug": "embj3-sa",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=embj3-sa"
+      },
+      "sentinel": {
+        "type": "HY",
+        "rating": "HY",
+        "baseSpread": 250,
+        "marketBeta": 1.2,
+        "sectorBeta": 1.3,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.012,
+        "baselineVolatility": 0.32,
+        "creditRating": "HY",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "ATCO-A.ST": {
+      "ticker": "ATCO-A.ST",
+      "name": "Atlas Copco",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "SE",
+      "exchanges": {
+        "yahoo": "ATCO-A.ST",
+        "tradingView": "OMXSTO:ATCO_A"
+      },
+      "finvault": {
+        "slug": "atco-a-st",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=atco-a-st"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 110,
+        "marketBeta": 0.9,
+        "sectorBeta": 0.9,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.01,
+        "baselineVolatility": 0.22,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "VOLV-B.ST": {
+      "ticker": "VOLV-B.ST",
+      "name": "Volvo Group",
+      "sector": "Industrials",
+      "region": "EU",
+      "country": "SE",
+      "exchanges": {
+        "yahoo": "VOLV-B.ST",
+        "tradingView": "OMXSTO:VOLV_B"
+      },
+      "finvault": {
+        "slug": "volv-b-st",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=volv-b-st"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "A",
+        "baseSpread": 130,
+        "marketBeta": 1.1,
+        "sectorBeta": 1,
+        "baseRateType": "BUND",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 6,
+        "jumpMu": 0.008,
+        "baselineVolatility": 0.26,
+        "creditRating": "A",
+        "ratingLastVerified": "2026-05"
+      }
+    },
+    "HWM": {
+      "ticker": "HWM",
+      "name": "Howmet Aerospace",
+      "sector": "Industrials",
+      "region": "US",
+      "country": "US",
+      "exchanges": {
+        "yahoo": "HWM",
+        "tradingView": "NYSE:HWM"
+      },
+      "finvault": {
+        "slug": "hwm",
+        "industry": "Industrials",
+        "pdfReady": false,
+        "reportUrl": "report.html?company=hwm"
+      },
+      "sentinel": {
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 150,
+        "marketBeta": 1,
+        "sectorBeta": 0.9,
+        "baseRateType": "UST",
+        "lastVerified": "2025-01-01"
+      },
+      "osiris": {
+        "cohort": "industrials_and_defense",
+        "physics": "Geometric Brownian Motion + Jump Diffusion",
+        "reversionSpeedTheta": null,
+        "jumpFrequencyLambda": 5,
+        "jumpMu": 0.012,
+        "baselineVolatility": 0.26,
+        "creditRating": "BBB",
+        "ratingLastVerified": "2026-05"
+      }
+    }
+  }
+}
