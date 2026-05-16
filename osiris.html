@@ -333,6 +333,96 @@
             line-height: 1.6;
             font-size: 1.05em;
         }
+
+        /* === Mobile layout (≤768px) ============================================
+           Several wrappers use inline `style="..."` (highest specificity), so
+           overriding them from CSS requires !important. Scoped strictly to the
+           viewport breakpoint — desktop behaviour is unchanged. */
+        @media (max-width: 768px) {
+            .osiris-container {
+                padding: 24px 12px;
+                gap: 16px;
+            }
+            .osiris-title {
+                font-size: 1.8em;
+                letter-spacing: 2px;
+            }
+            .osiris-subtitle {
+                font-size: 0.7em;
+                letter-spacing: 1px;
+            }
+            .osiris-header {
+                padding-bottom: 14px;
+                margin-bottom: 14px;
+            }
+            .osiris-controls-wrapper {
+                padding: 14px !important;
+            }
+            /* Top row: stack the combobox above the INITIATE button instead of
+               side-by-side. On narrow screens they overlap otherwise. */
+            .osiris-controls {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 12px !important;
+                margin-bottom: 14px !important;
+            }
+            #osiris-trigger-btn {
+                width: 100%;
+                padding: 12px 16px !important;
+                font-size: 0.82em !important;
+                letter-spacing: 1.5px !important;
+                height: auto !important;
+            }
+            /* Phase 2 dropdowns — collapse the 2-column grid to a stack. */
+            .osiris-phase2 {
+                grid-template-columns: 1fr !important;
+                gap: 14px !important;
+            }
+            /* Time-horizon pills row — two pills per line on narrow screens
+               (4 pills × wide labels = overflow); custom-days input takes a
+               full row of its own. */
+            .time-pill {
+                padding: 6px 10px !important;
+                font-size: 0.75em !important;
+                flex: 1 1 calc(50% - 10px) !important;
+                min-width: 0;
+            }
+            #osiris-custom-days {
+                flex: 1 1 100% !important;
+                width: 100% !important;
+                max-width: none !important;
+            }
+            /* Advanced Greek sliders — collapse 3-col to stacked. */
+            .osiris-sliders {
+                grid-template-columns: 1fr !important;
+                gap: 16px !important;
+            }
+            /* Combobox: tighten result rows so ticker · name · cohort still
+               fit at 360-ish viewport widths without overlap. */
+            .osiris-combobox-item {
+                grid-template-columns: 78px 1fr auto;
+                gap: 8px;
+                padding: 8px 10px;
+            }
+            .osiris-combobox-item-name {
+                font-size: 0.78em;
+            }
+            .osiris-combobox-item-cohort {
+                font-size: 0.55em;
+                letter-spacing: 0.5px;
+            }
+            .osiris-combobox-chips {
+                flex-wrap: wrap;
+            }
+            .osiris-combobox-list {
+                max-height: 280px;
+            }
+            #osiris-metadata-readout {
+                font-size: 0.75em !important;
+                margin-bottom: 14px !important;
+                line-height: 1.5;
+            }
+        }
     </style>
 </head>
 
@@ -501,7 +591,7 @@
                     </div>
 
                     <!-- Phase 2: Parameter Abstraction Dropdowns -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="osiris-phase2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div style="display: flex; flex-direction: column; gap: 5px;">
                             <label for="osiris-volatility-regime" style="color: var(--accent-green); font-family: monospace; font-size: 0.85em;">MARKET VOLATILITY REGIME:</label>
                             <select id="osiris-volatility-regime" class="osiris-input" style="width: 100%;">
