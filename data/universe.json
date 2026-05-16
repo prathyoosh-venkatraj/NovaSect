@@ -24,7 +24,24 @@
         "slug": "exxonmobil",
         "industry": "Integrated Oil & Gas",
         "pdfReady": true,
-        "reportUrl": "report.html?company=exxonmobil"
+        "reportUrl": "report.html?company=exxonmobil",
+        "stats": [
+          "1.15",
+          "0.76",
+          "0.72",
+          "0.68",
+          "0.16",
+          "0.406",
+          "69.4x",
+          "7.4x",
+          "7.3x",
+          "3.0x",
+          "0.72",
+          "12.6%",
+          "8.7%",
+          "6.4%",
+          "10.7%"
+        ]
       },
       "sentinel": {
         "type": "IG",
@@ -60,7 +77,8 @@
         "slug": "shel",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=shel"
+        "reportUrl": "report.html?company=shel",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -96,7 +114,24 @@
         "slug": "chevron",
         "industry": "Integrated Oil & Gas",
         "pdfReady": true,
-        "reportUrl": "report.html?company=chevron"
+        "reportUrl": "report.html?company=chevron",
+        "stats": [
+          "1.15",
+          "0.86",
+          "1.02",
+          "0.69",
+          "0.21",
+          "0.13",
+          "17.2x",
+          "11.5x",
+          "9.52x",
+          "5.23x",
+          "0.63x",
+          "11.4%",
+          "6.7%",
+          "4.2%",
+          "7.1%"
+        ]
       },
       "sentinel": {
         "type": "IG",
@@ -132,7 +167,24 @@
         "slug": "iberdrola",
         "industry": "Integrated Utilities & Renewable Energy",
         "pdfReady": true,
-        "reportUrl": "report.html?company=iberdrola"
+        "reportUrl": "report.html?company=iberdrola",
+        "stats": [
+          "0.87",
+          "0.69",
+          "0.41",
+          "1.53",
+          "0.84",
+          "0.61",
+          "2.45x",
+          "15.4x",
+          "3.8x",
+          "-",
+          "0.28x",
+          "36.2%",
+          "14.3%",
+          "3.9%",
+          "9.9%"
+        ]
       },
       "sentinel": {
         "type": "IG",
@@ -168,7 +220,8 @@
         "slug": "eqnr",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=eqnr"
+        "reportUrl": "report.html?company=eqnr",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -204,7 +257,8 @@
         "slug": "mpc",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=mpc"
+        "reportUrl": "report.html?company=mpc",
+        "stats": null
       },
       "sentinel": {
         "type": "HY",
@@ -240,7 +294,24 @@
         "slug": "lockheedmartin",
         "industry": "Aerospace & Defense",
         "pdfReady": true,
-        "reportUrl": "report.html?company=lockheedmartin"
+        "reportUrl": "report.html?company=lockheedmartin",
+        "stats": [
+          "1.09",
+          "0.76",
+          "0.37",
+          "7.9",
+          "3.41",
+          "2.0",
+          "6.92x",
+          "21.3x",
+          "19.2x",
+          "23.04x",
+          "1.31x",
+          "10.3%",
+          "6.7%",
+          "8.9%",
+          "76.2%"
+        ]
       },
       "sentinel": {
         "type": "IG",
@@ -276,7 +347,8 @@
         "slug": "ldo-mi",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=ldo-mi"
+        "reportUrl": "report.html?company=ldo-mi",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -312,7 +384,24 @@
         "slug": "generaldynamics",
         "industry": "Aerospace & Defense",
         "pdfReady": true,
-        "reportUrl": "report.html?company=generaldynamics"
+        "reportUrl": "report.html?company=generaldynamics",
+        "stats": [
+          "1.20",
+          "0.68",
+          "0.22",
+          "1.99",
+          "0.23",
+          "0.08",
+          "14.5x",
+          "1.21x",
+          "5.14x",
+          "4.49x",
+          "0.64x",
+          "17.0%",
+          "11.8%",
+          "7.6%",
+          "23.3%"
+        ]
       },
       "sentinel": {
         "type": "IG",
@@ -348,7 +437,24 @@
         "slug": "l3harris",
         "industry": "Aerospace & Defense",
         "pdfReady": true,
-        "reportUrl": "report.html?company=l3harris"
+        "reportUrl": "report.html?company=l3harris",
+        "stats": [
+          "1.19",
+          "1.02",
+          "0.43",
+          "1.10",
+          "0.53",
+          "0.25",
+          "3.53x",
+          "12.7x",
+          "17.9x",
+          "7.27x",
+          "0.53x",
+          "9.7%",
+          "7.3%",
+          "3.9%",
+          "8.2%"
+        ]
       },
       "sentinel": {
         "type": "IG",
@@ -384,7 +490,24 @@
         "slug": "northropgrumman",
         "industry": "Aerospace & Defense",
         "pdfReady": true,
-        "reportUrl": "report.html?company=northropgrumman"
+        "reportUrl": "report.html?company=northropgrumman",
+        "stats": [
+          "1.10",
+          "1.01",
+          "0.34",
+          "2.08",
+          "0.94",
+          "0.31",
+          "6.78x",
+          "24.3x",
+          "31.7x",
+          "11.5x",
+          "0.83x",
+          "10.8%",
+          "10.0%",
+          "8.3%",
+          "26.2%"
+        ]
       },
       "sentinel": {
         "type": "IG",
@@ -420,7 +543,24 @@
         "slug": "rtx",
         "industry": "Aerospace & Defense",
         "pdfReady": true,
-        "reportUrl": "report.html?company=rtx"
+        "reportUrl": "report.html?company=rtx",
+        "stats": [
+          "1.03",
+          "0.80",
+          "0.18",
+          "1.55",
+          "0.45",
+          "0.61",
+          "5.32x",
+          "6.6x",
+          "6.9x",
+          "4.9x",
+          "0.54x",
+          "10.5%",
+          "7.6%",
+          "4.1%",
+          "10.6%"
+        ]
       },
       "sentinel": {
         "type": "IG",
@@ -456,7 +596,24 @@
         "slug": "rheinmetall",
         "industry": "Aerospace & Defense",
         "pdfReady": true,
-        "reportUrl": "report.html?company=rheinmetall"
+        "reportUrl": "report.html?company=rheinmetall",
+        "stats": [
+          "1.44",
+          "0.89",
+          "0.30",
+          "1.23",
+          "0.31",
+          "0.14",
+          "17.1x",
+          "4.71x",
+          "19.5x",
+          "14.81x",
+          "0.93x",
+          "10.2%",
+          "8.0%",
+          "7.4%",
+          "17.7%"
+        ]
       },
       "sentinel": {
         "type": "HY",
@@ -492,7 +649,8 @@
         "slug": "ba",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=ba"
+        "reportUrl": "report.html?company=ba",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -528,7 +686,8 @@
         "slug": "air-pa",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=air-pa"
+        "reportUrl": "report.html?company=air-pa",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -564,7 +723,8 @@
         "slug": "engi-pa",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=engi-pa"
+        "reportUrl": "report.html?company=engi-pa",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -600,7 +760,8 @@
         "slug": "enel-mi",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=enel-mi"
+        "reportUrl": "report.html?company=enel-mi",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -636,7 +797,8 @@
         "slug": "nee",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=nee"
+        "reportUrl": "report.html?company=nee",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -672,7 +834,8 @@
         "slug": "duk",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=duk"
+        "reportUrl": "report.html?company=duk",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -708,7 +871,8 @@
         "slug": "bp",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=bp"
+        "reportUrl": "report.html?company=bp",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -744,7 +908,8 @@
         "slug": "tte",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=tte"
+        "reportUrl": "report.html?company=tte",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -780,7 +945,8 @@
         "slug": "cop",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=cop"
+        "reportUrl": "report.html?company=cop",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -816,7 +982,8 @@
         "slug": "eog",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=eog"
+        "reportUrl": "report.html?company=eog",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -852,7 +1019,8 @@
         "slug": "slb",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=slb"
+        "reportUrl": "report.html?company=slb",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -888,7 +1056,8 @@
         "slug": "hal",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=hal"
+        "reportUrl": "report.html?company=hal",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -924,7 +1093,8 @@
         "slug": "bkr",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=bkr"
+        "reportUrl": "report.html?company=bkr",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -960,7 +1130,8 @@
         "slug": "vlo",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=vlo"
+        "reportUrl": "report.html?company=vlo",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -996,7 +1167,8 @@
         "slug": "psx",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=psx"
+        "reportUrl": "report.html?company=psx",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1032,7 +1204,8 @@
         "slug": "oxy",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=oxy"
+        "reportUrl": "report.html?company=oxy",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1068,7 +1241,8 @@
         "slug": "wmb",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=wmb"
+        "reportUrl": "report.html?company=wmb",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1104,7 +1278,8 @@
         "slug": "kmi",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=kmi"
+        "reportUrl": "report.html?company=kmi",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1140,7 +1315,8 @@
         "slug": "so",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=so"
+        "reportUrl": "report.html?company=so",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1176,7 +1352,8 @@
         "slug": "d",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=d"
+        "reportUrl": "report.html?company=d",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1212,7 +1389,8 @@
         "slug": "aep",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=aep"
+        "reportUrl": "report.html?company=aep",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1248,7 +1426,8 @@
         "slug": "exc",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=exc"
+        "reportUrl": "report.html?company=exc",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1284,7 +1463,8 @@
         "slug": "sre",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=sre"
+        "reportUrl": "report.html?company=sre",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1320,7 +1500,8 @@
         "slug": "xel",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=xel"
+        "reportUrl": "report.html?company=xel",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1356,7 +1537,8 @@
         "slug": "pcg",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=pcg"
+        "reportUrl": "report.html?company=pcg",
+        "stats": null
       },
       "sentinel": {
         "type": "HY",
@@ -1392,7 +1574,8 @@
         "slug": "peg",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=peg"
+        "reportUrl": "report.html?company=peg",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1428,7 +1611,8 @@
         "slug": "wec",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=wec"
+        "reportUrl": "report.html?company=wec",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1464,7 +1648,8 @@
         "slug": "awk",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=awk"
+        "reportUrl": "report.html?company=awk",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1500,7 +1685,8 @@
         "slug": "eni-mi",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=eni-mi"
+        "reportUrl": "report.html?company=eni-mi",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1536,7 +1722,8 @@
         "slug": "ntgy-mc",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=ntgy-mc"
+        "reportUrl": "report.html?company=ntgy-mc",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1572,7 +1759,8 @@
         "slug": "sse-l",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=sse-l"
+        "reportUrl": "report.html?company=sse-l",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1608,7 +1796,8 @@
         "slug": "ng-l",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=ng-l"
+        "reportUrl": "report.html?company=ng-l",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1644,7 +1833,8 @@
         "slug": "ge",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=ge"
+        "reportUrl": "report.html?company=ge",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1680,7 +1870,8 @@
         "slug": "hon",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=hon"
+        "reportUrl": "report.html?company=hon",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1716,7 +1907,8 @@
         "slug": "ups",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=ups"
+        "reportUrl": "report.html?company=ups",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1752,7 +1944,8 @@
         "slug": "unp",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=unp"
+        "reportUrl": "report.html?company=unp",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1788,7 +1981,8 @@
         "slug": "cat",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=cat"
+        "reportUrl": "report.html?company=cat",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1824,7 +2018,8 @@
         "slug": "de",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=de"
+        "reportUrl": "report.html?company=de",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1860,7 +2055,8 @@
         "slug": "luv",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=luv"
+        "reportUrl": "report.html?company=luv",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1896,7 +2092,8 @@
         "slug": "dal",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=dal"
+        "reportUrl": "report.html?company=dal",
+        "stats": null
       },
       "sentinel": {
         "type": "HY",
@@ -1932,7 +2129,8 @@
         "slug": "mmm",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=mmm"
+        "reportUrl": "report.html?company=mmm",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -1968,7 +2166,8 @@
         "slug": "emr",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=emr"
+        "reportUrl": "report.html?company=emr",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2004,7 +2203,8 @@
         "slug": "etn",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=etn"
+        "reportUrl": "report.html?company=etn",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2040,7 +2240,8 @@
         "slug": "saf-pa",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=saf-pa"
+        "reportUrl": "report.html?company=saf-pa",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2076,7 +2277,8 @@
         "slug": "rr-l",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=rr-l"
+        "reportUrl": "report.html?company=rr-l",
+        "stats": null
       },
       "sentinel": {
         "type": "HY",
@@ -2112,7 +2314,8 @@
         "slug": "vow3-de",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=vow3-de"
+        "reportUrl": "report.html?company=vow3-de",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2148,7 +2351,8 @@
         "slug": "sie-de",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=sie-de"
+        "reportUrl": "report.html?company=sie-de",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2184,7 +2388,8 @@
         "slug": "dhl-de",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=dhl-de"
+        "reportUrl": "report.html?company=dhl-de",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2220,7 +2425,8 @@
         "slug": "pbr",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=pbr"
+        "reportUrl": "report.html?company=pbr",
+        "stats": null
       },
       "sentinel": {
         "type": "HY",
@@ -2256,7 +2462,8 @@
         "slug": "2222-sr",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=2222-sr"
+        "reportUrl": "report.html?company=2222-sr",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2292,7 +2499,8 @@
         "slug": "reliance-ns",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=reliance-ns"
+        "reportUrl": "report.html?company=reliance-ns",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2328,7 +2536,8 @@
         "slug": "wds-ax",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=wds-ax"
+        "reportUrl": "report.html?company=wds-ax",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2364,7 +2573,8 @@
         "slug": "rep-mc",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=rep-mc"
+        "reportUrl": "report.html?company=rep-mc",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2400,7 +2610,8 @@
         "slug": "dvn",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=dvn"
+        "reportUrl": "report.html?company=dvn",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2436,7 +2647,8 @@
         "slug": "fang",
         "industry": "Energy",
         "pdfReady": false,
-        "reportUrl": "report.html?company=fang"
+        "reportUrl": "report.html?company=fang",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2472,7 +2684,8 @@
         "slug": "9501-t",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=9501-t"
+        "reportUrl": "report.html?company=9501-t",
+        "stats": null
       },
       "sentinel": {
         "type": "HY",
@@ -2508,7 +2721,8 @@
         "slug": "ntpc-ns",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=ntpc-ns"
+        "reportUrl": "report.html?company=ntpc-ns",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2544,7 +2758,8 @@
         "slug": "org-ax",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=org-ax"
+        "reportUrl": "report.html?company=org-ax",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2580,7 +2795,8 @@
         "slug": "eoan-de",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=eoan-de"
+        "reportUrl": "report.html?company=eoan-de",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2616,7 +2832,8 @@
         "slug": "rwe-de",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=rwe-de"
+        "reportUrl": "report.html?company=rwe-de",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2652,7 +2869,8 @@
         "slug": "etr",
         "industry": "Utilities",
         "pdfReady": false,
-        "reportUrl": "report.html?company=etr"
+        "reportUrl": "report.html?company=etr",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2688,7 +2906,8 @@
         "slug": "ba-l",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=ba-l"
+        "reportUrl": "report.html?company=ba-l",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2724,7 +2943,8 @@
         "slug": "ho-pa",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=ho-pa"
+        "reportUrl": "report.html?company=ho-pa",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2760,7 +2980,8 @@
         "slug": "7011-t",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=7011-t"
+        "reportUrl": "report.html?company=7011-t",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2796,7 +3017,8 @@
         "slug": "6301-t",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=6301-t"
+        "reportUrl": "report.html?company=6301-t",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2832,7 +3054,8 @@
         "slug": "lt-ns",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=lt-ns"
+        "reportUrl": "report.html?company=lt-ns",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2868,7 +3091,8 @@
         "slug": "embj3-sa",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=embj3-sa"
+        "reportUrl": "report.html?company=embj3-sa",
+        "stats": null
       },
       "sentinel": {
         "type": "HY",
@@ -2904,7 +3128,8 @@
         "slug": "atco-a-st",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=atco-a-st"
+        "reportUrl": "report.html?company=atco-a-st",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2940,7 +3165,8 @@
         "slug": "volv-b-st",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=volv-b-st"
+        "reportUrl": "report.html?company=volv-b-st",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",
@@ -2976,7 +3202,8 @@
         "slug": "hwm",
         "industry": "Industrials",
         "pdfReady": false,
-        "reportUrl": "report.html?company=hwm"
+        "reportUrl": "report.html?company=hwm",
+        "stats": null
       },
       "sentinel": {
         "type": "IG",

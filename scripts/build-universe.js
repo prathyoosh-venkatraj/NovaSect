@@ -67,6 +67,26 @@ const reportSrc = fs.readFileSync(path.join(ROOT, 'report.html'), 'utf8');
 const skelMatch = reportSrc.match(/const skeletonReports = (\[[\s\S]*?\]);/);
 if (!skelMatch) throw new Error('Could not find skeletonReports in report.html');
 const skeletonRows = eval(skelMatch[1]);
+
+// Extract the 9 fully-built companyData entries so the brief page can
+// render the ratios table for those names. Brace-balanced parse keeps
+// the nested literal intact.
+function extractObjectLiteral(src, startMarker) {
+    const idx = src.indexOf(startMarker);
+    if (idx === -1) return null;
+    const start = src.indexOf('{', idx);
+    let depth = 0;
+    for (let i = start; i < src.length; i++) {
+        if (src[i] === '{') depth++;
+        else if (src[i] === '}') {
+            depth--;
+            if (depth === 0) return src.slice(start, i + 1);
+        }
+    }
+    return null;
+}
+const cdLiteral = extractObjectLiteral(reportSrc, 'const companyData = ');
+const companyDataLookup = cdLiteral ? eval('(' + cdLiteral + ')') : {};
 // Each row: [slug, name, tvTicker, industry, yahooOverride]
 const finvaultByYahoo = {};
 for (const [slug, name, tvTicker, industry, yahooOverride] of skeletonRows) {
@@ -110,7 +130,10 @@ for (const c of COMPANIES) {
             slug: finvault.slug,
             industry: finvault.industry,
             pdfReady: finvault.pdfReady,
-            reportUrl: 'report.html?company=' + finvault.slug
+            reportUrl: 'report.html?company=' + finvault.slug,
+            stats: (companyDataLookup[finvault.slug] && Array.isArray(companyDataLookup[finvault.slug].stats))
+                ? companyDataLookup[finvault.slug].stats
+                : null
         } : null,
         sentinel: {
             type: c.type,
