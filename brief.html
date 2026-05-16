@@ -268,7 +268,7 @@
             <div class="brief-band" id="brief-finvault" style="display:none;">
                 <div class="brief-band-head">
                     <div class="brief-band-title">FinVault <span class="brief-band-sub">chart · market · multiples · ratios · fundamentals</span></div>
-                    <a class="brief-band-btn" id="fv-btn" href="#">Open in FinVault →</a>
+                    <a class="brief-band-btn" id="fv-btn" href="#" target="_blank" rel="noopener noreferrer">Open in FinVault →</a>
                 </div>
 
                 <div class="brief-chart-wrap" id="brief-chart-wrap">
@@ -308,7 +308,7 @@
             <div class="brief-band" id="brief-sentinel" style="display:none;">
                 <div class="brief-band-head">
                     <div class="brief-band-title">Sentinel <span class="brief-band-sub">unsecured · 10-year default · live macro-adjusted</span></div>
-                    <a class="brief-band-btn" id="sn-btn" href="#">Open in Sentinel →</a>
+                    <a class="brief-band-btn" id="sn-btn" href="#" target="_blank" rel="noopener noreferrer">Open in Sentinel →</a>
                 </div>
                 <div class="brief-grid cols-3">
                     <div class="brief-cell">
@@ -349,7 +349,7 @@
             <div class="brief-band" id="brief-osiris" style="display:none;">
                 <div class="brief-band-head">
                     <div class="brief-band-title">Osiris <span class="brief-band-sub">calm historical baseline · standard regulatory gravity · 1000 paths</span></div>
-                    <a class="brief-band-btn" id="os-btn" href="#">Open in Osiris →</a>
+                    <a class="brief-band-btn" id="os-btn" href="#" target="_blank" rel="noopener noreferrer">Open in Osiris →</a>
                 </div>
                 <div class="brief-section-label">6-Month Horizon</div>
                 <div class="brief-grid cols-3">
@@ -652,20 +652,48 @@
                 }
             } catch (e) { /* swallow */ }
 
-            // Multiples + fundamentals via Finnhub
+            // Multiples + fundamentals via Finnhub.
+            // Field-name notes (from Finnhub /stock/metric, free tier):
+            //   peExclExtraTTM        — trailing P/E (TTM, ex-extraordinary)
+            //   forwardPe             — forward P/E (consensus NTM)
+            //   peNormalizedAnnual    — annual P/E fallback
+            //   currentEv/ebitdaTTM   — EV/EBITDA (slash IS part of the key)
+            //   currentEv/freeCashFlowTTM, enterpriseValueEbitdaTtm — fallbacks seen on some tickers
+            //   pbAnnual              — price-to-book
+            //   revenueGrowth5Y / epsGrowth5Y / operatingMarginTTM
+            //     → Finnhub returns these already as percent values
+            //       (e.g. 8.3 means 8.3%), so fmtPct is used as-is —
+            //       NOT multiplied by 100.
             try {
                 const fhRes = await fetch('/api/finnhub-proxy?endpoint=stock/metric&symbol=' + encodeURIComponent(yahoo) + '&metric=all');
                 if (fhRes.ok) {
                     const payload = await fhRes.json();
                     const m = payload && payload.metric ? payload.metric : null;
                     if (m) {
-                        setText('fv-tpe', fmtRatio(m.peExclExtraTTM || m.peNormalizedAnnual));
-                        setText('fv-fpe', fmtRatio(m.peInclExtraTTM ? null : (m.forwardPe || m.peNormalizedAnnual)));
-                        setText('fv-ev', fmtRatio(m['currentEv/ebitdaTTM']));
-                        setText('fv-pb', fmtRatio(m.pbAnnual));
-                        setText('fv-revg', fmtPct(m.revenueGrowth5Y * 100, true));
-                        setText('fv-epsg', fmtPct(m.epsGrowth5Y * 100, true));
-                        setText('fv-om', fmtPct(m.operatingMarginTTM * 100, false));
+                        // Trailing P/E
+                        const trailingPe = m.peExclExtraTTM || m.peTTM || m.peNormalizedAnnual;
+                        setText('fv-tpe', fmtRatio(trailingPe));
+
+                        // Forward P/E — the prior conditional was a bug that
+                        // always returned null. Just take forwardPe, with
+                        // peNormalizedAnnual as a final fallback.
+                        const forwardPe = m.forwardPe || m.peInclExtraAnnual || m.peNormalizedAnnual;
+                        setText('fv-fpe', fmtRatio(forwardPe));
+
+                        // EV/EBITDA — try the slash key first, then alt names.
+                        const evEbitda = m['currentEv/ebitdaTTM']
+                            || m['currentEv/ebitdaAnnual']
+                            || m.enterpriseValueEbitdaTtm
+                            || m.evEbitdaTtm;
+                        setText('fv-ev', fmtRatio(evEbitda));
+
+                        setText('fv-pb', fmtRatio(m.pbAnnual || m.pbTTM));
+
+                        // Growth + margin: already in % units from Finnhub.
+                        setText('fv-revg', fmtPct(m.revenueGrowth5Y, true));
+                        setText('fv-epsg', fmtPct(m.epsGrowth5Y, true));
+                        setText('fv-om', fmtPct(m.operatingMarginTTM, false));
+
                         footer.textContent = '> Finnhub TTM/5Y · ' + yahoo;
                         return;
                     }
