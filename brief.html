@@ -671,20 +671,36 @@
             let cells = { tpe: null, fpe: null, ev: null, pb: null, revG: null, epsG: null };
 
             // Hand-curated precision tier (9 fully-built reports).
-            // Uses LIVE price × hand-curated shares + netDebt ÷ EBITDA,
-            // matching the FinVault Multiples panel's math exactly.
-            // Same source for P/B (price ÷ bookValuePerShare).
+            // Uses the exact same formulas as the FinVault Multiples panel
+            // so the brief and the full report read identically:
+            //   Trailing P/E = price ÷ trailingEPS
+            //   Forward P/E  = price ÷ forwardEPS
+            //   EV/EBITDA    = (price × sharesOut + netDebt) ÷ ebitdaTTM
+            //   P/B          = price ÷ bookValuePerShare
             const hcFund = entry.finvault && entry.finvault.fundamentals;
             const livePrice = (typeof window._briefLivePrice === 'number') ? window._briefLivePrice : null;
-            if (hcFund && livePrice && hcFund.sharesOutstanding && hcFund.ebitdaTTM) {
-                const marketCap = livePrice * hcFund.sharesOutstanding;          // both in same currency
-                const ev = marketCap + (hcFund.netDebt || 0);
-                cells.ev = ev / hcFund.ebitdaTTM;
-                sources.push('Hand-curated 10-K');
+            let usedHC = false;
+            if (hcFund && livePrice) {
+                if (hcFund.trailingEPS && hcFund.trailingEPS > 0) {
+                    cells.tpe = livePrice / hcFund.trailingEPS;
+                    usedHC = true;
+                }
+                if (hcFund.forwardEPS && hcFund.forwardEPS > 0) {
+                    cells.fpe = livePrice / hcFund.forwardEPS;
+                    usedHC = true;
+                }
+                if (hcFund.sharesOutstanding && hcFund.ebitdaTTM) {
+                    const marketCap = livePrice * hcFund.sharesOutstanding;
+                    const ev = marketCap + (hcFund.netDebt || 0);
+                    cells.ev = ev / hcFund.ebitdaTTM;
+                    usedHC = true;
+                }
+                if (hcFund.bookValuePerShare && hcFund.bookValuePerShare > 0) {
+                    cells.pb = livePrice / hcFund.bookValuePerShare;
+                    usedHC = true;
+                }
             }
-            if (hcFund && livePrice && hcFund.bookValuePerShare) {
-                cells.pb = livePrice / hcFund.bookValuePerShare;
-            }
+            if (usedHC) sources.push('Hand-curated 10-K');
 
             // Finnhub pass
             try {
