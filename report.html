@@ -1826,7 +1826,9 @@
                 const revG = m.revenueGrowth5Y;
                 applyFh('fh-revenue-growth', fmtPercent(revG, true), { colorOnSign: true, rawNumber: revG });
 
-                const epsG = m.epsGrowth5Y;
+                // 5Y CAGR is undefined on cyclicals + recent restructurings;
+                // fall back to 3Y when Finnhub leaves epsGrowth5Y blank.
+                const epsG = (typeof m.epsGrowth5Y === 'number' ? m.epsGrowth5Y : m.epsGrowth3Y);
                 applyFh('fh-eps-growth', fmtPercent(epsG, true), { colorOnSign: true, rawNumber: epsG });
 
                 // Operating Margin, P/B and EV/EBITDA used to live here too;

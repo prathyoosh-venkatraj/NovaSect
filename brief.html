@@ -691,9 +691,10 @@
                         // Growth metrics — already in % units from Finnhub.
                         // Operating Margin lives in the Financial Ratios
                         // table (row 12), so it's intentionally not duplicated
-                        // here.
+                        // here. epsGrowth5Y is unavailable on cyclicals and
+                        // recent restructurings; fall back to 3Y CAGR.
                         setText('fv-revg', fmtPct(m.revenueGrowth5Y, true));
-                        setText('fv-epsg', fmtPct(m.epsGrowth5Y, true));
+                        setText('fv-epsg', fmtPct(m.epsGrowth5Y ?? m.epsGrowth3Y, true));
 
                         footer.textContent = '> Finnhub TTM/5Y · ' + yahoo;
                         return;
