@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brief — NovaSect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.min.css">
+    <style>
+        .brief-page {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 6rem 1.5rem 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* ── Header band ─────────────────────────────────────────── */
+        .brief-header {
+            border: 1px solid rgba(57, 255, 20, 0.35);
+            background: rgba(1, 10, 1, 0.85);
+            border-radius: 4px;
+            padding: 1.5rem 1.75rem;
+        }
+        .brief-ticker {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--accent-green);
+            letter-spacing: 3px;
+            line-height: 1;
+            text-shadow: 0 0 12px rgba(57, 255, 20, 0.45);
+        }
+        .brief-name {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.92);
+            margin-top: 0.5rem;
+        }
+        .brief-meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: rgba(57, 255, 20, 0.65);
+            letter-spacing: 1.5px;
+            margin-top: 0.45rem;
+            text-transform: uppercase;
+        }
+
+        /* ── Tool bands ──────────────────────────────────────────── */
+        .brief-band {
+            border: 1px solid rgba(57, 255, 20, 0.25);
+            background: rgba(1, 10, 1, 0.7);
+            border-radius: 4px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+        .brief-band-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.15);
+            padding-bottom: 0.5rem;
+        }
+        .brief-band-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            letter-spacing: 3px;
+            color: var(--accent-green);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .brief-band-title .brief-band-sub {
+            color: rgba(255, 255, 255, 0.45);
+            font-weight: 500;
+            margin-left: 0.6rem;
+            letter-spacing: 1.5px;
+        }
+        .brief-band-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent-green);
+            background: rgba(57, 255, 20, 0.06);
+            border: 1px solid rgba(57, 255, 20, 0.35);
+            border-radius: 3px;
+            text-decoration: none;
+            transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .brief-band-btn:hover {
+            background: rgba(57, 255, 20, 0.16);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.25);
+        }
+        .brief-band-btn.disabled {
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        .brief-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.85rem;
+        }
+        .brief-cell {
+            background: rgba(0, 8, 0, 0.7);
+            border: 1px solid rgba(57, 255, 20, 0.18);
+            border-radius: 3px;
+            padding: 0.7rem 0.85rem;
+        }
+        .brief-cell-label {
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.55rem;
+            color: rgba(57, 255, 20, 0.6);
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            margin-bottom: 0.35rem;
+        }
+        .brief-cell-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.92);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .brief-cell-sub {
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            margin-top: 0.2rem;
+            text-transform: uppercase;
+        }
+        .brief-section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: rgba(57, 255, 20, 0.7);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 0.4rem 0 -0.3rem;
+        }
+        .brief-footer-note {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.5px;
+            margin-top: 0.2rem;
+        }
+
+        /* ── Not-found / loading state ───────────────────────────── */
+        .brief-empty {
+            text-align: center;
+            padding: 5rem 2rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .brief-empty h1 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            color: var(--accent-green);
+            letter-spacing: 2px;
+            margin: 0 0 1rem;
+        }
+        .brief-empty p {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .brief-page { padding: 5rem 1rem 3rem; }
+            .brief-ticker { font-size: 2rem; }
+            .brief-grid { grid-template-columns: repeat(2, 1fr); }
+            .brief-band-head { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="index.html" class="logo" style="color: white; text-decoration: none;">NovaSect</a>
+        <nav class="nav-links">
+            <div class="nav-dropdown">
+                <span class="dropdown-trigger nav-link">Tools</span>
+                <div class="dropdown-menu">
+                    <a href="sentinel.html" class="dropdown-item">Sentinel</a>
+                    <a href="reports.html" class="dropdown-item">FinVault</a>
+                    <a href="osiris.html" class="dropdown-item">Osiris</a>
+                </div>
+            </div>
+            <a href="about.html" class="nav-link">About us</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="brief-page" id="brief-page">
+            <div class="brief-empty" id="brief-empty" style="display:none;">
+                <h1>No ticker selected</h1>
+                <p>Use the global search in the top-right to find a company.</p>
+            </div>
+
+            <!-- ── HEADER ─────────────────────────────────────────── -->
+            <div class="brief-header" id="brief-header" style="display:none;">
+                <div class="brief-ticker" id="b-ticker">—</div>
+                <div class="brief-name" id="b-name">—</div>
+                <div class="brief-meta" id="b-meta">—</div>
+            </div>
+
+            <!-- ── FINVAULT ───────────────────────────────────────── -->
+            <div class="brief-band" id="brief-finvault" style="display:none;">
+                <div class="brief-band-head">
+                    <div class="brief-band-title">FinVault <span class="brief-band-sub">fundamentals · multiples · market</span></div>
+                    <a class="brief-band-btn" id="fv-btn" href="#">Open in FinVault →</a>
+                </div>
+
+                <div class="brief-section-label">Market Context</div>
+                <div class="brief-grid">
+                    <div class="brief-cell"><span class="brief-cell-label">Current Price</span><span class="brief-cell-value" id="fv-price">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">52-Week Range</span><span class="brief-cell-value" id="fv-52w">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">Beta vs SPY</span><span class="brief-cell-value" id="fv-beta">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">TTM Div Yield</span><span class="brief-cell-value" id="fv-dy">—</span></div>
+                </div>
+
+                <div class="brief-section-label">Multiples</div>
+                <div class="brief-grid">
+                    <div class="brief-cell"><span class="brief-cell-label">Trailing P/E</span><span class="brief-cell-value" id="fv-tpe">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">Forward P/E</span><span class="brief-cell-value" id="fv-fpe">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">EV / EBITDA</span><span class="brief-cell-value" id="fv-ev">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">P / B</span><span class="brief-cell-value" id="fv-pb">—</span></div>
+                </div>
+
+                <div class="brief-section-label">Fundamentals (5Y)</div>
+                <div class="brief-grid">
+                    <div class="brief-cell"><span class="brief-cell-label">52W Return</span><span class="brief-cell-value" id="fv-52wret">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">Rev Growth 5Y</span><span class="brief-cell-value" id="fv-revg">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">EPS Growth 5Y</span><span class="brief-cell-value" id="fv-epsg">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">Operating Margin</span><span class="brief-cell-value" id="fv-om">—</span></div>
+                </div>
+                <div class="brief-footer-note" id="fv-footer">&gt; Loading market data…</div>
+            </div>
+
+            <!-- ── SENTINEL ───────────────────────────────────────── -->
+            <div class="brief-band" id="brief-sentinel" style="display:none;">
+                <div class="brief-band-head">
+                    <div class="brief-band-title">Sentinel <span class="brief-band-sub">credit · spread · regime</span></div>
+                    <a class="brief-band-btn" id="sn-btn" href="#">Open in Sentinel →</a>
+                </div>
+                <div class="brief-grid">
+                    <div class="brief-cell"><span class="brief-cell-label">Static Spread</span><span class="brief-cell-value" id="sn-spread">—</span><span class="brief-cell-sub" id="sn-tier">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">Live Spread</span><span class="brief-cell-value" id="sn-live">—</span><span class="brief-cell-sub" id="sn-live-tier">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">Rating</span><span class="brief-cell-value" id="sn-rating">—</span><span class="brief-cell-sub" id="sn-type">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">Yield to UST</span><span class="brief-cell-value" id="sn-yield">—</span><span class="brief-cell-sub">approx</span></div>
+                </div>
+                <div class="brief-footer-note" id="sn-footer">&gt; Static rating anchor from universe.json</div>
+            </div>
+
+            <!-- ── OSIRIS ─────────────────────────────────────────── -->
+            <div class="brief-band" id="brief-osiris" style="display:none;">
+                <div class="brief-band-head">
+                    <div class="brief-band-title">Osiris <span class="brief-band-sub">stochastic · 1Y forward · 1000 paths</span></div>
+                    <a class="brief-band-btn" id="os-btn" href="#">Open in Osiris →</a>
+                </div>
+                <div class="brief-grid">
+                    <div class="brief-cell"><span class="brief-cell-label">Median 1Y Return</span><span class="brief-cell-value" id="os-median">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">5th Percentile</span><span class="brief-cell-value" id="os-p5">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">95th Percentile</span><span class="brief-cell-value" id="os-p95">—</span></div>
+                    <div class="brief-cell"><span class="brief-cell-label">Realized σ (1Y)</span><span class="brief-cell-value" id="os-sigma">—</span></div>
+                </div>
+                <div class="brief-footer-note" id="os-footer">&gt; Awaiting simulation…</div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { osirisIngestion } from './components/osiris/osirisIngestion.js';
+
+        const params = new URLSearchParams(window.location.search);
+        const tickerParam = params.get('ticker');
+        const emptyEl = document.getElementById('brief-empty');
+
+        if (!tickerParam) {
+            emptyEl.style.display = 'block';
+        } else {
+            renderBrief(tickerParam).catch(err => {
+                console.error('[Brief] render failed', err);
+                emptyEl.style.display = 'block';
+                emptyEl.querySelector('h1').textContent = 'Brief unavailable';
+                emptyEl.querySelector('p').textContent = err.message || 'Something went wrong loading this brief.';
+            });
+        }
+
+        function tierFromSpread(spread) {
+            if (typeof spread !== 'number') return null;
+            if (spread < 200) return { tier: 'NOMINAL',  color: '#39FF14' };
+            if (spread < 400) return { tier: 'CAUTION',  color: '#FACC15' };
+            if (spread < 800) return { tier: 'ELEVATED', color: '#F97316' };
+            return                       { tier: 'CRITICAL', color: '#EF4444' };
+        }
+
+        const fmtPct = (v, signed = false) => {
+            if (typeof v !== 'number' || isNaN(v)) return '—';
+            const sign = signed && v > 0 ? '+' : '';
+            return sign + v.toFixed(2) + '%';
+        };
+        const fmtRatio = (v) => (typeof v !== 'number' || isNaN(v) || v <= 0) ? '—' : v.toFixed(1) + 'x';
+        const fmtPrice = (v) => (typeof v !== 'number' || isNaN(v)) ? '—' : '$' + v.toFixed(2);
+        const setText = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+        const setHTML = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
+
+        async function renderBrief(ticker) {
+            const uRes = await fetch('data/universe.json');
+            if (!uRes.ok) throw new Error('universe.json missing');
+            const universe = await uRes.json();
+            const entry = universe.tickers[ticker];
+            if (!entry) {
+                emptyEl.style.display = 'block';
+                emptyEl.querySelector('h1').textContent = 'Ticker not found';
+                emptyEl.querySelector('p').textContent = ticker + ' is not in the NovaSect universe.';
+                return;
+            }
+
+            // ── HEADER ──────────────────────────────────────────────
+            document.getElementById('brief-header').style.display = '';
+            setText('b-ticker', entry.ticker);
+            setText('b-name', entry.name);
+            const exch = (entry.exchanges && entry.exchanges.tradingView) ? entry.exchanges.tradingView.split(':')[0] : '';
+            const industry = entry.finvault ? entry.finvault.industry : entry.sector;
+            setText('b-meta', [entry.sector, entry.country, exch, industry].filter(Boolean).join(' · '));
+
+            // ── FINVAULT band ───────────────────────────────────────
+            document.getElementById('brief-finvault').style.display = '';
+            const fvBtn = document.getElementById('fv-btn');
+            if (entry.finvault) {
+                fvBtn.href = entry.finvault.reportUrl;
+            } else {
+                fvBtn.classList.add('disabled');
+            }
+
+            // Show Sentinel + Osiris bands first (they use static data),
+            // then trigger live FinVault/Osiris work in parallel.
+            renderSentinelBand(entry);
+            renderOsirisBandStatic(entry);
+
+            // Live FinVault data
+            populateFinVaultLive(entry).catch(e => console.warn('[Brief] FinVault live failed', e));
+            // Live Osiris simulation
+            populateOsirisLive(entry).catch(e => console.warn('[Brief] Osiris live failed', e));
+            // Live Sentinel macro-adjusted spread
+            populateSentinelLive(entry).catch(e => console.warn('[Brief] Sentinel live failed', e));
+        }
+
+        function renderSentinelBand(entry) {
+            document.getElementById('brief-sentinel').style.display = '';
+            const snBtn = document.getElementById('sn-btn');
+            snBtn.href = 'sentinel.html?ticker=' + encodeURIComponent(entry.ticker);
+
+            const s = entry.sentinel;
+            if (!s) return;
+            const tier = tierFromSpread(s.baseSpread);
+            setHTML('sn-spread', '<span style="color:' + tier.color + ';">' + s.baseSpread + ' bps</span>');
+            setText('sn-tier', tier.tier);
+            setText('sn-rating', s.rating || '—');
+            setText('sn-type', s.type || '—');
+        }
+
+        function renderOsirisBandStatic(entry) {
+            document.getElementById('brief-osiris').style.display = '';
+            const osBtn = document.getElementById('os-btn');
+            osBtn.href = 'osiris.html?ticker=' + encodeURIComponent(entry.ticker);
+        }
+
+        // ── Phase 3 — live data backfill ────────────────────────────
+        async function populateFinVaultLive(entry) {
+            const yahoo = entry.exchanges.yahoo;
+            const tvTicker = entry.exchanges.tradingView;
+            const footer = document.getElementById('fv-footer');
+
+            // Market context via osirisIngestion (shared 24h cache)
+            try {
+                const [metrics, history] = await Promise.all([
+                    osirisIngestion.getTickerMetrics(yahoo).catch(() => null),
+                    osirisIngestion.getHistoricalData(yahoo).catch(() => null)
+                ]);
+                if (metrics) {
+                    setText('fv-price', fmtPrice(metrics.currentPrice));
+                    setText('fv-beta', typeof metrics.beta === 'number' ? metrics.beta.toFixed(2) : '—');
+                    setText('fv-dy', typeof metrics.dividendYield === 'number' && metrics.dividendYield > 0
+                        ? (metrics.dividendYield * 100).toFixed(2) + '%' : '—');
+                }
+                if (Array.isArray(history) && history.length > 0) {
+                    let mn = Infinity, mx = -Infinity;
+                    for (const p of history) {
+                        if (p.adjClose < mn) mn = p.adjClose;
+                        if (p.adjClose > mx) mx = p.adjClose;
+                    }
+                    setText('fv-52w', '$' + mn.toFixed(0) + ' – $' + mx.toFixed(0));
+                    if (history.length > 250 && metrics && typeof metrics.currentPrice === 'number') {
+                        const yearAgo = history[history.length - 252] || history[0];
+                        const ret = ((metrics.currentPrice / yearAgo.adjClose) - 1) * 100;
+                        setText('fv-52wret', fmtPct(ret, true));
+                    }
+                }
+            } catch (e) { /* swallow */ }
+
+            // Multiples + fundamentals via Finnhub
+            try {
+                const fhRes = await fetch('/api/finnhub-proxy?endpoint=stock/metric&symbol=' + encodeURIComponent(yahoo) + '&metric=all');
+                if (fhRes.ok) {
+                    const payload = await fhRes.json();
+                    const m = payload && payload.metric ? payload.metric : null;
+                    if (m) {
+                        setText('fv-tpe', fmtRatio(m.peExclExtraTTM || m.peNormalizedAnnual));
+                        setText('fv-fpe', fmtRatio(m.peInclExtraTTM ? null : (m.forwardPe || m.peNormalizedAnnual)));
+                        setText('fv-ev', fmtRatio(m['currentEv/ebitdaTTM']));
+                        setText('fv-pb', fmtRatio(m.pbAnnual));
+                        setText('fv-revg', fmtPct(m.revenueGrowth5Y * 100, true));
+                        setText('fv-epsg', fmtPct(m.epsGrowth5Y * 100, true));
+                        setText('fv-om', fmtPct(m.operatingMarginTTM * 100, false));
+                        footer.textContent = '> Finnhub TTM/5Y · ' + yahoo;
+                        return;
+                    }
+                }
+                footer.textContent = '> Live multiples unavailable for ' + yahoo;
+            } catch (e) {
+                footer.textContent = '> Live multiples unavailable for ' + yahoo;
+            }
+        }
+
+        async function populateOsirisLive(entry) {
+            const yahoo = entry.exchanges.yahoo;
+            const footer = document.getElementById('os-footer');
+            const o = entry.osiris;
+            if (!o) {
+                footer.textContent = '> Osiris config missing';
+                return;
+            }
+            try {
+                const [metrics, history] = await Promise.all([
+                    osirisIngestion.getTickerMetrics(yahoo),
+                    osirisIngestion.getHistoricalData(yahoo)
+                ]);
+                if (!metrics || !history || history.length < 30) {
+                    footer.textContent = '> Insufficient history for simulation';
+                    return;
+                }
+
+                setText('os-sigma', typeof metrics.realizedSigma === 'number'
+                    ? (metrics.realizedSigma * 100).toFixed(1) + '%' : '—');
+
+                // Lightweight simulation: 1000 paths, 252 trading days,
+                // OU for energy/utilities, GBM+jump for industrials. Match
+                // stochasticWorker semantics inline so we don't need a worker.
+                const paths = 1000;
+                const steps = 252;
+                const dt = 1 / 252;
+                const S0 = metrics.currentPrice || history[history.length - 1].adjClose;
+                const sigma = metrics.realizedSigma || o.baselineVolatility || 0.25;
+                const drift = 0.05; // 5% nominal annual drift — close enough for a brief
+                const finals = new Array(paths);
+
+                if (o.cohort === 'energy_and_utilities') {
+                    const theta = o.reversionSpeedTheta || 0.15;
+                    const mean = (metrics.longTermMeanPrice || S0);
+                    for (let p = 0; p < paths; p++) {
+                        let S = S0;
+                        for (let t = 0; t < steps; t++) {
+                            const z = gaussian();
+                            S = S + theta * (mean - S) * dt + sigma * S * Math.sqrt(dt) * z;
+                            if (S < 0.01) S = 0.01;
+                        }
+                        finals[p] = S;
+                    }
+                } else {
+                    const lambda = o.jumpFrequencyLambda || 5;
+                    const jumpMu = o.jumpMu || 0.01;
+                    const jumpStd = 0.05;
+                    const compensator = lambda * (Math.exp(jumpMu + 0.5 * jumpStd * jumpStd) - 1);
+                    for (let p = 0; p < paths; p++) {
+                        let S = S0;
+                        for (let t = 0; t < steps; t++) {
+                            const z = gaussian();
+                            let jump = 0;
+                            // Poisson(lambda*dt) — for small lambda*dt, Bernoulli is fine
+                            if (Math.random() < lambda * dt) {
+                                jump = jumpMu + jumpStd * gaussian();
+                            }
+                            S = S * Math.exp((drift - compensator - 0.5 * sigma * sigma) * dt + sigma * Math.sqrt(dt) * z + jump);
+                            if (S < 0.01) S = 0.01;
+                        }
+                        finals[p] = S;
+                    }
+                }
+                finals.sort((a, b) => a - b);
+                const median = finals[Math.floor(paths * 0.5)];
+                const p5 = finals[Math.floor(paths * 0.05)];
+                const p95 = finals[Math.floor(paths * 0.95)];
+                const ret = (v) => ((v / S0) - 1) * 100;
+
+                setText('os-median', fmtPct(ret(median), true));
+                setText('os-p5', fmtPct(ret(p5), true));
+                setText('os-p95', fmtPct(ret(p95), true));
+                footer.textContent = '> 1000 paths · ' + o.physics + ' · σ=' + (sigma * 100).toFixed(1) + '%';
+            } catch (e) {
+                console.warn('[Brief] simulation failed', e);
+                footer.textContent = '> Simulation failed';
+            }
+        }
+
+        function gaussian() {
+            const u1 = Math.max(Math.random(), 1e-12);
+            const u2 = Math.random();
+            return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        }
+
+        // ── Phase 4 — live Sentinel macro-adjusted spread ──────────
+        async function populateSentinelLive(entry) {
+            const s = entry.sentinel;
+            if (!s) return;
+            const footer = document.getElementById('sn-footer');
+            try {
+                const sectorEtf = entry.sector === 'Energy' ? 'XLE' : entry.sector === 'Utilities' ? 'XLU' : 'XLI';
+                // FRED rating index code per Sentinel's convention
+                const ratingMap = { AAA: 'BAMLC0A1CAAA', AA: 'BAMLC0A2CAA', A: 'BAMLC0A3CA', BBB: 'BAMLC0A4CBBB', HY: 'BAMLH0A0HYM2' };
+                const ratingCode = ratingMap[s.rating];
+                const [vixRes, ratingRes, sectorRes] = await Promise.all([
+                    fetch('/api/fred-proxy?series_id=VIXCLS').then(r => r.ok ? r.json() : null).catch(() => null),
+                    ratingCode ? fetch('/api/fred-proxy?series_id=' + ratingCode).then(r => r.ok ? r.json() : null).catch(() => null) : Promise.resolve(null),
+                    fetch('/api/alpha-proxy?symbol=' + sectorEtf).then(r => r.ok ? r.json() : null).catch(() => null)
+                ]);
+                const vix = vixRes && typeof vixRes.value === 'number' ? vixRes.value : 15;
+                const ratingIdxBps = ratingRes && typeof ratingRes.value === 'number' ? Math.round(ratingRes.value * 100) : 0;
+                const sectorVol = sectorRes && typeof sectorRes.volatility === 'number' ? sectorRes.volatility : 22;
+
+                const cFactor = Math.min(0.8, Math.max(0, (vix - 25) / 25));
+                const effSectorBeta = (1 - cFactor) * s.sectorBeta + cFactor;
+                const effMarketBeta = (1 - cFactor) * s.marketBeta + cFactor;
+                const proxyVol = sectorVol * effSectorBeta;
+                const mertonScalar = 1.5 + 1.0 / (1 + Math.exp(-0.4 * (proxyVol - 35)));
+                const sensitivity = s.type === 'IG' ? 0.35 : 1.0;
+                const liveMacroSpread = Math.max(s.baseSpread, ratingIdxBps);
+                const volPremium = proxyVol * mertonScalar * 1.0 * sensitivity;
+                const marketComp = effMarketBeta * 50 * 1.0 * sensitivity;
+                const liveSpread = Math.round(liveMacroSpread + volPremium + marketComp);
+
+                const tier = tierFromSpread(liveSpread);
+                setHTML('sn-live', '<span style="color:' + tier.color + ';">' + liveSpread + ' bps</span>');
+                setText('sn-live-tier', tier.tier);
+
+                // Approx yield to UST 10Y
+                const ust10y = 4.25; // placeholder; sentinel uses live FRED
+                setText('sn-yield', (ust10y + liveSpread / 100).toFixed(2) + '%');
+
+                footer.textContent = '> Live: FRED ' + (s.rating || 'idx') + ' · VIX ' + vix.toFixed(1) + ' · ' + sectorEtf + ' σ=' + sectorVol.toFixed(1) + '%';
+            } catch (e) {
+                console.warn('[Brief] sentinel live failed', e);
+            }
+        }
+    </script>
+
+    <script src="components/global-search/global-search.js" defer></script>
+</body>
+</html>
