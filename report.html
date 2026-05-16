@@ -1346,11 +1346,183 @@
             if (!ticker.includes(':')) return ticker;
             const [exchange, symbol] = ticker.split(':');
             const ex = exchange.toUpperCase();
+
+            // US — bare symbol, no suffix
             if (ex === 'NYSE' || ex === 'NASDAQ' || ex === 'AMEX') return symbol;
-            if (ex === 'BME') return symbol + '.MC';   // Madrid (Iberdrola)
-            if (ex === 'LON') return symbol + '.L';    // London
-            if (ex === 'XETR' || ex === 'FWB') return symbol + '.DE'; // Frankfurt
+
+            // Europe
+            if (ex === 'BME')                       return symbol + '.MC';                              // Madrid
+            if (ex === 'LON' || ex === 'LSE') {
+                // LSE ordinary-share TradingView symbols sometimes end in '.' (NG., RR., BA.).
+                // Yahoo's convention is to put the dot before the exchange suffix (NG.L, RR.L).
+                const bare = symbol.endsWith('.') ? symbol.slice(0, -1) : symbol;
+                return bare + '.L';
+            }
+            if (ex === 'XETR' || ex === 'FWB')      return symbol + '.DE';                              // Frankfurt
+            if (ex === 'MIL' || ex === 'BIT')       return symbol + '.MI';                              // Milan
+            if (ex === 'EURONEXT' || ex === 'EPA')  return symbol + '.PA';                              // Paris
+            // Stockholm: TradingView uses '_' for share class (ATCO_A); Yahoo uses '-' (ATCO-A.ST).
+            if (ex === 'OMXSTO' || ex === 'OMX')    return symbol.replace(/_/g, '-') + '.ST';
+
+            // Asia-Pacific
+            if (ex === 'TSE' || ex === 'TYO')       return symbol + '.T';                               // Tokyo
+            if (ex === 'NSE')                       return symbol + '.NS';                              // India NSE
+            if (ex === 'BSE')                       return symbol + '.BO';                              // India BSE
+            if (ex === 'HKEX' || ex === 'HKG')      return symbol + '.HK';                              // Hong Kong
+            if (ex === 'ASX')                       return symbol + '.AX';                              // Australia
+
+            // Middle East / Latin America
+            if (ex === 'TADAWUL')                   return symbol + '.SR';                              // Saudi
+            if (ex === 'BMFBOVESPA' || ex === 'B3') return symbol + '.SA';                              // Brazil
+
             return symbol; // generic fallback
+        }
+
+        // ── Fallback price chart (TradingView-restricted tickers) ────
+        // Renders a 1Y price line on a canvas, using the same Yahoo
+        // history that osirisIngestion already caches for every ticker.
+        // Used in place of the TradingView embed for the handful of
+        // names TradingView's free widget refuses to display.
+        async function renderFallbackChart(container, data) {
+            container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(57,255,20,0.5);font-family:monospace;font-size:0.85em;letter-spacing:1px;">Loading 1Y chart…</div>';
+
+            const yahooSym = data.yahooSymbol || toYahooSymbol(data.ticker);
+            if (!yahooSym) {
+                container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.5);font-family:monospace;font-size:0.85em;">Chart unavailable — symbol not resolvable</div>';
+                return;
+            }
+
+            let history;
+            try {
+                history = await osirisIngestion.getHistoricalData(yahooSym);
+            } catch (e) {
+                container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.5);font-family:monospace;font-size:0.85em;">Chart unavailable — ' + escapeHtml(e.message || 'fetch failed') + '</div>';
+                return;
+            }
+            if (!Array.isArray(history) || history.length < 2) {
+                container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.5);font-family:monospace;font-size:0.85em;">Insufficient price history</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'position:relative;width:100%;height:100%;';
+            const canvas = document.createElement('canvas');
+            canvas.style.cssText = 'display:block;width:100%;height:100%;';
+            wrapper.appendChild(canvas);
+            container.appendChild(wrapper);
+
+            function draw() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) return;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                const ctx = canvas.getContext('2d');
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                const w = rect.width, h = rect.height;
+                const padL = 54, padR = 14, padT = 34, padB = 26;
+                const plotW = w - padL - padR;
+                const plotH = h - padT - padB;
+
+                let min = Infinity, max = -Infinity;
+                for (const p of history) {
+                    if (p.adjClose < min) min = p.adjClose;
+                    if (p.adjClose > max) max = p.adjClose;
+                }
+                const range = max - min || 1;
+                const yMin = min - range * 0.05;
+                const yMax = max + range * 0.05;
+
+                const start = history[0].adjClose;
+                const cur = history[history.length - 1].adjClose;
+                const delta = cur - start;
+                const deltaPct = (delta / start) * 100;
+                const positive = delta >= 0;
+                const lineCol = positive ? 'rgba(57, 255, 20, 1)' : 'rgba(255, 100, 100, 1)';
+                const fillTop = positive ? 'rgba(57, 255, 20, 0.28)' : 'rgba(255, 100, 100, 0.28)';
+                const fillBot = positive ? 'rgba(57, 255, 20, 0)'    : 'rgba(255, 100, 100, 0)';
+
+                const yFor = price => padT + plotH * (1 - (price - yMin) / (yMax - yMin));
+                const xFor = idx   => padL + plotW * (idx / (history.length - 1));
+
+                // Subtle horizontal gridlines.
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+                ctx.lineWidth = 1;
+                for (let g = 0; g <= 4; g++) {
+                    const y = padT + plotH * (g / 4);
+                    ctx.beginPath();
+                    ctx.moveTo(padL, y);
+                    ctx.lineTo(padL + plotW, y);
+                    ctx.stroke();
+                }
+
+                // Area fill under the curve.
+                const gradient = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+                gradient.addColorStop(0, fillTop);
+                gradient.addColorStop(1, fillBot);
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.moveTo(xFor(0), padT + plotH);
+                for (let i = 0; i < history.length; i++) ctx.lineTo(xFor(i), yFor(history[i].adjClose));
+                ctx.lineTo(xFor(history.length - 1), padT + plotH);
+                ctx.closePath();
+                ctx.fill();
+
+                // Price line.
+                ctx.strokeStyle = lineCol;
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.moveTo(xFor(0), yFor(history[0].adjClose));
+                for (let i = 1; i < history.length; i++) ctx.lineTo(xFor(i), yFor(history[i].adjClose));
+                ctx.stroke();
+
+                // Y-axis labels — high and low.
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.font = '10px JetBrains Mono, monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText(max.toFixed(2), padL - 6, padT + 4);
+                ctx.fillText(min.toFixed(2), padL - 6, padT + plotH);
+
+                // Header — ticker + current price + change.
+                ctx.textAlign = 'left';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+                ctx.font = '700 12px Montserrat, sans-serif';
+                ctx.fillText(data.ticker, padL, 18);
+
+                let cursor = padL + ctx.measureText(data.ticker).width + 14;
+                ctx.font = '700 14px JetBrains Mono, monospace';
+                ctx.fillStyle = '#fff';
+                const priceText = cur.toFixed(2);
+                ctx.fillText(priceText, cursor, 18);
+                cursor += ctx.measureText(priceText).width + 10;
+
+                ctx.font = '10px JetBrains Mono, monospace';
+                ctx.fillStyle = lineCol;
+                const sign = positive ? '+' : '';
+                ctx.fillText(sign + delta.toFixed(2) + ' (' + sign + deltaPct.toFixed(2) + '%)', cursor, 18);
+
+                // Date axis — start / end labels only.
+                ctx.font = '9px JetBrains Mono, monospace';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+                ctx.textAlign = 'left';
+                ctx.fillText(history[0].date || '', padL, padT + plotH + 14);
+                ctx.textAlign = 'right';
+                ctx.fillText(history[history.length - 1].date || '', padL + plotW, padT + plotH + 14);
+
+                ctx.fillStyle = 'rgba(57, 255, 20, 0.45)';
+                ctx.font = '9px JetBrains Mono, monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText('1Y · Yahoo Finance', w - padR, 18);
+            }
+
+            draw();
+            let rt;
+            window.addEventListener('resize', () => {
+                clearTimeout(rt);
+                rt = setTimeout(draw, 120);
+            });
         }
 
         // ── News Feed ────────────────────────────────────────────────
@@ -2188,35 +2360,52 @@
                         }
                     }
 
-                    // TradingView Widget Injection
+                    // TradingView's free embed widget refuses to render certain
+                    // non-US exchanges even when their search API resolves them
+                    // ("This symbol is only available on TradingView"). For
+                    // those tickers we draw an in-house 1Y price line on a
+                    // canvas, using osirisIngestion's already-cached Yahoo data.
+                    const RESTRICTED_TV_TICKERS = new Set([
+                        'MIL:ENI', 'MIL:ENEL', 'MIL:LDO',
+                        'EURONEXT:ENGI', 'EURONEXT:AIR', 'EURONEXT:SAF', 'EURONEXT:HO',
+                        'OMXSTO:ATCO_A', 'OMXSTO:VOLV_B',
+                        'LSE:NG.', 'LSE:RR.'
+                    ]);
+
                     if (data.ticker) {
                         const chartSection = document.getElementById('stock-chart-section');
                         const widgetContainer = document.getElementById('tv-widget-container');
                         chartSection.style.display = 'block';
-                        
-                        const script = document.createElement('script');
-                        script.type = 'text/javascript';
-                        script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
-                        script.async = true;
-                        
-                        script.innerHTML = JSON.stringify({
-                            "symbol": data.ticker,
-                            "width": "100%",
-                            "height": "100%",
-                            "locale": "en",
-                            "dateRange": "12M",
-                            "colorTheme": "dark",
-                            "isTransparent": true,
-                            "autosize": true,
-                            "largeChartUrl": "",
-                            "chartOnly": false,
-                            "noTimeScale": false,
-                            "trendLineColor": "rgba(57, 255, 20, 1)", // Neon Green
-                            "underLineColor": "rgba(57, 255, 20, 0.3)",
-                            "underLineBottomColor": "rgba(57, 255, 20, 0)"
-                        });
-                        
-                        widgetContainer.appendChild(script);
+
+                        if (RESTRICTED_TV_TICKERS.has(data.ticker)) {
+                            // Native canvas fallback: build the chart from the
+                            // 1Y price series osirisIngestion already caches.
+                            renderFallbackChart(widgetContainer, data);
+                        } else {
+                            const script = document.createElement('script');
+                            script.type = 'text/javascript';
+                            script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+                            script.async = true;
+
+                            script.innerHTML = JSON.stringify({
+                                "symbol": data.ticker,
+                                "width": "100%",
+                                "height": "100%",
+                                "locale": "en",
+                                "dateRange": "12M",
+                                "colorTheme": "dark",
+                                "isTransparent": true,
+                                "autosize": true,
+                                "largeChartUrl": "",
+                                "chartOnly": false,
+                                "noTimeScale": false,
+                                "trendLineColor": "rgba(57, 255, 20, 1)",
+                                "underLineColor": "rgba(57, 255, 20, 0.3)",
+                                "underLineBottomColor": "rgba(57, 255, 20, 0)"
+                            });
+
+                            widgetContainer.appendChild(script);
+                        }
                     }
                     
                     // Live Multiples Calculation
