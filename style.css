@@ -1173,13 +1173,14 @@ body {
     margin: 0;
     text-transform: uppercase;
     line-height: 1;
-    text-shadow: 0 0 10px rgba(57, 255, 20, 0.8), 0 0 30px rgba(57, 255, 20, 0.4);
+    /* Glow colour matches the text (white). Pulses gently at rest. */
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 30px rgba(255, 255, 255, 0.35);
     animation: hdrGlow 4s ease-in-out infinite alternate;
 }
 
 @keyframes hdrGlow {
-    from { text-shadow: 0 0 10px rgba(57, 255, 20, 0.8), 0 0 30px rgba(57, 255, 20, 0.4); }
-    to { text-shadow: 0 0 20px rgba(57, 255, 20, 1), 0 0 50px rgba(57, 255, 20, 0.7); }
+    from { text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 0 30px rgba(255, 255, 255, 0.35); }
+    to   { text-shadow: 0 0 20px rgba(255, 255, 255, 0.95), 0 0 50px rgba(255, 255, 255, 0.6); }
 }
 
 .promo-desc {
@@ -1194,11 +1195,12 @@ body {
 }
 
 .sentinel-promo-section:hover .promo-hdr {
-    color: var(--accent-green);
-    /* Drop the green glow on hover so the text reads as a clean neon-green
-       solid; the pulsing shadow + green color stacked together had a
-       washed-out, tacky look. Resting state still pulses. */
-    text-shadow: none;
+    /* No colour change — text stays white. Hover only intensifies the
+       white glow, in the same colour as the text. Pause the rest-state
+       pulse so the bright state holds steady while hovered. */
+    text-shadow: 0 0 22px rgba(255, 255, 255, 1),
+                 0 0 55px rgba(255, 255, 255, 0.75),
+                 0 0 100px rgba(255, 255, 255, 0.4);
     animation: none;
 }
 
