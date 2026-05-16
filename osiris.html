@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NovaSect - Project Osiris</title>
+    <title>NovaSect - Osiris</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -349,12 +349,12 @@
             z-index: 0;
         }
         .osiris-bg-matrix {
-            opacity: 0.55;
+            opacity: 1;
         }
         .osiris-bg-vignette {
-            background: radial-gradient(ellipse 75% 55% at 50% 42%,
+            background: radial-gradient(ellipse 80% 60% at 50% 42%,
                                         transparent 0%,
-                                        rgba(0, 0, 0, 0.6) 95%);
+                                        rgba(0, 0, 0, 0.35) 95%);
         }
         main {
             position: relative;
@@ -483,11 +483,11 @@
     <main>
         <section class="osiris-container">
             <div class="osiris-header">
-                <h1 class="osiris-title">PROJECT OSIRIS</h1>
+                <h1 class="osiris-title">OSIRIS</h1>
                 <div class="osiris-subtitle">STOCHASTIC PROBABILITY ENGINE // MULTI-PATH FORWARD SIMULATION</div>
             </div>
 
-            <div class="osiris-controls-wrapper" style="background: rgba(0, 255, 0, 0.05); border: 1px solid rgba(0, 255, 0, 0.2); padding: 20px; border-radius: 4px;">
+            <div class="osiris-controls-wrapper" style="background: #0d1a0d; border: 1px solid rgba(57, 255, 20, 0.3); padding: 20px; border-radius: 4px; box-shadow: 0 0 24px rgba(57, 255, 20, 0.12);">
                 <div class="osiris-controls" style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 20px; border: none; padding: 0; background: transparent;">
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
                         <label for="osiris-combobox-input" style="color: var(--accent-green); font-family: monospace; font-size: 0.9em;">TARGET TICKER:</label>
@@ -681,7 +681,7 @@
             </div>
 
             <div class="oracle-terminal">
-                <div class="oracle-header">ORACLE SYNTHESIS PROTOCOL</div>
+                <div class="oracle-header">OSIRIS INFERENCE</div>
                 <div id="oracle-readout">
                     > SYSTEM STANDBY. AWAITING SIMULATION PARAMETERS... <span class="blinking-cursor">_</span>
                 </div>
@@ -746,9 +746,9 @@
             function frame(now) {
                 // Trailing fade — overlay slight black each frame so existing
                 // characters fade out smoothly behind the falling head.
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.085)';
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
                 ctx.fillRect(0, 0, cssW, cssH);
-                ctx.fillStyle = 'rgba(120, 230, 120, 0.55)';
+                ctx.fillStyle = 'rgba(120, 230, 120, 0.85)';
 
                 for (let i = 0; i < columns.length; i++) {
                     const c = columns[i];
