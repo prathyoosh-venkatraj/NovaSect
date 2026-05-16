@@ -17,10 +17,12 @@
         }
 
         /* Page-level wordmark above the company header. Renders on every
-           brief regardless of whether a ticker is selected. */
+           brief regardless of whether a ticker is selected. Font matches
+           the SENTINEL / OSIRIS .promo-hdr on the landing page
+           (var(--font-display), 900 weight). */
         .brief-page-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 700;
+            font-family: var(--font-display);
+            font-weight: 900;
             font-size: 0.9rem;
             color: var(--accent-green);
             letter-spacing: 6px;
@@ -37,6 +39,7 @@
             background: rgba(1, 10, 1, 0.85);
             border-radius: 4px;
             padding: 1.5rem 1.75rem;
+            text-align: center;
         }
         .brief-ticker {
             font-family: 'JetBrains Mono', monospace;
