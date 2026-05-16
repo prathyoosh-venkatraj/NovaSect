@@ -1045,6 +1045,10 @@
                             <span class="mc-label">Last Dividend</span>
                             <span class="mc-value" id="mc-last-div">—</span>
                         </div>
+                        <div class="mc-card">
+                            <span class="mc-label">Credit Risk (Sentinel)</span>
+                            <span class="mc-value" id="mc-sentinel-risk">—</span>
+                        </div>
                     </div>
                     <div class="mc-footer" id="mc-footer"></div>
                 </div>
@@ -1643,6 +1647,52 @@
             if (footer && sourceTier === 'yahoo-rss') {
                 footer.textContent = '> Yahoo Finance RSS · ' + yahooSym + ' (Finnhub fallback)';
             }
+        }
+
+        // ── Sentinel risk badge ──────────────────────────────────────
+        // Looks up the company in data/universe.json (single source of
+        // truth for cross-tool features) and renders a static rating-
+        // anchored spread + risk tier in the Market Context grid.
+        // Uses the same getRiskLevel thresholds as Sentinel itself.
+        // Live macro-adjusted spread is what Sentinel renders on its
+        // own card — this badge is the static anchor + "Open in
+        // Sentinel" doorway.
+        let _universePromise = null;
+        function loadUniverse() {
+            if (!_universePromise) _universePromise = fetch('data/universe.json').then(r => r.ok ? r.json() : null).catch(() => null);
+            return _universePromise;
+        }
+
+        function tierFromSpread(spread) {
+            if (typeof spread !== 'number') return null;
+            if (spread < 200) return { tier: 'NOMINAL',  color: '#39FF14' };
+            if (spread < 400) return { tier: 'CAUTION',  color: '#FACC15' };
+            if (spread < 800) return { tier: 'ELEVATED', color: '#F97316' };
+            return                       { tier: 'CRITICAL', color: '#EF4444' };
+        }
+
+        async function loadSentinelRisk(slug) {
+            const el = document.getElementById('mc-sentinel-risk');
+            if (!el || !slug) return;
+            const universe = await loadUniverse();
+            if (!universe || !universe.tickers) return;
+
+            let entry = null;
+            for (const e of Object.values(universe.tickers)) {
+                if (e.finvault && e.finvault.slug === slug) { entry = e; break; }
+            }
+            if (!entry || !entry.sentinel || typeof entry.sentinel.baseSpread !== 'number') {
+                el.textContent = '—';
+                return;
+            }
+
+            const spread = entry.sentinel.baseSpread;
+            const tier = tierFromSpread(spread);
+            if (!tier) { el.textContent = '—'; return; }
+
+            el.innerHTML =
+                '<span style="color:' + tier.color + ';font-weight:700;">' + spread + ' bps</span>' +
+                '<span style="display:block;margin-top:2px;font-size:0.65em;letter-spacing:1.5px;color:rgba(255,255,255,0.55);">' + tier.tier + '</span>';
         }
 
         // ── Company Profile + Revenue Segments ───────────────────────
@@ -2362,6 +2412,8 @@
                         loadPeerComparison(data.ticker, PEERS[company.toLowerCase()] || []);
                         loadFundamentals(data.ticker);
                     }
+                    // Cross-tool badge: Sentinel's static rating anchor.
+                    loadSentinelRisk(company.toLowerCase());
 
                     if (data.stats && data.stats.length > 0) {
                         const rows = tbody.querySelectorAll('tr');
