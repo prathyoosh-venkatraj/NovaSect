@@ -334,11 +334,58 @@
             font-size: 1.05em;
         }
 
+        /* === Ambient background layers ========================================
+           Three coordinated layers behind <main> that texture the dark canvas
+           without interfering with any interaction or layout. Order from back
+           to front (all behind main):
+             1. .osiris-bg-grid    — static dotted grid (CSS-only)
+             2. .osiris-bg-paths   — animated stochastic paths (canvas)
+             3. .osiris-bg-vignette — radial darkening at the edges */
+        .osiris-bg-grid,
+        .osiris-bg-vignette,
+        .osiris-bg-paths {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+        }
+        .osiris-bg-grid {
+            z-index: 0;
+            background-image:
+                radial-gradient(circle, rgba(57, 255, 20, 0.05) 1px, transparent 1.5px);
+            background-size: 56px 56px;
+            opacity: 0.85;
+        }
+        .osiris-bg-vignette {
+            z-index: 0;
+            background: radial-gradient(ellipse 75% 55% at 50% 42%,
+                                        transparent 0%,
+                                        rgba(0, 0, 0, 0.55) 95%);
+        }
+        .osiris-bg-paths {
+            z-index: 0;
+            opacity: 0.85;
+        }
+        main {
+            position: relative;
+            z-index: 1;
+        }
+        /* Respect users who've opted out of motion. */
+        @media (prefers-reduced-motion: reduce) {
+            .osiris-bg-paths { display: none; }
+        }
+
         /* === Mobile layout (≤768px) ============================================
            Several wrappers use inline `style="..."` (highest specificity), so
            overriding them from CSS requires !important. Scoped strictly to the
            viewport breakpoint — desktop behaviour is unchanged. */
         @media (max-width: 768px) {
+            /* Skip the animated path canvas on mobile (battery + already-busy
+               controls panel). Keep the grid at slightly lower density. */
+            .osiris-bg-paths { display: none; }
+            .osiris-bg-grid {
+                background-size: 40px 40px;
+                opacity: 0.6;
+            }
             .osiris-container {
                 padding: 24px 12px;
                 gap: 16px;
@@ -441,6 +488,11 @@
             <a href="about.html" class="nav-link">About us</a>
         </nav>
     </header>
+
+    <!-- Ambient background layers (purely decorative, pointer-events:none) -->
+    <div class="osiris-bg-grid" aria-hidden="true"></div>
+    <canvas class="osiris-bg-paths" aria-hidden="true"></canvas>
+    <div class="osiris-bg-vignette" aria-hidden="true"></div>
 
     <main>
         <section class="osiris-container">
@@ -650,6 +702,107 @@
             </div>
         </section>
     </main>
+
+    <!-- Ambient background: sparse stochastic paths drifting across the viewport.
+         ~10 concurrent Brownian walks with rare Poisson jumps; visually echoes
+         the Monte Carlo simulation the page runs. Disabled on mobile and when
+         the user prefers reduced motion. -->
+    <script>
+        (() => {
+            const canvas = document.querySelector('.osiris-bg-paths');
+            if (!canvas) return;
+            if (window.innerWidth < 769) return;
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            const ctx = canvas.getContext('2d');
+            let cssW = 0, cssH = 0;
+
+            function resize() {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                cssW = window.innerWidth;
+                cssH = window.innerHeight;
+                canvas.width = cssW * dpr;
+                canvas.height = cssH * dpr;
+                canvas.style.width = cssW + 'px';
+                canvas.style.height = cssH + 'px';
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            const MAX_PATHS = 11;
+            const PATH_LIFE = 11000;
+            const FADE = 1800;
+            const paths = [];
+            let last = performance.now();
+            let spawnTimer = 0;
+
+            function spawn(prebornAge = 0) {
+                paths.push({
+                    x: -40 + (prebornAge > 0 ? Math.random() * cssW : 0),
+                    y: Math.random() * cssH,
+                    drift: (Math.random() - 0.5) * 0.4,
+                    sigma: 0.5 + Math.random() * 1.4,
+                    speed: 0.45 + Math.random() * 1.3,
+                    born: performance.now() - prebornAge,
+                    jumpy: Math.random() < 0.18,
+                    points: []
+                });
+            }
+            // Pre-seed so the first second isn't visually empty.
+            for (let i = 0; i < 5; i++) spawn(Math.random() * 4000);
+
+            function frame(now) {
+                const dt = Math.min(now - last, 50);
+                last = now;
+                spawnTimer -= dt;
+                if (paths.length < MAX_PATHS && spawnTimer <= 0) {
+                    spawn();
+                    spawnTimer = 650 + Math.random() * 900;
+                }
+                // Slight trailing fade rather than hard clear — gives paths a
+                // ghosted-tail feel without compounding noise.
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.045)';
+                ctx.fillRect(0, 0, cssW, cssH);
+
+                for (let i = paths.length - 1; i >= 0; i--) {
+                    const p = paths[i];
+                    const age = now - p.born;
+                    p.x += p.speed;
+                    let jitter = (Math.random() - 0.5) * p.sigma * 2;
+                    // Rare Poisson jump for the ~18% of paths flagged "jumpy",
+                    // mirroring the GBM+jump cohort.
+                    if (p.jumpy && Math.random() < 0.005) {
+                        jitter += (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 14);
+                    }
+                    p.y += p.drift + jitter;
+                    p.points.push(p.x, p.y);
+                    if (p.points.length > 320) p.points.splice(0, 4);
+
+                    let alpha = 0.13;
+                    if (age < FADE) alpha *= age / FADE;
+                    else if (age > PATH_LIFE - FADE) alpha *= (PATH_LIFE - age) / FADE;
+
+                    if (alpha > 0 && p.points.length > 4) {
+                        ctx.strokeStyle = 'rgba(57, 255, 20, ' + alpha + ')';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(p.points[0], p.points[1]);
+                        for (let j = 2; j < p.points.length; j += 2) {
+                            ctx.lineTo(p.points[j], p.points[j + 1]);
+                        }
+                        ctx.stroke();
+                    }
+
+                    if (age > PATH_LIFE || p.x > cssW + 60) {
+                        paths.splice(i, 1);
+                    }
+                }
+                requestAnimationFrame(frame);
+            }
+            requestAnimationFrame(frame);
+        })();
+    </script>
 
     <script type="module" src="components/osiris/osiris.js"></script>
 </body>
