@@ -123,6 +123,49 @@
             border: none;
         }
 
+        /* Shown in place of the PDF iframe when a ticker has no research
+           report yet — every Sentinel/Osiris ticker has a FinVault page,
+           but only ~10% currently have a digested PDF behind them. */
+        .pdf-placeholder {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed rgba(57, 255, 20, 0.3);
+            padding: 2rem;
+            text-align: center;
+        }
+        .pdf-placeholder-inner { max-width: 360px; }
+        .pdf-placeholder-mobile {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px dashed rgba(57, 255, 20, 0.3);
+            border-radius: 6px;
+            margin: 1rem;
+        }
+        .pdf-placeholder-title {
+            color: var(--accent-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            letter-spacing: 2.5px;
+            margin-bottom: 0.4rem;
+        }
+        .pdf-placeholder-sub {
+            color: rgba(57, 255, 20, 0.65);
+            font-family: monospace;
+            font-size: 0.72rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        .pdf-placeholder-body {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 0.85rem;
+            line-height: 1.55;
+        }
+
         .stats-table-container {
             flex: 1;
             background: rgba(1, 10, 1, 0.9);
@@ -1100,66 +1143,21 @@
                             </tr>
                         </thead>
                         <tbody id="stats-body">
-                            <tr>
-                                <td>Current</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Acid test</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Operating cash flow</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Liabilities to Equity</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Debt to Equity</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Debt to assets</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Interest coverage</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Inventory turnover</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Receivables turnover</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Payables turnover</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Total asset turnover</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Operating margin</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Net profit margin</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Return on assets</td>
-                                <td></td>
-                            </tr>
-                            <tr>
-                                <td>Return on equity</td>
-                                <td></td>
-                            </tr>
+                            <tr><td>Current</td><td>--</td></tr>
+                            <tr><td>Acid test</td><td>--</td></tr>
+                            <tr><td>Operating cash flow</td><td>--</td></tr>
+                            <tr><td>Liabilities to Equity</td><td>--</td></tr>
+                            <tr><td>Debt to Equity</td><td>--</td></tr>
+                            <tr><td>Debt to assets</td><td>--</td></tr>
+                            <tr><td>Interest coverage</td><td>--</td></tr>
+                            <tr><td>Inventory turnover</td><td>--</td></tr>
+                            <tr><td>Receivables turnover</td><td>--</td></tr>
+                            <tr><td>Payables turnover</td><td>--</td></tr>
+                            <tr><td>Total asset turnover</td><td>--</td></tr>
+                            <tr><td>Operating margin</td><td>--</td></tr>
+                            <tr><td>Net profit margin</td><td>--</td></tr>
+                            <tr><td>Return on assets</td><td>--</td></tr>
+                            <tr><td>Return on equity</td><td>--</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1978,9 +1976,145 @@
                     }
                 };
 
+                // === Skeleton entries for the wider universe (74 tickers) =====
+                // Every Sentinel / Osiris ticker now has a corresponding FinVault
+                // report page so the three tools share a single 83-company
+                // universe. Until the underlying 10-K / annual report has been
+                // digested, fundamentals (multiples) and stats (ratios) stay
+                // empty — those sections render with '--' placeholders. Live
+                // sections (TradingView, Market Context, News Feed, Forward
+                // Estimates, Peer Snapshot, Fundamentals Highlights) populate
+                // normally from Yahoo/Finnhub.
+                //
+                // Row format: [slug, displayName, tradingViewTicker, industry, yahooSymbolOverride]
+                // - slug is the URL ?company= value (lowercased ticker, dots→hyphens)
+                // - yahooSymbolOverride is only needed when the TradingView bare
+                //   symbol differs from Yahoo's (mostly international names).
+                const skeletonReports = [
+                    // ─── Energy (23) ─────────────────────────────────────────
+                    ['shel',        'Shell PLC',            'NYSE:SHEL',         'Energy', null],
+                    ['eqnr',        'Equinor',              'NYSE:EQNR',         'Energy', null],
+                    ['mpc',         'Marathon Petroleum',   'NYSE:MPC',          'Energy', null],
+                    ['bp',          'BP PLC',               'NYSE:BP',           'Energy', null],
+                    ['tte',         'TotalEnergies',        'NYSE:TTE',          'Energy', null],
+                    ['cop',         'ConocoPhillips',       'NYSE:COP',          'Energy', null],
+                    ['eog',         'EOG Resources',        'NYSE:EOG',          'Energy', null],
+                    ['slb',         'SLB',                  'NYSE:SLB',          'Energy', null],
+                    ['hal',         'Halliburton',          'NYSE:HAL',          'Energy', null],
+                    ['bkr',         'Baker Hughes',         'NASDAQ:BKR',        'Energy', null],
+                    ['vlo',         'Valero Energy',        'NYSE:VLO',          'Energy', null],
+                    ['psx',         'Phillips 66',          'NYSE:PSX',          'Energy', null],
+                    ['oxy',         'Occidental',           'NYSE:OXY',          'Energy', null],
+                    ['wmb',         'Williams Cos',         'NYSE:WMB',          'Energy', null],
+                    ['kmi',         'Kinder Morgan',        'NYSE:KMI',          'Energy', null],
+                    ['eni-mi',      'Eni SpA',              'BIT:ENI',           'Energy', 'ENI.MI'],
+                    ['pbr',         'Petrobras',            'NYSE:PBR',          'Energy', null],
+                    ['2222-sr',     'Saudi Aramco',         'TADAWUL:2222',      'Energy', '2222.SR'],
+                    ['reliance-ns', 'Reliance Industries',  'NSE:RELIANCE',      'Energy', 'RELIANCE.NS'],
+                    ['wds-ax',      'Woodside Energy',      'ASX:WDS',           'Energy', 'WDS.AX'],
+                    ['rep-mc',      'Repsol',               'BME:REP',           'Energy', 'REP.MC'],
+                    ['dvn',         'Devon Energy',         'NYSE:DVN',          'Energy', null],
+                    ['fang',        'Diamondback Energy',   'NASDAQ:FANG',       'Energy', null],
+                    // ─── Utilities (23) ──────────────────────────────────────
+                    ['engi-pa',     'Engie',                'EPA:ENGI',          'Utilities', 'ENGI.PA'],
+                    ['enel-mi',     'Enel SpA',             'BIT:ENEL',          'Utilities', 'ENEL.MI'],
+                    ['nee',         'NextEra Energy',       'NYSE:NEE',          'Utilities', null],
+                    ['duk',         'Duke Energy',          'NYSE:DUK',          'Utilities', null],
+                    ['so',          'Southern Co',          'NYSE:SO',           'Utilities', null],
+                    ['d',           'Dominion Energy',      'NYSE:D',            'Utilities', null],
+                    ['aep',         'American Electric',    'NASDAQ:AEP',        'Utilities', null],
+                    ['exc',         'Exelon Corp',          'NASDAQ:EXC',        'Utilities', null],
+                    ['sre',         'Sempra Energy',        'NYSE:SRE',          'Utilities', null],
+                    ['xel',         'Xcel Energy',          'NASDAQ:XEL',        'Utilities', null],
+                    ['pcg',         'PG&E Corp',            'NYSE:PCG',          'Utilities', null],
+                    ['peg',         'Public Service',       'NYSE:PEG',          'Utilities', null],
+                    ['wec',         'WEC Energy',           'NYSE:WEC',          'Utilities', null],
+                    ['awk',         'American Water Works', 'NYSE:AWK',          'Utilities', null],
+                    ['ntgy-mc',     'Naturgy',              'BME:NTGY',          'Utilities', 'NTGY.MC'],
+                    ['sse-l',       'SSE PLC',              'LSE:SSE',           'Utilities', 'SSE.L'],
+                    ['ng-l',        'National Grid',        'LSE:NG',            'Utilities', 'NG.L'],
+                    ['9501-t',      'Tokyo Electric Power', 'TSE:9501',          'Utilities', '9501.T'],
+                    ['ntpc-ns',     'NTPC',                 'NSE:NTPC',          'Utilities', 'NTPC.NS'],
+                    ['org-ax',      'Origin Energy',        'ASX:ORG',           'Utilities', 'ORG.AX'],
+                    ['eoan-de',     'E.ON',                 'XETR:EOAN',         'Utilities', 'EOAN.DE'],
+                    ['rwe-de',      'RWE',                  'XETR:RWE',          'Utilities', 'RWE.DE'],
+                    ['etr',         'Entergy',              'NYSE:ETR',          'Utilities', null],
+                    // ─── Industrials (28) ────────────────────────────────────
+                    ['ldo-mi',      'Leonardo SpA',         'BIT:LDO',           'Industrials', 'LDO.MI'],
+                    ['ba',          'Boeing',               'NYSE:BA',           'Industrials', null],
+                    ['air-pa',      'Airbus SE',            'EPA:AIR',           'Industrials', 'AIR.PA'],
+                    ['ge',          'GE Aerospace',         'NYSE:GE',           'Industrials', null],
+                    ['hon',         'Honeywell',            'NASDAQ:HON',        'Industrials', null],
+                    ['ups',         'United Parcel',        'NYSE:UPS',          'Industrials', null],
+                    ['unp',         'Union Pacific',        'NYSE:UNP',          'Industrials', null],
+                    ['cat',         'Caterpillar',          'NYSE:CAT',          'Industrials', null],
+                    ['de',          'Deere & Co',           'NYSE:DE',           'Industrials', null],
+                    ['luv',         'Southwest Airlines',   'NYSE:LUV',          'Industrials', null],
+                    ['dal',         'Delta Air Lines',      'NYSE:DAL',          'Industrials', null],
+                    ['mmm',         '3M Company',           'NYSE:MMM',          'Industrials', null],
+                    ['emr',         'Emerson Electric',     'NYSE:EMR',          'Industrials', null],
+                    ['etn',         'Eaton Corp',           'NYSE:ETN',          'Industrials', null],
+                    ['saf-pa',      'Safran SA',            'EPA:SAF',           'Industrials', 'SAF.PA'],
+                    ['rr-l',        'Rolls-Royce',          'LSE:RR',            'Industrials', 'RR.L'],
+                    ['vow3-de',     'Volkswagen',           'XETR:VOW3',         'Industrials', 'VOW3.DE'],
+                    ['sie-de',      'Siemens AG',           'XETR:SIE',          'Industrials', 'SIE.DE'],
+                    ['dhl-de',      'DHL Group',            'XETR:DHL',          'Industrials', 'DHL.DE'],
+                    ['ba-l',        'BAE Systems',          'LSE:BA.',           'Industrials', 'BA.L'],
+                    ['ho-pa',       'Thales',               'EPA:HO',            'Industrials', 'HO.PA'],
+                    ['7011-t',      'Mitsubishi Heavy',     'TSE:7011',          'Industrials', '7011.T'],
+                    ['6301-t',      'Komatsu',              'TSE:6301',          'Industrials', '6301.T'],
+                    ['lt-ns',       'Larsen & Toubro',      'NSE:LT',            'Industrials', 'LT.NS'],
+                    ['embj3-sa',    'Embraer',              'BMFBOVESPA:EMBJ3',  'Industrials', 'EMBJ3.SA'],
+                    ['atco-a-st',   'Atlas Copco',          'OMX:ATCO_A',        'Industrials', 'ATCO-A.ST'],
+                    ['volv-b-st',   'Volvo Group',          'OMX:VOLV_B',        'Industrials', 'VOLV-B.ST'],
+                    ['hwm',         'Howmet Aerospace',     'NYSE:HWM',          'Industrials', null],
+                ];
+
+                for (const [slug, name, tvTicker, industry, yahooOverride] of skeletonReports) {
+                    companyData[slug] = { name, industry, ticker: tvTicker };
+                    if (yahooOverride) companyData[slug].yahooSymbol = yahooOverride;
+                }
+
+                // Auto-derive peer pairs from same sector for skeleton tickers.
+                // Existing 9 keep their hand-picked peers; new 74 get the first
+                // two same-sector tickers (excluding self) so the Peer Snapshot
+                // section renders out-of-the-box.
+                const sectorIndex = { Energy: [], Utilities: [], Industrials: [] };
+                for (const [, , tvTicker, industry] of skeletonReports) {
+                    if (sectorIndex[industry]) sectorIndex[industry].push(tvTicker);
+                }
+                // Seed with the 9 existing reports' tickers so skeletons can
+                // peer-link back to fully-built reports too.
+                sectorIndex.Energy.push('NYSE:CVX', 'NYSE:XOM');
+                sectorIndex.Utilities.push('BME:IBE');
+                sectorIndex.Industrials.push('NYSE:LMT', 'NYSE:NOC', 'NYSE:GD', 'NYSE:LHX', 'NYSE:RTX', 'XETR:RHM');
+                for (const [slug, , tvTicker, industry] of skeletonReports) {
+                    if (!PEERS[slug] && sectorIndex[industry]) {
+                        PEERS[slug] = sectorIndex[industry].filter(t => t !== tvTicker).slice(0, 2);
+                    }
+                }
+
                 const data = companyData[company.toLowerCase()];
                 if (data) {
-                    pdfViewer.src = data.pdf;
+                    if (data.pdf) {
+                        pdfViewer.src = data.pdf;
+                    } else {
+                        // Skeleton report: no PDF yet. Swap iframe for a
+                        // "under construction" placeholder and hide the
+                        // fullscreen control so the affordance matches.
+                        pdfViewer.style.display = 'none';
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'pdf-placeholder';
+                        placeholder.innerHTML =
+                            '<div class="pdf-placeholder-inner">' +
+                            '<p class="pdf-placeholder-title">RESEARCH REPORT</p>' +
+                            '<p class="pdf-placeholder-sub">Under construction</p>' +
+                            '<p class="pdf-placeholder-body">A full PDF research report for this ticker is being prepared. Live market data, peer comparison, news, forward estimates, and fundamentals are populated above.</p>' +
+                            '</div>';
+                        pdfViewer.parentElement.appendChild(placeholder);
+                        const fsBtn = document.getElementById('pdf-fullscreen-btn');
+                        if (fsBtn) fsBtn.style.display = 'none';
+                    }
                     companyDisplayName.textContent = data.name;
                     companyIndustry.textContent = data.industry;
                     document.title = `${data.name} Report - NovaSect`;
@@ -2041,6 +2175,17 @@
                             console.error('PDF Load Error:', err);
                             pdfPagesContainer.innerHTML = '<p style="color: white; padding: 2rem;">Unable to load preview. Please use a desktop for full report.</p>';
                         });
+                    } else if (window.innerWidth <= 1024 && !data.pdf) {
+                        // Skeleton report on mobile — show placeholder.
+                        const pdfPagesContainer = document.getElementById('pdf-pages');
+                        if (pdfPagesContainer) {
+                            pdfPagesContainer.innerHTML =
+                                '<div class="pdf-placeholder-mobile">' +
+                                '<p class="pdf-placeholder-title">RESEARCH REPORT</p>' +
+                                '<p class="pdf-placeholder-sub">Under construction</p>' +
+                                '<p class="pdf-placeholder-body">A full PDF report for this ticker is being prepared. Live data is populated above.</p>' +
+                                '</div>';
+                        }
                     }
 
                     // TradingView Widget Injection
@@ -2083,11 +2228,13 @@
                         // (the HTML default) — no stale static fallback.
 
                         const ticker = data.ticker.split(':')[1];
-                        const symbolMap = { 
+                        const symbolMap = {
                             'IBE': 'IBE.MC',
                             'RHM': 'RHM.DE'
                         };
-                        const yahooSymbol = symbolMap[ticker] || ticker;
+                        // Per-entry yahooSymbol takes precedence (set on every
+                        // skeleton entry whose TV bare-symbol differs from Yahoo).
+                        const yahooSymbol = data.yahooSymbol || symbolMap[ticker] || ticker;
                         const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`;
                         const cacheKey = `novasect_cache_${yahooSymbol}`;
 
