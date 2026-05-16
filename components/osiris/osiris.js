@@ -112,6 +112,20 @@ class OsirisOrchestrator {
             });
         }
 
+        // Deep-link support: ?ticker=X pre-selects that ticker before
+        // the combobox initialises. Used by FinVault report pages'
+        // "Open in Osiris" button. User still clicks INITIATE
+        // SIMULATION when ready — no auto-run.
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedTicker = urlParams.get('ticker');
+        if (requestedTicker && tickerSelect) {
+            const match = Array.from(tickerSelect.options).find(o => o.value === requestedTicker);
+            if (match) {
+                tickerSelect.value = requestedTicker;
+                this.syncUIState(requestedTicker);
+            }
+        }
+
         // Wrap the (now hidden) <select> in a searchable combobox.
         this.initCombobox();
     }

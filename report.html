@@ -879,6 +879,39 @@
             margin: 0;
         }
 
+        .cross-tool-links {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: 0.85rem;
+            flex-wrap: wrap;
+        }
+        .cross-tool-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent-green);
+            background: rgba(57, 255, 20, 0.06);
+            border: 1px solid rgba(57, 255, 20, 0.35);
+            border-radius: 3px;
+            text-decoration: none;
+            transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .cross-tool-btn:hover {
+            background: rgba(57, 255, 20, 0.16);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.25);
+        }
+        .cross-tool-btn.disabled {
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
         /* Scanline effect for table */
         .stats-table-container::after {
             content: " ";
@@ -996,6 +1029,10 @@
                 <div class="company-header">
                     <h1 id="company-name" class="company-title">Company Name</h1>
                     <p id="company-industry" class="company-industry">Industry Name</p>
+                    <div class="cross-tool-links" id="cross-tool-links">
+                        <a id="open-in-sentinel" class="cross-tool-btn" href="#" rel="noopener">▶ Open in Sentinel</a>
+                        <a id="open-in-osiris" class="cross-tool-btn" href="#" rel="noopener">▶ Open in Osiris</a>
+                    </div>
                 </div>
 
                 <!-- Company Profile — manual description + revenue-segment mix.
@@ -1671,16 +1708,20 @@
             return                       { tier: 'CRITICAL', color: '#EF4444' };
         }
 
+        // Helper: find universe entry by FinVault slug.
+        async function findUniverseEntry(slug) {
+            const universe = await loadUniverse();
+            if (!universe || !universe.tickers) return null;
+            for (const e of Object.values(universe.tickers)) {
+                if (e.finvault && e.finvault.slug === slug) return e;
+            }
+            return null;
+        }
+
         async function loadSentinelRisk(slug) {
             const el = document.getElementById('mc-sentinel-risk');
             if (!el || !slug) return;
-            const universe = await loadUniverse();
-            if (!universe || !universe.tickers) return;
-
-            let entry = null;
-            for (const e of Object.values(universe.tickers)) {
-                if (e.finvault && e.finvault.slug === slug) { entry = e; break; }
-            }
+            const entry = await findUniverseEntry(slug);
             if (!entry || !entry.sentinel || typeof entry.sentinel.baseSpread !== 'number') {
                 el.textContent = '—';
                 return;
@@ -1693,6 +1734,25 @@
             el.innerHTML =
                 '<span style="color:' + tier.color + ';font-weight:700;">' + spread + ' bps</span>' +
                 '<span style="display:block;margin-top:2px;font-size:0.65em;letter-spacing:1.5px;color:rgba(255,255,255,0.55);">' + tier.tier + '</span>';
+        }
+
+        // ── Cross-tool deep links ────────────────────────────────────
+        // Point the "Open in Sentinel" / "Open in Osiris" buttons at
+        // sentinel.html?ticker=X / osiris.html?ticker=X using the
+        // canonical Yahoo ticker from universe.json. The receiving
+        // pages parse ?ticker= and auto-select that company.
+        async function setupCrossToolLinks(slug) {
+            const entry = await findUniverseEntry(slug);
+            const sentinelBtn = document.getElementById('open-in-sentinel');
+            const osirisBtn = document.getElementById('open-in-osiris');
+            if (!entry) {
+                if (sentinelBtn) sentinelBtn.classList.add('disabled');
+                if (osirisBtn) osirisBtn.classList.add('disabled');
+                return;
+            }
+            const t = encodeURIComponent(entry.ticker);
+            if (sentinelBtn) sentinelBtn.href = 'sentinel.html?ticker=' + t;
+            if (osirisBtn) osirisBtn.href = 'osiris.html?ticker=' + t;
         }
 
         // ── Company Profile + Revenue Segments ───────────────────────
@@ -2412,8 +2472,11 @@
                         loadPeerComparison(data.ticker, PEERS[company.toLowerCase()] || []);
                         loadFundamentals(data.ticker);
                     }
-                    // Cross-tool badge: Sentinel's static rating anchor.
+                    // Cross-tool badge: Sentinel's static rating anchor +
+                    // deep-link buttons that hand the canonical ticker
+                    // off to Sentinel / Osiris.
                     loadSentinelRisk(company.toLowerCase());
+                    setupCrossToolLinks(company.toLowerCase());
 
                     if (data.stats && data.stats.length > 0) {
                         const rows = tbody.querySelectorAll('tr');

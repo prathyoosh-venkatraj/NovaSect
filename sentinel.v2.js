@@ -637,6 +637,19 @@ function init() {
     // _lastBaseSpread on every card before we start sampling.
     setTimeout(snapshotSpreadHistory, 6000);
     setInterval(snapshotSpreadHistory, 60 * 1000);
+
+    // Deep-link support: ?ticker=X opens that company's modal on load.
+    // Used by FinVault report pages' "Open in Sentinel" button.
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestedTicker = urlParams.get('ticker');
+    if (requestedTicker) {
+        const company = COMPANIES.find(c => c.ticker === requestedTicker);
+        if (company) {
+            // Wait briefly so the card grid finishes rendering before
+            // we open the modal (openModal pulls live values off cards).
+            setTimeout(() => openModal(requestedTicker), 250);
+        }
+    }
 }
 
 function setupEventListeners() {
