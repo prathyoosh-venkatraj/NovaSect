@@ -1763,6 +1763,45 @@
             }
 
             if (company) {
+                // ─── Fundamentals schema (per-ticker inputs to the multiples panel) ───
+                //
+                // All values are hand-curated. They drive the MULTIPLES section and
+                // are refreshed quarterly (target: within 30 days of each issuer's
+                // earnings release — same cadence as Sentinel anchor verification).
+                //
+                //   trailingEPS         — Diluted GAAP earnings per share, last 4
+                //                         reported quarters (TTM). Same currency as
+                //                         the listed share price.
+                //   forwardEPS          — Consensus NTM (next-twelve-months) EPS
+                //                         estimate. Same currency as price.
+                //   fcfPerShare         — TTM Operating Cash Flow minus Capex,
+                //                         divided by diluted shares outstanding.
+                //                         (Standard "FCF to firm" definition.)
+                //   dividendAmount      — Annualised forward dividend per share
+                //                         (current quarterly rate × 4). Set 0 for
+                //                         non-payers — renders 'No dividend'.
+                //   sharesOutstanding   — Diluted shares outstanding, in MILLIONS.
+                //                         Used with price to compute market cap.
+                //   netDebt             — Total debt minus cash and equivalents, in
+                //                         MILLIONS of the same currency as price.
+                //                         Used with market cap to compute EV.
+                //   ebitdaTTM           — TTM EBITDA in MILLIONS (same currency).
+                //                         Used for EV/EBITDA.
+                //   revenueTTM          — TTM revenue in MILLIONS (same currency).
+                //                         Used for EV/Sales.
+                //   bookValuePerShare   — Most recent reported book value per
+                //                         diluted share. Used for P/B.
+                //
+                // Currency note: per-ticker fields must all share a single currency
+                // (matching the listed share price). USD for US/ADR tickers, EUR
+                // for IBE.MC and RHM.DE, etc. The ratios are unit-free so as long
+                // as the numerator and denominator agree, the displayed multiple
+                // is currency-agnostic.
+                //
+                // When a value is unknown, omit the field — the formatMultiple
+                // helper renders '--' for missing inputs and 'N/M' (not
+                // meaningful) for non-positive denominators.
+                // ─────────────────────────────────────────────────────────────────
                 const companyData = {
                     'chevron': {
                         name: 'Chevron',
