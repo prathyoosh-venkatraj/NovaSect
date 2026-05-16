@@ -718,22 +718,41 @@
             }
             if (usedHC) sources.push('Hand-curated 10-K');
 
-            // Finnhub pass
+            // Finnhub pass — fills cells the hand-curated tier left empty.
+            // CRITICAL: the per-field `!isPresent(cells.X)` guards are what
+            // preserve cascade priority. Without them, Finnhub's own P/E
+            // (which uses Finnhub's price ÷ Finnhub's EPS) would overwrite
+            // our hand-curated `livePrice ÷ hand-curated EPS` value and the
+            // brief would diverge from the FinVault report on the 9 ready
+            // names — even though both pages share the same source data.
             try {
                 const fhRes = await fetch('/api/finnhub-proxy?endpoint=stock/metric&symbol=' + encodeURIComponent(yahoo) + '&metric=all');
                 if (fhRes.ok) {
                     const payload = await fhRes.json();
                     const m = payload && payload.metric ? payload.metric : null;
                     if (m) {
-                        cells.tpe = m.peExclExtraTTM || m.peTTM || m.peNormalizedAnnual;
-                        cells.fpe = m.forwardPe || m.peInclExtraAnnual || m.peNormalizedAnnual;
-                        cells.ev  = m['currentEv/ebitdaTTM'] || m['currentEv/ebitdaAnnual'] || m.enterpriseValueEbitdaTtm || m.evEbitdaTtm;
-                        cells.pb  = m.pbAnnual || m.pbTTM;
-                        cells.revG = m.revenueGrowth5Y;
-                        cells.epsG = m.epsGrowth5Y ?? m.epsGrowth3Y;
-                        if (Object.values(cells).some(v => typeof v === 'number' && isFinite(v))) {
-                            sources.push('Finnhub TTM/5Y');
+                        let fhUsed = false;
+                        if (!isPresent(cells.tpe)) {
+                            const v = m.peExclExtraTTM || m.peTTM || m.peNormalizedAnnual;
+                            if (isPresent(v)) { cells.tpe = v; fhUsed = true; }
                         }
+                        if (!isPresent(cells.fpe)) {
+                            const v = m.forwardPe || m.peInclExtraAnnual || m.peNormalizedAnnual;
+                            if (isPresent(v)) { cells.fpe = v; fhUsed = true; }
+                        }
+                        if (!isPresent(cells.ev)) {
+                            const v = m['currentEv/ebitdaTTM'] || m['currentEv/ebitdaAnnual'] || m.enterpriseValueEbitdaTtm || m.evEbitdaTtm;
+                            if (isPresent(v)) { cells.ev = v; fhUsed = true; }
+                        }
+                        if (!isPresent(cells.pb)) {
+                            const v = m.pbAnnual || m.pbTTM;
+                            if (isPresent(v)) { cells.pb = v; fhUsed = true; }
+                        }
+                        // Growth fields have no hand-curated tier; always take Finnhub.
+                        if (isPresent(m.revenueGrowth5Y)) { cells.revG = m.revenueGrowth5Y; fhUsed = true; }
+                        const epsCAGR = m.epsGrowth5Y ?? m.epsGrowth3Y;
+                        if (isPresent(epsCAGR)) { cells.epsG = epsCAGR; fhUsed = true; }
+                        if (fhUsed) sources.push('Finnhub TTM/5Y');
                     }
                 }
             } catch (e) { /* fall through to Yahoo */ }
