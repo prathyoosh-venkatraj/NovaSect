@@ -1165,14 +1165,14 @@ body {
 }
 
 .promo-hdr {
-    /* Style matches .segments-heading (ENTER THE VAULT). Static — no
-       animated pulse and no hover-state override, so the heading does
-       not visually bleed into the adjacent section on hover. */
+    /* Static glow palette matches .segments-heading (ENTER THE VAULT)
+       but sized larger for the full-viewport Sentinel / Osiris
+       sections. No animated pulse, no hover override. */
     font-family: var(--font-display);
     font-weight: 900;
-    font-size: 3rem;
+    font-size: 5rem;
     text-transform: uppercase;
-    letter-spacing: 4px;
+    letter-spacing: 10px;
     margin: 0;
     line-height: 1;
     color: rgba(255, 255, 255, 0.9);
