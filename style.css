@@ -1195,6 +1195,11 @@ body {
 
 .sentinel-promo-section:hover .promo-hdr {
     color: var(--accent-green);
+    /* Drop the green glow on hover so the text reads as a clean neon-green
+       solid; the pulsing shadow + green color stacked together had a
+       washed-out, tacky look. Resting state still pulses. */
+    text-shadow: none;
+    animation: none;
 }
 
 @media (max-width: 768px) {
