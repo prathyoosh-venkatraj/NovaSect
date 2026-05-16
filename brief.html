@@ -635,6 +635,9 @@
                     setText('fv-beta', typeof metrics.beta === 'number' ? metrics.beta.toFixed(2) : '—');
                     setText('fv-dy', typeof metrics.dividendYield === 'number' && metrics.dividendYield > 0
                         ? (metrics.dividendYield * 100).toFixed(2) + '%' : '—');
+                    // Stash for the hand-curated EV/EBITDA + P/B math
+                    // (needs live price × hand-curated shares).
+                    if (typeof metrics.currentPrice === 'number') window._briefLivePrice = metrics.currentPrice;
                 }
                 if (Array.isArray(history) && history.length > 0) {
                     let mn = Infinity, mx = -Infinity;
@@ -666,6 +669,22 @@
 
             const sources = [];
             let cells = { tpe: null, fpe: null, ev: null, pb: null, revG: null, epsG: null };
+
+            // Hand-curated precision tier (9 fully-built reports).
+            // Uses LIVE price × hand-curated shares + netDebt ÷ EBITDA,
+            // matching the FinVault Multiples panel's math exactly.
+            // Same source for P/B (price ÷ bookValuePerShare).
+            const hcFund = entry.finvault && entry.finvault.fundamentals;
+            const livePrice = (typeof window._briefLivePrice === 'number') ? window._briefLivePrice : null;
+            if (hcFund && livePrice && hcFund.sharesOutstanding && hcFund.ebitdaTTM) {
+                const marketCap = livePrice * hcFund.sharesOutstanding;          // both in same currency
+                const ev = marketCap + (hcFund.netDebt || 0);
+                cells.ev = ev / hcFund.ebitdaTTM;
+                sources.push('Hand-curated 10-K');
+            }
+            if (hcFund && livePrice && hcFund.bookValuePerShare) {
+                cells.pb = livePrice / hcFund.bookValuePerShare;
+            }
 
             // Finnhub pass
             try {

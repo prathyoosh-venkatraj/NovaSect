@@ -133,6 +133,13 @@ for (const c of COMPANIES) {
             reportUrl: 'report.html?company=' + finvault.slug,
             stats: (companyDataLookup[finvault.slug] && Array.isArray(companyDataLookup[finvault.slug].stats))
                 ? companyDataLookup[finvault.slug].stats
+                : null,
+            // Hand-curated 10-K fundamentals — drives the precision
+            // EV/EBITDA + P/B math on both report.html's Multiples
+            // panel and the brief page (first tier in the cascade).
+            // Present only for the 9 fully-built reports.
+            fundamentals: (companyDataLookup[finvault.slug] && companyDataLookup[finvault.slug].fundamentals)
+                ? companyDataLookup[finvault.slug].fundamentals
                 : null
         } : null,
         sentinel: {
