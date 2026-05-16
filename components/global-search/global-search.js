@@ -114,9 +114,34 @@
     font-size: 0.75rem;
 }
 @media (max-width: 768px) {
-    .gs-wrap { margin-right: 0.5rem; }
-    .gs-input-wrap { width: 140px; }
-    .gs-panel { width: 280px; }
+    /* On mobile, drop the search onto its own row below Tools + About
+       us. Cleaner than squeezing four nav items into a single line at
+       a 360-380px viewport. */
+    .nav-links {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        row-gap: 0.55rem;
+        column-gap: 1.25rem;
+    }
+    .gs-wrap {
+        order: 99;            /* forces search to the wrap position (new row) */
+        width: 100%;
+        margin-right: 0;
+    }
+    .gs-input-wrap {
+        width: 100%;
+        height: 34px;
+    }
+    .gs-panel {
+        width: 100%;
+        right: 0;
+        max-height: 320px;
+    }
+    .gs-input { font-size: 0.82rem; }
+    .gs-item { grid-template-columns: 70px 1fr auto; padding: 7px 10px; }
+    .gs-ticker { font-size: 0.78rem; }
+    .gs-name { font-size: 0.74rem; }
+    .gs-sector { font-size: 0.55rem; }
 }
 `;
 
