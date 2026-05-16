@@ -1072,12 +1072,13 @@
                     <div class="fe-footer" id="fe-footer"></div>
                 </div>
 
-                <!-- Recent News — last 30 days via Finnhub /company-news -->
+                <!-- Recent News — Finnhub /company-news with Yahoo RSS fallback -->
                 <div class="news-feed-section">
                     <h2>RECENT NEWS</h2>
                     <div id="news-feed" class="news-feed">
                         <div class="news-loading">Loading...</div>
                     </div>
+                    <div class="fe-footer" id="news-footer"></div>
                 </div>
 
                 <!-- Peer Snapshot — same metrics for focal company + 2 peers
@@ -1569,33 +1570,78 @@
             const toDate = today.toISOString().split('T')[0];
             const fromDate = past.toISOString().split('T')[0];
 
+            // News cascade — every report should land at least one
+            // clickable item:
+            //   1. Finnhub /company-news (fast, rich coverage for US names)
+            //   2. Yahoo Finance RSS via our proxy (works for almost every
+            //      Yahoo ticker including the international universe)
+            //   3. Final fallback: external link to the ticker's news page
+            //      on Yahoo Finance.
+            let items = [];
+            let sourceTier = null;
+
             try {
                 const url = '/api/finnhub-proxy?endpoint=company-news&symbol=' +
                     encodeURIComponent(yahooSym) + '&from=' + fromDate + '&to=' + toDate;
                 const res = await fetch(url);
-                if (!res.ok) throw new Error('finnhub-proxy ' + res.status);
-                const items = await res.json();
-
-                if (!Array.isArray(items) || items.length === 0) {
-                    feedEl.innerHTML = '<div class="news-empty">No recent news</div>';
-                    return;
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        items = data;
+                        sourceTier = 'finnhub';
+                    }
                 }
-
-                items.sort((a, b) => (b.datetime || 0) - (a.datetime || 0));
-                const top = items.slice(0, 8);
-
-                feedEl.innerHTML = top.map(item => (
-                    '<a href="' + escapeHtml(item.url || '#') + '" target="_blank" rel="noopener noreferrer" class="news-item">' +
-                        '<div class="news-headline">' + escapeHtml(item.headline || 'Untitled') + '</div>' +
-                        '<div class="news-meta">' +
-                            '<span class="news-source">' + escapeHtml(item.source || 'Unknown') + '</span>' +
-                            '<span class="news-date">' + relativeDate(item.datetime) + '</span>' +
-                        '</div>' +
-                    '</a>'
-                )).join('');
             } catch (err) {
-                console.warn('[FinVault] News feed failed for ' + ticker + ':', err);
-                feedEl.innerHTML = '<div class="news-empty">News unavailable</div>';
+                console.warn('[FinVault] Finnhub news failed for ' + ticker + ':', err);
+            }
+
+            if (items.length === 0) {
+                try {
+                    const url = '/api/yahoo-proxy?symbol=' + encodeURIComponent(yahooSym) + '&mode=news';
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data) && data.length > 0) {
+                            items = data;
+                            sourceTier = 'yahoo-rss';
+                        }
+                    }
+                } catch (err) {
+                    console.warn('[FinVault] Yahoo RSS news failed for ' + ticker + ':', err);
+                }
+            }
+
+            if (items.length === 0) {
+                const yahooNewsUrl = 'https://finance.yahoo.com/quote/' +
+                    encodeURIComponent(yahooSym) + '/news';
+                feedEl.innerHTML =
+                    '<a href="' + escapeHtml(yahooNewsUrl) + '" target="_blank" rel="noopener noreferrer" class="news-item news-fallback">' +
+                        '<div class="news-headline">Latest news for ' + escapeHtml(yahooSym) + ' on Yahoo Finance →</div>' +
+                        '<div class="news-meta">' +
+                            '<span class="news-source">Yahoo Finance</span>' +
+                            '<span class="news-date">External link</span>' +
+                        '</div>' +
+                    '</a>';
+                return;
+            }
+
+            items.sort((a, b) => (b.datetime || 0) - (a.datetime || 0));
+            const top = items.slice(0, 8);
+            feedEl.innerHTML = top.map(item => (
+                '<a href="' + escapeHtml(item.url || '#') + '" target="_blank" rel="noopener noreferrer" class="news-item">' +
+                    '<div class="news-headline">' + escapeHtml(item.headline || 'Untitled') + '</div>' +
+                    '<div class="news-meta">' +
+                        '<span class="news-source">' + escapeHtml(item.source || 'Unknown') + '</span>' +
+                        '<span class="news-date">' + relativeDate(item.datetime) + '</span>' +
+                    '</div>' +
+                '</a>'
+            )).join('');
+
+            // Tier annotation for the footer if available — lets users see
+            // when news is coming from the RSS backup rather than Finnhub.
+            const footer = document.getElementById('news-footer');
+            if (footer && sourceTier === 'yahoo-rss') {
+                footer.textContent = '> Yahoo Finance RSS · ' + yahooSym + ' (Finnhub fallback)';
             }
         }
 

@@ -1,7 +1,7 @@
 /**
  * Yahoo Finance Proxy - Vercel Serverless Function
  *
- * Three modes:
+ * Four modes:
  *   - Default (no `mode` query param): returns a 30-day realized volatility summary.
  *     Cache: 1h edge. Used by Sentinel's auto-calibration spot-checks.
  *   - mode=history (with `range`, default '1y'): returns the full daily adjusted-close
@@ -11,6 +11,10 @@
  *     from Yahoo's quoteSummary endpoint. Requires a cookie+crumb auth flow.
  *     Cache: 6h edge. Used by FinVault Forward Estimates panel as a free-tier
  *     substitute for Finnhub's premium-only /stock/price-target.
+ *   - mode=news: parses Yahoo's public RSS headline feed and returns up to
+ *     20 items in Finnhub /company-news shape. Cache: 30min edge. Used by
+ *     FinVault News Feed as a fallback when Finnhub returns nothing (most
+ *     non-US tickers on the free tier).
  */
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
@@ -79,6 +83,61 @@ export default async function handler(req, res) {
         } catch (error) {
             console.error('Yahoo quote-summary error:', error);
             return res.status(502).json({ error: 'E502: YAHOO_AUTH_FAILED' });
+        }
+    }
+
+    // ── news mode: parse Yahoo Finance's public RSS headline feed ─────
+    // No auth required. Returns up to 20 items in the same shape Finnhub's
+    // /company-news endpoint produces, so the FinVault UI can render
+    // either source through the same code path. Used as a fallback when
+    // Finnhub returns nothing — which it does for most non-US tickers.
+    if (mode === 'news') {
+        try {
+            const rssUrl = `https://feeds.finance.yahoo.com/rss/2.0/headline?s=${encodeURIComponent(symbol)}&region=US&lang=en-US`;
+            const rssRes = await fetch(rssUrl, { headers: { 'User-Agent': UA, 'Accept': 'application/rss+xml, application/xml, text/xml' } });
+            if (!rssRes.ok) {
+                return res.status(rssRes.status).json({ error: `E${rssRes.status}: YAHOO_RSS_REJECTED` });
+            }
+            const xml = await rssRes.text();
+
+            // Minimal RSS extractor — no XML library needed for this shape.
+            const stripCdata = s => s.replace(/^<!\[CDATA\[/, '').replace(/\]\]>$/, '').trim();
+            const getTag = (block, tag) => {
+                const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i');
+                const m = re.exec(block);
+                return m ? stripCdata(m[1]) : '';
+            };
+
+            const items = [];
+            const itemRe = /<item\b[^>]*>([\s\S]*?)<\/item>/gi;
+            let m;
+            while ((m = itemRe.exec(xml)) !== null && items.length < 20) {
+                const block = m[1];
+                const title = getTag(block, 'title');
+                const link = getTag(block, 'link');
+                const pubDate = getTag(block, 'pubDate');
+                const description = getTag(block, 'description');
+                let source = getTag(block, 'source');
+                if (!source) source = 'Yahoo Finance';
+                const ts = pubDate
+                    ? Math.floor(new Date(pubDate).getTime() / 1000) || Math.floor(Date.now() / 1000)
+                    : Math.floor(Date.now() / 1000);
+                if (!title || !link) continue;
+                items.push({
+                    headline: title,
+                    url: link,
+                    source,
+                    datetime: ts,
+                    summary: description
+                });
+            }
+
+            // 30 min cache — Yahoo's RSS refreshes ~hourly.
+            res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=1800');
+            return res.status(200).json(items);
+        } catch (error) {
+            console.error('Yahoo RSS news error:', error);
+            return res.status(502).json({ error: 'E502: YAHOO_RSS_FAILED' });
         }
     }
 
