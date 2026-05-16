@@ -651,59 +651,77 @@
                 }
             } catch (e) { /* swallow */ }
 
-            // Multiples + fundamentals via Finnhub.
-            // Field-name notes (from Finnhub /stock/metric, free tier):
+            // Multiples cascade (in priority order):
+            //   1. Finnhub /stock/metric           — rich TTM data for US names
+            //   2. Yahoo /quoteSummary (key-stats) — backfill for the ~32 international tickers Finnhub 401s on
+            //
+            // Finnhub field-name notes:
             //   peExclExtraTTM        — trailing P/E (TTM, ex-extraordinary)
             //   forwardPe             — forward P/E (consensus NTM)
-            //   peNormalizedAnnual    — annual P/E fallback
             //   currentEv/ebitdaTTM   — EV/EBITDA (slash IS part of the key)
-            //   currentEv/freeCashFlowTTM, enterpriseValueEbitdaTtm — fallbacks seen on some tickers
             //   pbAnnual              — price-to-book
             //   revenueGrowth5Y / epsGrowth5Y / operatingMarginTTM
-            //     → Finnhub returns these already as percent values
-            //       (e.g. 8.3 means 8.3%), so fmtPct is used as-is —
-            //       NOT multiplied by 100.
+            //     → Finnhub returns these as percent values (8.3 = 8.3%),
+            //       so fmtPct is used as-is — NOT multiplied by 100.
+
+            const sources = [];
+            let cells = { tpe: null, fpe: null, ev: null, pb: null, revG: null, epsG: null };
+
+            // Finnhub pass
             try {
                 const fhRes = await fetch('/api/finnhub-proxy?endpoint=stock/metric&symbol=' + encodeURIComponent(yahoo) + '&metric=all');
                 if (fhRes.ok) {
                     const payload = await fhRes.json();
                     const m = payload && payload.metric ? payload.metric : null;
                     if (m) {
-                        // Trailing P/E
-                        const trailingPe = m.peExclExtraTTM || m.peTTM || m.peNormalizedAnnual;
-                        setText('fv-tpe', fmtRatio(trailingPe));
-
-                        // Forward P/E — the prior conditional was a bug that
-                        // always returned null. Just take forwardPe, with
-                        // peNormalizedAnnual as a final fallback.
-                        const forwardPe = m.forwardPe || m.peInclExtraAnnual || m.peNormalizedAnnual;
-                        setText('fv-fpe', fmtRatio(forwardPe));
-
-                        // EV/EBITDA — try the slash key first, then alt names.
-                        const evEbitda = m['currentEv/ebitdaTTM']
-                            || m['currentEv/ebitdaAnnual']
-                            || m.enterpriseValueEbitdaTtm
-                            || m.evEbitdaTtm;
-                        setText('fv-ev', fmtRatio(evEbitda));
-
-                        setText('fv-pb', fmtRatio(m.pbAnnual || m.pbTTM));
-
-                        // Growth metrics — already in % units from Finnhub.
-                        // Operating Margin lives in the Financial Ratios
-                        // table (row 12), so it's intentionally not duplicated
-                        // here. epsGrowth5Y is unavailable on cyclicals and
-                        // recent restructurings; fall back to 3Y CAGR.
-                        setText('fv-revg', fmtPct(m.revenueGrowth5Y, true));
-                        setText('fv-epsg', fmtPct(m.epsGrowth5Y ?? m.epsGrowth3Y, true));
-
-                        footer.textContent = '> Finnhub TTM/5Y · ' + yahoo;
-                        return;
+                        cells.tpe = m.peExclExtraTTM || m.peTTM || m.peNormalizedAnnual;
+                        cells.fpe = m.forwardPe || m.peInclExtraAnnual || m.peNormalizedAnnual;
+                        cells.ev  = m['currentEv/ebitdaTTM'] || m['currentEv/ebitdaAnnual'] || m.enterpriseValueEbitdaTtm || m.evEbitdaTtm;
+                        cells.pb  = m.pbAnnual || m.pbTTM;
+                        cells.revG = m.revenueGrowth5Y;
+                        cells.epsG = m.epsGrowth5Y ?? m.epsGrowth3Y;
+                        if (Object.values(cells).some(v => typeof v === 'number' && isFinite(v))) {
+                            sources.push('Finnhub TTM/5Y');
+                        }
                     }
                 }
-                footer.textContent = '> Live multiples unavailable for ' + yahoo;
-            } catch (e) {
-                footer.textContent = '> Live multiples unavailable for ' + yahoo;
+            } catch (e) { /* fall through to Yahoo */ }
+
+            // Yahoo key-stats backfill — only for cells Finnhub left empty.
+            // Covers the international tickers Finnhub doesn't licence on the
+            // free tier (MIL: / EURONEXT: / OMXSTO: / .L / .DE / .NS / .T / .SA /
+            // .AX / .SR / .MC / etc).
+            const needsBackfill = !isPresent(cells.tpe) || !isPresent(cells.fpe) ||
+                                  !isPresent(cells.ev)  || !isPresent(cells.pb);
+            if (needsBackfill) {
+                try {
+                    const yRes = await fetch('/api/yahoo-proxy?symbol=' + encodeURIComponent(yahoo) + '&mode=quote-summary');
+                    if (yRes.ok) {
+                        const y = await yRes.json();
+                        let used = false;
+                        if (!isPresent(cells.tpe) && isPresent(y.trailingPE))         { cells.tpe = y.trailingPE; used = true; }
+                        if (!isPresent(cells.fpe) && isPresent(y.forwardPE))          { cells.fpe = y.forwardPE; used = true; }
+                        if (!isPresent(cells.ev)  && isPresent(y.enterpriseToEbitda)) { cells.ev  = y.enterpriseToEbitda; used = true; }
+                        if (!isPresent(cells.pb)  && isPresent(y.priceToBook))        { cells.pb  = y.priceToBook; used = true; }
+                        if (used) sources.push('Yahoo quoteSummary');
+                    }
+                } catch (e) { /* swallow — both sources can fail; cells stay '—' */ }
             }
+
+            setText('fv-tpe', fmtRatio(cells.tpe));
+            setText('fv-fpe', fmtRatio(cells.fpe));
+            setText('fv-ev',  fmtRatio(cells.ev));
+            setText('fv-pb',  fmtRatio(cells.pb));
+            setText('fv-revg', fmtPct(cells.revG, true));
+            setText('fv-epsg', fmtPct(cells.epsG, true));
+
+            footer.textContent = sources.length
+                ? '> ' + sources.join(' + ') + ' · ' + yahoo
+                : '> Live multiples unavailable for ' + yahoo;
+        }
+
+        function isPresent(v) {
+            return typeof v === 'number' && isFinite(v) && v !== 0;
         }
 
         async function populateOsirisLive(entry) {

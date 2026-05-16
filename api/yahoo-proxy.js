@@ -49,12 +49,18 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'E400: Missing symbol' });
     }
 
-    // ── quote-summary mode: analyst targets + recommendation mean ──────
+    // ── quote-summary mode: analyst targets + valuation key-stats ──────
+    // Returns financialData (analyst targets), defaultKeyStatistics
+    // (priceToBook, enterpriseToEbitda, enterpriseToRevenue), and
+    // summaryDetail (trailingPE, forwardPE, dividendYield). Used by
+    // FinVault Forward Estimates AND by the brief page's Multiples
+    // cascade as a Finnhub fallback for international tickers (where
+    // Finnhub free tier returns 401).
     if (mode === 'quote-summary') {
         try {
             const { cookie, crumb } = await getYahooAuth();
             const summaryUrl = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}` +
-                `?modules=financialData&crumb=${encodeURIComponent(crumb)}`;
+                `?modules=financialData,defaultKeyStatistics,summaryDetail&crumb=${encodeURIComponent(crumb)}`;
             const response = await fetch(summaryUrl, {
                 headers: { 'User-Agent': UA, 'Cookie': cookie }
             });
@@ -62,22 +68,36 @@ export default async function handler(req, res) {
                 return res.status(response.status).json({ error: `E${response.status}: YAHOO_API_REJECTED` });
             }
             const data = await response.json();
-            const fd = data.quoteSummary?.result?.[0]?.financialData;
-            if (!fd) {
+            const result = data.quoteSummary?.result?.[0];
+            const fd = result?.financialData;
+            const ks = result?.defaultKeyStatistics;
+            const sd = result?.summaryDetail;
+            if (!fd && !ks && !sd) {
                 return res.status(404).json({ error: 'E404: NO_DATA_FOUND' });
             }
             res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=21600');
             return res.status(200).json({
                 symbol: symbol,
                 mode: 'quote-summary',
-                currentPrice:      unwrap(fd.currentPrice),
-                targetMean:        unwrap(fd.targetMeanPrice),
-                targetMedian:      unwrap(fd.targetMedianPrice),
-                targetHigh:        unwrap(fd.targetHighPrice),
-                targetLow:         unwrap(fd.targetLowPrice),
-                numberOfAnalysts:  unwrap(fd.numberOfAnalystOpinions),
-                recommendationMean: unwrap(fd.recommendationMean),
-                recommendationKey: fd.recommendationKey || null,
+                // ── Analyst targets / recommendation (financialData) ──
+                currentPrice:       unwrap(fd?.currentPrice),
+                targetMean:         unwrap(fd?.targetMeanPrice),
+                targetMedian:       unwrap(fd?.targetMedianPrice),
+                targetHigh:         unwrap(fd?.targetHighPrice),
+                targetLow:          unwrap(fd?.targetLowPrice),
+                numberOfAnalysts:   unwrap(fd?.numberOfAnalystOpinions),
+                recommendationMean: unwrap(fd?.recommendationMean),
+                recommendationKey:  fd?.recommendationKey || null,
+                // ── Valuation key-stats (defaultKeyStatistics) ─────────
+                priceToBook:        unwrap(ks?.priceToBook),
+                enterpriseToEbitda: unwrap(ks?.enterpriseToEbitda),
+                enterpriseToRevenue:unwrap(ks?.enterpriseToRevenue),
+                pegRatio:           unwrap(ks?.pegRatio),
+                // ── Trailing / forward P/E (summaryDetail) ────────────
+                trailingPE:         unwrap(sd?.trailingPE) ?? unwrap(ks?.trailingPE),
+                forwardPE:          unwrap(sd?.forwardPE) ?? unwrap(ks?.forwardPE),
+                dividendYield:      unwrap(sd?.dividendYield),
+                payoutRatio:        unwrap(sd?.payoutRatio),
                 source: 'Yahoo Finance Live'
             });
         } catch (error) {
