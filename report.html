@@ -1143,7 +1143,10 @@
                     <div class="peer-footer" id="peer-footer"></div>
                 </div>
 
-                <!-- Fundamentals Highlights — Finnhub /stock/metric (TTM growth + valuation) -->
+                <!-- Fundamentals Highlights — Finnhub /stock/metric.
+                     Pruned to growth/return metrics only. Operating Margin
+                     lives in the Financial Ratios table; P/B and EV/EBITDA
+                     live in the Multiples panel. -->
                 <div class="fundamentals-section">
                     <h2>FUNDAMENTALS HIGHLIGHTS</h2>
                     <div class="fundamentals-grid">
@@ -1158,18 +1161,6 @@
                         <div class="fh-card">
                             <span class="fh-label">EPS Growth 5Y</span>
                             <span class="fh-value" id="fh-eps-growth">—</span>
-                        </div>
-                        <div class="fh-card">
-                            <span class="fh-label">Operating Margin TTM</span>
-                            <span class="fh-value" id="fh-op-margin">—</span>
-                        </div>
-                        <div class="fh-card">
-                            <span class="fh-label">Price / Book</span>
-                            <span class="fh-value" id="fh-pb">—</span>
-                        </div>
-                        <div class="fh-card">
-                            <span class="fh-label">EV / EBITDA TTM</span>
-                            <span class="fh-value" id="fh-ev-ebitda">—</span>
                         </div>
                     </div>
                     <div class="fh-footer" id="fh-footer"></div>
@@ -1838,14 +1829,9 @@
                 const epsG = m.epsGrowth5Y;
                 applyFh('fh-eps-growth', fmtPercent(epsG, true), { colorOnSign: true, rawNumber: epsG });
 
-                const opMargin = m.operatingMarginTTM;
-                applyFh('fh-op-margin', fmtPercent(opMargin, false));
-
-                const pb = m.pbAnnual;
-                applyFh('fh-pb', fmtRatio(pb));
-
-                const evEbitda = m['currentEv/ebitdaTTM'];
-                applyFh('fh-ev-ebitda', fmtRatio(evEbitda));
+                // Operating Margin, P/B and EV/EBITDA used to live here too;
+                // moved out to avoid duplication with the Financial Ratios
+                // table (op margin) and the Multiples panel (P/B, EV/EBITDA).
 
                 if (footer) {
                     const period = m.fiscalYearEnd || '';

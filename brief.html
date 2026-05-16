@@ -294,12 +294,11 @@
                 <div class="brief-section-label">Financial Ratios <span style="color:rgba(255,255,255,0.35);font-size:0.55rem;letter-spacing:1px;">· from 10-K / consolidated financials</span></div>
                 <div class="brief-ratios" id="fv-ratios"></div>
 
-                <div class="brief-section-label">Fundamentals (5Y)</div>
-                <div class="brief-grid">
+                <div class="brief-section-label">Growth (5Y trailing)</div>
+                <div class="brief-grid cols-3">
                     <div class="brief-cell"><span class="brief-cell-label">52W Return</span><span class="brief-cell-value" id="fv-52wret">—</span></div>
                     <div class="brief-cell"><span class="brief-cell-label">Rev Growth 5Y</span><span class="brief-cell-value" id="fv-revg">—</span></div>
                     <div class="brief-cell"><span class="brief-cell-label">EPS Growth 5Y</span><span class="brief-cell-value" id="fv-epsg">—</span></div>
-                    <div class="brief-cell"><span class="brief-cell-label">Operating Margin</span><span class="brief-cell-value" id="fv-om">—</span></div>
                 </div>
                 <div class="brief-footer-note" id="fv-footer">&gt; Loading market data…</div>
             </div>
@@ -689,10 +688,12 @@
 
                         setText('fv-pb', fmtRatio(m.pbAnnual || m.pbTTM));
 
-                        // Growth + margin: already in % units from Finnhub.
+                        // Growth metrics — already in % units from Finnhub.
+                        // Operating Margin lives in the Financial Ratios
+                        // table (row 12), so it's intentionally not duplicated
+                        // here.
                         setText('fv-revg', fmtPct(m.revenueGrowth5Y, true));
                         setText('fv-epsg', fmtPct(m.epsGrowth5Y, true));
-                        setText('fv-om', fmtPct(m.operatingMarginTTM, false));
 
                         footer.textContent = '> Finnhub TTM/5Y · ' + yahoo;
                         return;
