@@ -27,6 +27,7 @@
 
     // ── Constants ──────────────────────────────────────────────────
     const JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    const AUTOTABLE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js';
     const METHODOLOGY = 'Sentinel v2 · Osiris v1 · FinVault v1';
     const DISCLAIMER = 'For informational purposes only. Not investment advice. ' +
         'NovaSect is not a registered investment advisor. Data sourced from third-party ' +
@@ -288,23 +289,32 @@
         triggerDownload(makeFilename(snap, 'csv'), 'text/csv;charset=utf-8', body);
     }
 
-    // ── jsPDF lazy loader ──────────────────────────────────────────
-    let jspdfPromise = null;
-    function loadJsPDF() {
-        if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
-        if (jspdfPromise) return jspdfPromise;
-        jspdfPromise = new Promise((resolve, reject) => {
+    // ── jsPDF + AutoTable lazy loader ──────────────────────────────
+    function injectScript(src) {
+        return new Promise((resolve, reject) => {
             const s = document.createElement('script');
-            s.src = JSPDF_URL;
+            s.src = src;
             s.async = true;
-            s.onload = () => {
-                if (window.jspdf && window.jspdf.jsPDF) resolve(window.jspdf.jsPDF);
-                else reject(new Error('jsPDF loaded but global missing'));
-            };
-            s.onerror = () => reject(new Error('Failed to load jsPDF'));
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error('Failed to load ' + src));
             document.head.appendChild(s);
         });
-        return jspdfPromise;
+    }
+    let pdfStackPromise = null;
+    function loadJsPDF() {
+        // jsPDF must load first because autotable registers itself onto
+        // jsPDF.API at script-eval time.
+        if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) {
+            return Promise.resolve(window.jspdf.jsPDF);
+        }
+        if (pdfStackPromise) return pdfStackPromise;
+        pdfStackPromise = (async () => {
+            if (!window.jspdf || !window.jspdf.jsPDF) await injectScript(JSPDF_URL);
+            if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('jsPDF global missing after load');
+            if (!window.jspdf.jsPDF.API.autoTable) await injectScript(AUTOTABLE_URL);
+            return window.jspdf.jsPDF;
+        })();
+        return pdfStackPromise;
     }
 
     // ── PDF rendering helpers ──────────────────────────────────────
@@ -380,30 +390,54 @@
         ensureSpace(state, 9);
         const margin = 14;
         state.doc.setFont('helvetica', 'bold');
-        state.doc.setFontSize(8);
+        state.doc.setFontSize(8.5);
         state.doc.setTextColor(...BRAND_INK);
         state.doc.text(label, margin, state.y);
-        state.y += 4.5;
+        state.y += 3.5;
     }
 
-    function row(state, label, value, opts) {
-        ensureSpace(state, 5.5);
+    // Two-column key/value table — used for Market Context, Multiples,
+    // Ratios, Growth, Sentinel.
+    function kvTable(state, body, opts) {
+        const cols = (opts && opts.headers) || ['Metric', 'Value'];
+        return writeTable(state, [cols], body, {
+            columnStyles: { 0: { cellWidth: 'auto' }, 1: { halign: 'right', cellWidth: 50, fontStyle: 'bold' } }
+        });
+    }
+
+    // Generic table wrapper around autoTable with the brand styling.
+    // Updates state.y to the cursor position below the table.
+    function writeTable(state, head, body, opts) {
+        ensureSpace(state, 18);
         const W = state.doc.internal.pageSize.getWidth();
-        const margin = 14;
-        const tabRight = W - margin;
-        state.doc.setFont('helvetica', 'normal');
-        state.doc.setFontSize(9);
-        state.doc.setTextColor(...BRAND_INK);
-        state.doc.text(label, margin + (opts && opts.indent ? 4 : 0), state.y);
-        state.doc.setFont('helvetica', 'bold');
-        state.doc.setTextColor(...BRAND_INK);
-        state.doc.text(value || '—', tabRight, state.y, { align: 'right' });
-        state.y += 5;
-    }
-
-    function divider(state, gap) {
-        ensureSpace(state, (gap || 4));
-        state.y += (gap || 4);
+        state.doc.autoTable({
+            startY: state.y,
+            head,
+            body,
+            theme: 'grid',
+            styles: {
+                font: 'helvetica',
+                fontSize: 9,
+                cellPadding: { top: 2, right: 3, bottom: 2, left: 3 },
+                textColor: BRAND_INK,
+                lineColor: BRAND_RULE,
+                lineWidth: 0.15,
+                overflow: 'linebreak'
+            },
+            headStyles: {
+                fillColor: BRAND_GREEN,
+                textColor: [255, 255, 255],
+                fontStyle: 'bold',
+                fontSize: 8.5,
+                halign: 'left'
+            },
+            alternateRowStyles: { fillColor: [247, 252, 247] },
+            margin: { left: 14, right: 14, top: 22, bottom: 22 },
+            tableWidth: W - 28,
+            columnStyles: (opts && opts.columnStyles) || {},
+            didDrawPage: () => drawPageFrame(state.doc, state.snap)
+        });
+        state.y = state.doc.lastAutoTable.finalY + 5;
     }
 
     function drawCover(state) {
@@ -483,66 +517,78 @@
         drawPageFrame(doc, snap);
         state.y = 24;
 
-        // FinVault
+        // ── FinVault ────────────────────────────────────────────────
         sectionHeader(state, 'FinVault');
-        subHeader(state, 'Market Context');
-        const mc = snap.finvault.marketContext;
-        row(state, 'Current Price', mc.currentPrice, { indent: true });
-        row(state, '52-Week Range', mc.week52Range, { indent: true });
-        row(state, 'Beta vs SPY', mc.betaVsSPY, { indent: true });
-        row(state, 'TTM Dividend Yield', mc.ttmDividendYield, { indent: true });
-        divider(state);
 
-        subHeader(state, 'Multiples');
+        const mc = snap.finvault.marketContext;
+        subHeader(state, 'Market Context');
+        kvTable(state, [
+            ['Current Price', mc.currentPrice || '—'],
+            ['52-Week Range', mc.week52Range || '—'],
+            ['Beta vs SPY', mc.betaVsSPY || '—'],
+            ['TTM Dividend Yield', mc.ttmDividendYield || '—']
+        ]);
+
         const mu = snap.finvault.multiples;
-        row(state, 'Trailing P/E', mu.trailingPE, { indent: true });
-        row(state, 'Forward P/E', mu.forwardPE, { indent: true });
-        row(state, 'EV / EBITDA', mu.evEbitda, { indent: true });
-        row(state, 'P / B', mu.priceToBook, { indent: true });
-        divider(state);
+        subHeader(state, 'Multiples');
+        kvTable(state, [
+            ['Trailing P/E', mu.trailingPE || '—'],
+            ['Forward P/E', mu.forwardPE || '—'],
+            ['EV / EBITDA', mu.evEbitda || '—'],
+            ['P / B', mu.priceToBook || '—']
+        ]);
 
         const ratioKeys = Object.keys(snap.finvault.ratios);
         if (ratioKeys.length) {
             subHeader(state, 'Financial Ratios');
-            for (const k of ratioKeys) row(state, k, snap.finvault.ratios[k], { indent: true });
-            divider(state);
+            kvTable(state,
+                ratioKeys.map(k => [k, snap.finvault.ratios[k] || '—']),
+                { headers: ['Ratio', 'Value'] }
+            );
         }
 
-        subHeader(state, 'Growth (5Y trailing)');
         const g = snap.finvault.growth5Y;
-        row(state, '52W Return', g.week52Return, { indent: true });
-        row(state, 'Revenue Growth 5Y', g.revenueGrowth5Y, { indent: true });
-        row(state, 'EPS Growth 5Y', g.epsGrowth5Y, { indent: true });
-        divider(state, 6);
+        subHeader(state, 'Growth (5Y trailing)');
+        kvTable(state, [
+            ['52W Return', g.week52Return || '—'],
+            ['Revenue Growth 5Y', g.revenueGrowth5Y || '—'],
+            ['EPS Growth 5Y', g.epsGrowth5Y || '—']
+        ]);
 
-        // Sentinel
+        // ── Sentinel ────────────────────────────────────────────────
         sectionHeader(state, 'Sentinel');
         const sn = snap.sentinel;
-        row(state, 'Implied Total Yield', sn.impliedTotalYield);
-        row(state, 'Base UST (10Y)', sn.baseUST10Y);
-        row(state, 'Credit Spread', sn.creditSpread + (sn.creditTier ? '   (' + sn.creditTier + ')' : ''));
-        row(state, 'Synthetic Normalization Differential', sn.syntheticNormalizationDifferential);
-        row(state, 'Seniority', sn.seniority);
-        row(state, 'Duration', sn.duration);
-        divider(state, 6);
+        const creditSpreadCell = (sn.creditSpread || '—') +
+            (sn.creditTier ? '   (' + sn.creditTier + ')' : '');
+        kvTable(state, [
+            ['Implied Total Yield', sn.impliedTotalYield || '—'],
+            ['Base UST (10Y)', sn.baseUST10Y || '—'],
+            ['Credit Spread', creditSpreadCell],
+            ['Synthetic Normalization Differential', sn.syntheticNormalizationDifferential || '—'],
+            ['Seniority', sn.seniority || '—'],
+            ['Duration', sn.duration || '—']
+        ]);
 
-        // Osiris
+        // ── Osiris (4-col horizon × scenario table) ─────────────────
         sectionHeader(state, 'Osiris');
-        subHeader(state, '6-Month Horizon');
         const o6 = snap.osiris.sixMonth;
-        row(state, 'Expected Value (median)', o6.expectedValue, { indent: true });
-        row(state, 'Upside Ceiling (95th)', o6.upsideCeiling, { indent: true });
-        row(state, 'Stress Floor (5th)', o6.stressFloor, { indent: true });
-        divider(state);
-        subHeader(state, '1-Year Horizon');
         const o1 = snap.osiris.oneYear;
-        row(state, 'Expected Value (median)', o1.expectedValue, { indent: true });
-        row(state, 'Upside Ceiling (95th)', o1.upsideCeiling, { indent: true });
-        row(state, 'Stress Floor (5th)', o1.stressFloor, { indent: true });
+        writeTable(state,
+            [['Horizon', 'Expected (median)', 'Upside (95th)', 'Stress (5th)']],
+            [
+                ['6-Month', o6.expectedValue || '—', o6.upsideCeiling || '—', o6.stressFloor || '—'],
+                ['1-Year', o1.expectedValue || '—', o1.upsideCeiling || '—', o1.stressFloor || '—']
+            ],
+            {
+                columnStyles: {
+                    0: { fontStyle: 'bold', cellWidth: 28 },
+                    1: { halign: 'right' },
+                    2: { halign: 'right' },
+                    3: { halign: 'right' }
+                }
+            }
+        );
 
-        // Final page-number stamps (re-run frame on every page so numbers
-        // pick up the real total — only matters if we want a "Page X of N"
-        // someday; for now Page X is enough).
         doc.save(makeFilename(snap, 'pdf'));
     }
 
