@@ -1,25 +1,30 @@
 /**
  * NovaSect Downloads — per-tool report exporter.
  *
- * Phase 1 — brief.html only. Adds a "Download ▾" dropdown anchored top-
- * right of the brief page exposing three formats:
- *   - PDF  (branded, multi-section, methodology + disclaimer footer)
- *   - JSON (structured snapshot of the brief)
+ * Mounts a fixed top-right "Download ▾" dropdown on the four downloadable
+ * pages and exposes three formats per page:
+ *   - PDF  (branded, tabular layout via jspdf-autotable)
+ *   - JSON (structured snapshot)
  *   - CSV  (flat Section / Field / Value table)
  *
- * Data source: the live brief DOM. We read text content from the stable
- * IDs that brief.html populates (fv-price, sn-total-yield, os-6m-ev, …),
- * plus a small meta blob exposed via `window.__briefMeta` containing the
- * ticker / name / sector / asOf the page has already resolved. Reading
- * the DOM means downloads always match what the user is looking at —
- * including any live price / multiples that backfilled after page load.
+ * Pages and their snapshot shapes:
+ *   - brief.html       — per-ticker synthesis (FinVault + Sentinel + Osiris bands)
+ *   - report.html      — per-company full FinVault report (?company=slug)
+ *   - osiris.html      — per-ticker simulation state + oracle outputs
+ *   - sentinel.html    — universe-wide credit dashboard (all 83 tickers)
  *
- * jsPDF is lazy-loaded from the cdnjs CDN on first PDF click only, so
- * non-PDF flows stay zero-cost. No CSS framework dependency.
+ * Data sources used per page:
+ *   - brief / report   — live DOM (stable IDs the page populates after fetch)
+ *   - osiris           — DOM (combobox value + oracle readout) + universe.json
+ *                        for the static physics block
+ *   - sentinel         — data/universe.json directly (dashboard is universe-wide,
+ *                        DOM scrape would miss filtered-out cards)
  *
- * Methodology + disclaimer + asOf are baked into every PDF page footer.
- * Future phases will reuse this module on sentinel.html, osiris.html and
- * report.html with tool-specific snapshot collectors.
+ * jsPDF + autotable are lazy-loaded from cdnjs on the first PDF click only;
+ * JSON / CSV stay zero-cost.
+ *
+ * Methodology + asOf + disclaimer are baked into every PDF page footer; the
+ * cover page adapts (per-ticker vs dashboard wordmark) based on snap.tool.
  */
 (() => {
     if (window.__novasectDownloadsInit) return;
@@ -40,14 +45,14 @@
 
     // ── Styles ─────────────────────────────────────────────────────
     const STYLE = `
-/* Sits just below the fixed page header, aligned with the brief-page's
-   right padding. brief-page has padding-top: 6rem on desktop / 5rem on
-   mobile, so we tuck the dropdown into that gutter above the wordmark. */
+/* Fixed top-right placement so the same offset works across every tool
+   page regardless of the page's own padding / layout. Sits below the
+   fixed nav header (z-index 1000) but above all page content. */
 .dl-wrap {
-    position: absolute;
-    top: 5.2rem;
-    right: 1.5rem;
-    z-index: 50;
+    position: fixed;
+    top: 5.5rem;
+    right: 1.75rem;
+    z-index: 90;
 }
 .dl-btn {
     background: rgba(0, 18, 0, 0.55);
@@ -157,7 +162,8 @@
         const meta = window.__briefMeta || {};
         const ratios = collectRatios();
         return {
-            tool: 'NovaSect Brief',
+            tool: 'brief',
+            displayName: 'NovaSect Brief',
             ticker: meta.ticker || txt('b-ticker'),
             name: meta.name || txt('b-name'),
             sector: meta.sector || '',
@@ -222,11 +228,207 @@
         return out;
     }
 
+    // Cached universe.json — shared by FinVault / Osiris / Sentinel
+    // snapshots so we don't refetch on every click.
+    let universeCache = null;
+    async function loadUniverse() {
+        if (universeCache) return universeCache;
+        try {
+            const res = await fetch('data/universe.json');
+            if (!res.ok) return null;
+            universeCache = await res.json();
+            return universeCache;
+        } catch (e) { return null; }
+    }
+
+    // ── FinVault report snapshot (report.html?company=slug) ────────
+    async function snapshotFinVault() {
+        const params = new URLSearchParams(window.location.search);
+        const slug = params.get('company') || '';
+        const universe = await loadUniverse();
+        let ticker = '', name = '', sector = '', country = '', industry = '', exchange = '';
+        if (universe && universe.tickers) {
+            for (const [t, entry] of Object.entries(universe.tickers)) {
+                if (entry.finvault && entry.finvault.slug === slug) {
+                    ticker = t;
+                    name = entry.name;
+                    sector = entry.sector;
+                    country = entry.country;
+                    industry = (entry.finvault && entry.finvault.industry) || entry.sector;
+                    exchange = (entry.exchanges && entry.exchanges.tradingView)
+                        ? entry.exchanges.tradingView.split(':')[0] : '';
+                    break;
+                }
+            }
+        }
+        // DOM fallback if universe lookup didn't find a match (skeleton
+        // entries still render the page even without a universe row).
+        if (!name) name = txt('company-name');
+        if (!industry) industry = txt('company-industry');
+
+        const cellTxt = (id) => asNumOrText(txt(id));
+        // 15-row ratios table; report.html renders <tr><td>Label</td><td>Value</td></tr>
+        // into #stats-body. Labels are stable and match the brief / build-universe set.
+        const ratios = {};
+        const ratioRows = document.querySelectorAll('#stats-body tr');
+        ratioRows.forEach(tr => {
+            const cells = tr.querySelectorAll('td');
+            if (cells.length >= 2) {
+                const k = (cells[0].textContent || '').trim();
+                const v = (cells[1].textContent || '').trim();
+                if (k) ratios[k] = v;
+            }
+        });
+        // Recent news headlines from the news feed (first ~5).
+        const news = [];
+        document.querySelectorAll('#news-feed .news-headline').forEach((h, i) => {
+            if (i < 8) news.push((h.textContent || '').trim());
+        });
+        return {
+            tool: 'finvault',
+            displayName: 'NovaSect FinVault',
+            slug,
+            ticker,
+            name,
+            sector,
+            country,
+            industry,
+            exchange,
+            asOf: new Date().toISOString(),
+            methodologyVersion: METHODOLOGY,
+            marketContext: {
+                currentPrice: cellTxt('mc-current-price'),
+                week52Range: cellTxt('mc-52w-range'),
+                realizedVolatility: cellTxt('mc-realized-vol'),
+                betaVsSPY: cellTxt('mc-beta'),
+                ttmDividendYield: cellTxt('mc-div-yield'),
+                lastDividend: cellTxt('mc-last-div'),
+                sentinelRisk: cellTxt('mc-sentinel-risk')
+            },
+            forwardEstimates: {
+                breakdown: cellTxt('fe-breakdown'),
+                targetMedian: cellTxt('fe-target-median'),
+                targetRange: cellTxt('fe-target-range'),
+                targetUpside: cellTxt('fe-target-upside'),
+                analystCount: cellTxt('fe-target-count')
+            },
+            multiples: {
+                trailingPE: cellTxt('val-trailing-pe'),
+                forwardPE: cellTxt('val-leading-pe'),
+                priceFCF: cellTxt('val-price-fcf'),
+                dividendYield: cellTxt('val-div-yield'),
+                evEbitda: cellTxt('val-ev-ebitda'),
+                evSales: cellTxt('val-ev-sales'),
+                priceToBook: cellTxt('val-pb')
+            },
+            ratios,
+            fundamentalsHighlights: {
+                week52Return: cellTxt('fh-52w-return'),
+                revenueGrowth5Y: cellTxt('fh-revenue-growth'),
+                epsGrowth5Y: cellTxt('fh-eps-growth')
+            },
+            recentNews: news
+        };
+    }
+
+    // ── Osiris snapshot (osiris.html — per-ticker simulation state) ─
+    async function snapshotOsiris() {
+        const select = document.getElementById('osiris-ticker-select');
+        const ticker = (select && select.value) || '';
+        const universe = await loadUniverse();
+        const entry = (universe && universe.tickers && universe.tickers[ticker]) || null;
+        const physics = entry && entry.osiris ? entry.osiris : null;
+        const cellTxt = (id) => asNumOrText(txt(id));
+
+        // Oracle outputs — rendered by osirisOracle.js as a headline +
+        // three badges (Upside / Expected / Stress). We scrape the
+        // human-formatted prices and the headline text so PDF/JSON/CSV
+        // mirror what the user sees post-simulation.
+        const oracleEl = document.getElementById('oracle-readout');
+        const oracle = {};
+        if (oracleEl) {
+            const headlineEl = oracleEl.querySelector('.oracle-headline');
+            if (headlineEl) {
+                oracle.headline = (headlineEl.textContent || '').replace(/\s+/g, ' ').trim();
+            }
+            oracleEl.querySelectorAll('.oracle-badge').forEach(b => {
+                const labelEl = b.children[0];
+                const priceEl = b.children[2];
+                const label = labelEl ? (labelEl.textContent || '').trim() : '';
+                const price = priceEl ? (priceEl.textContent || '').trim() : '';
+                if (/upside/i.test(label)) oracle.upsideCeiling = price;
+                else if (/expected/i.test(label)) oracle.expectedValue = price;
+                else if (/stress/i.test(label)) oracle.stressFloor = price;
+            });
+        }
+
+        return {
+            tool: 'osiris',
+            displayName: 'NovaSect Osiris',
+            ticker,
+            name: entry ? entry.name : '',
+            sector: entry ? entry.sector : '',
+            country: entry ? entry.country : '',
+            asOf: new Date().toISOString(),
+            methodologyVersion: METHODOLOGY,
+            simulatorState: {
+                volatility: cellTxt('val-volatility'),
+                physicsParam: cellTxt('val-physics-param'),
+                horizon: cellTxt('val-horizon'),
+                volatilityRegime: (document.getElementById('osiris-volatility-regime') || {}).value || null,
+                operationalShock: (document.getElementById('osiris-operational-shock') || {}).value || null,
+                dataSource: cellTxt('osiris-metadata-readout')
+            },
+            physics: physics ? {
+                cohort: physics.cohort,
+                baselineVolatility: physics.baselineVolatility,
+                reversionSpeedTheta: physics.reversionSpeedTheta,
+                jumpFrequencyLambda: physics.jumpFrequencyLambda,
+                jumpMu: physics.jumpMu,
+                creditRating: physics.creditRating,
+                ratingLastVerified: physics.ratingLastVerified
+            } : null,
+            oracle
+        };
+    }
+
+    // ── Sentinel snapshot (sentinel.html — universe-wide dashboard) ─
+    async function snapshotSentinel() {
+        const universe = await loadUniverse();
+        const tickers = (universe && universe.tickers) || {};
+        const rows = Object.values(tickers).map(t => ({
+            ticker: t.ticker,
+            name: t.name,
+            sector: t.sector,
+            country: t.country,
+            type: t.sentinel ? t.sentinel.type : null,
+            rating: t.sentinel ? t.sentinel.rating : null,
+            baseSpreadBps: t.sentinel ? t.sentinel.baseSpread : null,
+            marketBeta: t.sentinel ? t.sentinel.marketBeta : null,
+            sectorBeta: t.sentinel ? t.sentinel.sectorBeta : null,
+            baseRateType: t.sentinel ? t.sentinel.baseRateType : null,
+            lastVerified: t.sentinel ? t.sentinel.lastVerified : null
+        })).sort((a, b) => a.ticker.localeCompare(b.ticker));
+
+        return {
+            tool: 'sentinel',
+            displayName: 'NovaSect Sentinel',
+            view: 'Normalized 10Y Senior Unsecured',
+            asOf: new Date().toISOString(),
+            methodologyVersion: METHODOLOGY,
+            count: rows.length,
+            tickers: rows
+        };
+    }
+
     // ── Filename helper ────────────────────────────────────────────
     function makeFilename(snap, ext) {
-        const safe = (snap.ticker || 'unknown').replace(/[^A-Za-z0-9._-]/g, '_');
+        const tool = snap.tool || 'report';
+        const id = snap.tool === 'sentinel'
+            ? 'dashboard'
+            : (snap.ticker || snap.slug || 'unknown').replace(/[^A-Za-z0-9._-]/g, '_');
         const date = new Date().toISOString().slice(0, 10);
-        return 'novasect-brief-' + safe + '-' + date + '.' + ext;
+        return 'novasect-' + tool + '-' + id + '-' + date + '.' + ext;
     }
 
     function triggerDownload(filename, mime, body) {
@@ -257,33 +459,64 @@
         }
         return s;
     }
+    // Each tool builds its own (rows[], filename) tuple. We keep the
+    // wide-table sentinel snapshot as a proper N-row CSV (one row per
+    // ticker) since that's what consumers actually want for a universe
+    // dashboard; everything else uses the flat Section/Field/Value form.
     function downloadCSV(snap) {
+        if (snap.tool === 'sentinel') {
+            const head = ['Ticker', 'Name', 'Sector', 'Country', 'Type', 'Rating',
+                'Base Spread (bps)', 'Market Beta', 'Sector Beta', 'Base Rate Type', 'Last Verified'];
+            const rows = [head];
+            for (const t of snap.tickers) {
+                rows.push([t.ticker, t.name, t.sector, t.country, t.type, t.rating,
+                    t.baseSpreadBps, t.marketBeta, t.sectorBeta, t.baseRateType, t.lastVerified]);
+            }
+            const body = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+            triggerDownload(makeFilename(snap, 'csv'), 'text/csv;charset=utf-8', body);
+            return;
+        }
+
         const rows = [['Section', 'Field', 'Value']];
         const push = (section, field, value) => rows.push([section, field, value == null ? '' : value]);
-        push('Header', 'Ticker', snap.ticker);
-        push('Header', 'Name', snap.name);
-        push('Header', 'Sector', snap.sector);
-        push('Header', 'Country', snap.country);
-        push('Header', 'Industry', snap.industry);
-        push('Header', 'Exchange', snap.exchange);
+        push('Header', 'Tool', snap.displayName);
+        push('Header', 'Ticker', snap.ticker || '');
+        push('Header', 'Name', snap.name || '');
+        push('Header', 'Sector', snap.sector || '');
+        push('Header', 'Country', snap.country || '');
+        push('Header', 'Industry', snap.industry || '');
+        push('Header', 'Exchange', snap.exchange || '');
         push('Header', 'As Of', snap.asOf);
         push('Header', 'Methodology Version', snap.methodologyVersion);
-        // FinVault
-        const fv = snap.finvault;
-        for (const k of Object.keys(fv.marketContext)) push('FinVault · Market Context', k, fv.marketContext[k]);
-        for (const k of Object.keys(fv.multiples)) push('FinVault · Multiples', k, fv.multiples[k]);
-        for (const k of Object.keys(fv.ratios)) push('FinVault · Ratios', k, fv.ratios[k]);
-        for (const k of Object.keys(fv.growth5Y)) push('FinVault · Growth (5Y)', k, fv.growth5Y[k]);
-        // Sentinel
-        const sn = snap.sentinel;
-        for (const k of Object.keys(sn)) push('Sentinel', k, sn[k]);
-        // Osiris
-        push('Osiris · 6-Month', 'Expected Value', snap.osiris.sixMonth.expectedValue);
-        push('Osiris · 6-Month', 'Upside Ceiling', snap.osiris.sixMonth.upsideCeiling);
-        push('Osiris · 6-Month', 'Stress Floor', snap.osiris.sixMonth.stressFloor);
-        push('Osiris · 1-Year', 'Expected Value', snap.osiris.oneYear.expectedValue);
-        push('Osiris · 1-Year', 'Upside Ceiling', snap.osiris.oneYear.upsideCeiling);
-        push('Osiris · 1-Year', 'Stress Floor', snap.osiris.oneYear.stressFloor);
+
+        if (snap.tool === 'brief') {
+            const fv = snap.finvault;
+            for (const k of Object.keys(fv.marketContext)) push('FinVault · Market Context', k, fv.marketContext[k]);
+            for (const k of Object.keys(fv.multiples)) push('FinVault · Multiples', k, fv.multiples[k]);
+            for (const k of Object.keys(fv.ratios)) push('FinVault · Ratios', k, fv.ratios[k]);
+            for (const k of Object.keys(fv.growth5Y)) push('FinVault · Growth (5Y)', k, fv.growth5Y[k]);
+            const sn = snap.sentinel;
+            for (const k of Object.keys(sn)) push('Sentinel', k, sn[k]);
+            push('Osiris · 6-Month', 'Expected Value', snap.osiris.sixMonth.expectedValue);
+            push('Osiris · 6-Month', 'Upside Ceiling', snap.osiris.sixMonth.upsideCeiling);
+            push('Osiris · 6-Month', 'Stress Floor', snap.osiris.sixMonth.stressFloor);
+            push('Osiris · 1-Year', 'Expected Value', snap.osiris.oneYear.expectedValue);
+            push('Osiris · 1-Year', 'Upside Ceiling', snap.osiris.oneYear.upsideCeiling);
+            push('Osiris · 1-Year', 'Stress Floor', snap.osiris.oneYear.stressFloor);
+        } else if (snap.tool === 'finvault') {
+            for (const k of Object.keys(snap.marketContext)) push('Market Context', k, snap.marketContext[k]);
+            for (const k of Object.keys(snap.forwardEstimates)) push('Forward Estimates', k, snap.forwardEstimates[k]);
+            for (const k of Object.keys(snap.multiples)) push('Multiples', k, snap.multiples[k]);
+            for (const k of Object.keys(snap.ratios)) push('Financial Ratios', k, snap.ratios[k]);
+            for (const k of Object.keys(snap.fundamentalsHighlights)) push('Fundamentals Highlights', k, snap.fundamentalsHighlights[k]);
+            snap.recentNews.forEach((h, i) => push('Recent News', 'Headline ' + (i + 1), h));
+        } else if (snap.tool === 'osiris') {
+            for (const k of Object.keys(snap.simulatorState)) push('Simulator State', k, snap.simulatorState[k]);
+            if (snap.physics) {
+                for (const k of Object.keys(snap.physics)) push('Physics', k, snap.physics[k]);
+            }
+            for (const k of Object.keys(snap.oracle)) push('Oracle', k, snap.oracle[k]);
+        }
 
         const body = rows.map(r => r.map(csvEscape).join(',')).join('\n');
         triggerDownload(makeFilename(snap, 'csv'), 'text/csv;charset=utf-8', body);
@@ -325,6 +558,16 @@
         } catch (e) { return iso; }
     }
 
+    function toolBrandLabel(snap) {
+        switch (snap.tool) {
+            case 'brief': return 'NOVASECT  ·  BRIEF';
+            case 'finvault': return 'NOVASECT  ·  FINVAULT';
+            case 'osiris': return 'NOVASECT  ·  OSIRIS';
+            case 'sentinel': return 'NOVASECT  ·  SENTINEL';
+            default: return 'NOVASECT';
+        }
+    }
+
     function drawPageFrame(doc, snap, opts) {
         const W = doc.internal.pageSize.getWidth();
         const H = doc.internal.pageSize.getHeight();
@@ -334,15 +577,14 @@
         doc.setFillColor(...BRAND_GREEN);
         doc.rect(0, 0, W, 1.6, 'F');
 
-        // Top header — wordmark left, ticker right
+        // Top header — wordmark left, ticker (or "DASHBOARD") right
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(...BRAND_GREEN);
-        doc.text('NOVASECT  ·  BRIEF', margin, 9);
-        if (snap.ticker) {
-            doc.setTextColor(...BRAND_INK);
-            doc.text(snap.ticker, W - margin, 9, { align: 'right' });
-        }
+        doc.text(toolBrandLabel(snap), margin, 9);
+        doc.setTextColor(...BRAND_INK);
+        const rightLabel = snap.tool === 'sentinel' ? 'DASHBOARD' : (snap.ticker || '');
+        if (rightLabel) doc.text(rightLabel, W - margin, 9, { align: 'right' });
 
         // Footer rule
         doc.setDrawColor(...BRAND_RULE);
@@ -440,48 +682,70 @@
         state.y = state.doc.lastAutoTable.finalY + 5;
     }
 
+    function coverWordmark(snap) {
+        switch (snap.tool) {
+            case 'brief': return 'NOVASECT  ·  BRIEF REPORT';
+            case 'finvault': return 'NOVASECT  ·  FINVAULT REPORT';
+            case 'osiris': return 'NOVASECT  ·  OSIRIS REPORT';
+            case 'sentinel': return 'NOVASECT  ·  SENTINEL DASHBOARD';
+            default: return 'NOVASECT REPORT';
+        }
+    }
+
     function drawCover(state) {
         const doc = state.doc;
         const snap = state.snap;
         const W = doc.internal.pageSize.getWidth();
         drawPageFrame(doc, snap);
 
-        // Vertical centering for the cover block
         let y = 70;
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(...BRAND_GREEN);
-        doc.text('NOVASECT  ·  BRIEF REPORT', W / 2, y, { align: 'center' });
+        doc.text(coverWordmark(snap), W / 2, y, { align: 'center' });
         y += 4;
         doc.setDrawColor(...BRAND_GREEN);
         doc.setLineWidth(0.6);
-        doc.line(W / 2 - 40, y, W / 2 + 40, y);
+        doc.line(W / 2 - 45, y, W / 2 + 45, y);
         y += 22;
 
-        doc.setFont('courier', 'bold');
-        doc.setFontSize(42);
-        doc.setTextColor(...BRAND_INK);
-        doc.text(snap.ticker || '—', W / 2, y, { align: 'center' });
-        y += 12;
-
-        if (snap.name) {
+        // Hero block — ticker (per-ticker tools) OR "UNIVERSE" + count (dashboard).
+        if (snap.tool === 'sentinel') {
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(16);
+            doc.setFontSize(28);
             doc.setTextColor(...BRAND_INK);
-            doc.text(snap.name, W / 2, y, { align: 'center' });
-            y += 9;
-        }
-
-        const metaParts = [snap.sector, snap.country, snap.exchange, snap.industry].filter(Boolean);
-        if (metaParts.length) {
+            doc.text('UNIVERSE', W / 2, y, { align: 'center' });
+            y += 10;
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(9);
+            doc.setFontSize(11);
             doc.setTextColor(...BRAND_MUTED);
-            doc.text(metaParts.join('  ·  '), W / 2, y, { align: 'center' });
+            doc.text((snap.count || 0) + ' tickers  ·  ' + (snap.view || ''), W / 2, y, { align: 'center' });
             y += 18;
         } else {
-            y += 9;
+            doc.setFont('courier', 'bold');
+            doc.setFontSize(42);
+            doc.setTextColor(...BRAND_INK);
+            doc.text(snap.ticker || '—', W / 2, y, { align: 'center' });
+            y += 12;
+
+            if (snap.name) {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(16);
+                doc.setTextColor(...BRAND_INK);
+                doc.text(snap.name, W / 2, y, { align: 'center' });
+                y += 9;
+            }
+            const metaParts = [snap.sector, snap.country, snap.exchange, snap.industry].filter(Boolean);
+            if (metaParts.length) {
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9);
+                doc.setTextColor(...BRAND_MUTED);
+                doc.text(metaParts.join('  ·  '), W / 2, y, { align: 'center' });
+                y += 18;
+            } else {
+                y += 9;
+            }
         }
 
         doc.setFont('helvetica', 'normal');
@@ -500,26 +764,13 @@
         doc.setTextColor(...BRAND_MUTED);
         doc.text('Methodology  ·  ' + snap.methodologyVersion, W / 2, y, { align: 'center' });
 
-        // Move cursor below cover content so the page footer can render.
         state.y = doc.internal.pageSize.getHeight() - 24;
     }
 
-    async function downloadPDF(snap) {
-        const jsPDF = await loadJsPDF();
-        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
-        const state = { doc, snap, y: 24 };
-
-        // Page 1: cover
-        drawCover(state);
-
-        // Page 2+: data
-        doc.addPage();
-        drawPageFrame(doc, snap);
-        state.y = 24;
-
-        // ── FinVault ────────────────────────────────────────────────
+    // ── Per-tool PDF body builders ─────────────────────────────────
+    function buildBriefBody(state) {
+        const snap = state.snap;
         sectionHeader(state, 'FinVault');
-
         const mc = snap.finvault.marketContext;
         subHeader(state, 'Market Context');
         kvTable(state, [
@@ -528,7 +779,6 @@
             ['Beta vs SPY', mc.betaVsSPY || '—'],
             ['TTM Dividend Yield', mc.ttmDividendYield || '—']
         ]);
-
         const mu = snap.finvault.multiples;
         subHeader(state, 'Multiples');
         kvTable(state, [
@@ -537,7 +787,6 @@
             ['EV / EBITDA', mu.evEbitda || '—'],
             ['P / B', mu.priceToBook || '—']
         ]);
-
         const ratioKeys = Object.keys(snap.finvault.ratios);
         if (ratioKeys.length) {
             subHeader(state, 'Financial Ratios');
@@ -546,7 +795,6 @@
                 { headers: ['Ratio', 'Value'] }
             );
         }
-
         const g = snap.finvault.growth5Y;
         subHeader(state, 'Growth (5Y trailing)');
         kvTable(state, [
@@ -555,7 +803,6 @@
             ['EPS Growth 5Y', g.epsGrowth5Y || '—']
         ]);
 
-        // ── Sentinel ────────────────────────────────────────────────
         sectionHeader(state, 'Sentinel');
         const sn = snap.sentinel;
         const creditSpreadCell = (sn.creditSpread || '—') +
@@ -569,7 +816,6 @@
             ['Duration', sn.duration || '—']
         ]);
 
-        // ── Osiris (4-col horizon × scenario table) ─────────────────
         sectionHeader(state, 'Osiris');
         const o6 = snap.osiris.sixMonth;
         const o1 = snap.osiris.oneYear;
@@ -588,6 +834,178 @@
                 }
             }
         );
+    }
+
+    function buildFinVaultBody(state) {
+        const snap = state.snap;
+        sectionHeader(state, 'Market Context');
+        const mc = snap.marketContext;
+        kvTable(state, [
+            ['Current Price', mc.currentPrice || '—'],
+            ['52-Week Range', mc.week52Range || '—'],
+            ['Realized Volatility', mc.realizedVolatility || '—'],
+            ['Beta vs SPY', mc.betaVsSPY || '—'],
+            ['TTM Dividend Yield', mc.ttmDividendYield || '—'],
+            ['Last Dividend', mc.lastDividend || '—'],
+            ['Sentinel Risk Tier', mc.sentinelRisk || '—']
+        ]);
+
+        const fe = snap.forwardEstimates;
+        const hasFE = Object.values(fe).some(v => v != null);
+        if (hasFE) {
+            sectionHeader(state, 'Forward Estimates');
+            kvTable(state, [
+                ['Breakdown', fe.breakdown || '—'],
+                ['Target Median', fe.targetMedian || '—'],
+                ['Target Range', fe.targetRange || '—'],
+                ['Target Upside', fe.targetUpside || '—'],
+                ['Analyst Count', fe.analystCount || '—']
+            ]);
+        }
+
+        sectionHeader(state, 'Multiples');
+        const m = snap.multiples;
+        kvTable(state, [
+            ['Trailing P/E', m.trailingPE || '—'],
+            ['Forward P/E', m.forwardPE || '—'],
+            ['Price / FCF', m.priceFCF || '—'],
+            ['Dividend Yield', m.dividendYield || '—'],
+            ['EV / EBITDA', m.evEbitda || '—'],
+            ['EV / Sales', m.evSales || '—'],
+            ['P / B', m.priceToBook || '—']
+        ]);
+
+        const ratioKeys = Object.keys(snap.ratios);
+        if (ratioKeys.length) {
+            sectionHeader(state, 'Financial Ratios');
+            kvTable(state,
+                ratioKeys.map(k => [k, snap.ratios[k] || '—']),
+                { headers: ['Ratio', 'Value'] }
+            );
+        }
+
+        sectionHeader(state, 'Fundamentals Highlights');
+        const fh = snap.fundamentalsHighlights;
+        kvTable(state, [
+            ['52W Return', fh.week52Return || '—'],
+            ['Revenue Growth 5Y', fh.revenueGrowth5Y || '—'],
+            ['EPS Growth 5Y', fh.epsGrowth5Y || '—']
+        ]);
+
+        if (snap.recentNews && snap.recentNews.length) {
+            sectionHeader(state, 'Recent News');
+            writeTable(state,
+                [['#', 'Headline']],
+                snap.recentNews.map((h, i) => [String(i + 1), h]),
+                {
+                    columnStyles: {
+                        0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
+                        1: { cellWidth: 'auto' }
+                    }
+                }
+            );
+        }
+    }
+
+    function buildOsirisBody(state) {
+        const snap = state.snap;
+        sectionHeader(state, 'Simulator State');
+        const s = snap.simulatorState;
+        kvTable(state, [
+            ['Volatility (σ)', s.volatility || '—'],
+            ['Physics Parameter', s.physicsParam || '—'],
+            ['Time Horizon', s.horizon || '—'],
+            ['Volatility Regime', s.volatilityRegime || '—'],
+            ['Operational Shock', s.operationalShock || '—'],
+            ['Data Source', s.dataSource || '—']
+        ]);
+
+        if (snap.physics) {
+            sectionHeader(state, 'Physics');
+            const p = snap.physics;
+            kvTable(state, [
+                ['Cohort', p.cohort || '—'],
+                ['Baseline Volatility', p.baselineVolatility != null ? String(p.baselineVolatility) : '—'],
+                ['Reversion Speed (θ)', p.reversionSpeedTheta != null ? String(p.reversionSpeedTheta) : '—'],
+                ['Jump Frequency (λ)', p.jumpFrequencyLambda != null ? String(p.jumpFrequencyLambda) : '—'],
+                ['Jump Mean (μ)', p.jumpMu != null ? String(p.jumpMu) : '—'],
+                ['Credit Rating', p.creditRating || '—'],
+                ['Rating Last Verified', p.ratingLastVerified || '—']
+            ]);
+        }
+
+        const o = snap.oracle || {};
+        const hasOracle = Object.keys(o).length > 0;
+        if (hasOracle) {
+            sectionHeader(state, 'Oracle Output');
+            if (o.headline) {
+                ensureSpace(state, 12);
+                const W = state.doc.internal.pageSize.getWidth();
+                state.doc.setFont('helvetica', 'normal');
+                state.doc.setFontSize(9);
+                state.doc.setTextColor(...BRAND_INK);
+                const lines = state.doc.splitTextToSize(o.headline, W - 28);
+                state.doc.text(lines, 14, state.y);
+                state.y += lines.length * 4.2 + 3;
+            }
+            kvTable(state, [
+                ['Upside Ceiling (95th)', o.upsideCeiling || '—'],
+                ['Expected Value (median)', o.expectedValue || '—'],
+                ['Stress Floor (5th)', o.stressFloor || '—']
+            ]);
+        }
+    }
+
+    function buildSentinelBody(state) {
+        const snap = state.snap;
+        sectionHeader(state, 'Credit Dashboard · ' + snap.count + ' Tickers');
+        writeTable(state,
+            [['Ticker', 'Name', 'Sector', 'Country', 'Rating',
+                'Spread (bps)', 'M-β', 'S-β', 'Rate Type']],
+            snap.tickers.map(t => [
+                t.ticker,
+                t.name || '—',
+                t.sector || '—',
+                t.country || '—',
+                t.rating || '—',
+                t.baseSpreadBps != null ? String(t.baseSpreadBps) : '—',
+                t.marketBeta != null ? Number(t.marketBeta).toFixed(2) : '—',
+                t.sectorBeta != null ? Number(t.sectorBeta).toFixed(2) : '—',
+                t.baseRateType || '—'
+            ]),
+            {
+                columnStyles: {
+                    0: { fontStyle: 'bold', cellWidth: 18 },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 22 },
+                    3: { cellWidth: 14, halign: 'center' },
+                    4: { cellWidth: 14, halign: 'center' },
+                    5: { cellWidth: 18, halign: 'right' },
+                    6: { cellWidth: 12, halign: 'right' },
+                    7: { cellWidth: 12, halign: 'right' },
+                    8: { cellWidth: 18, halign: 'center' }
+                }
+            }
+        );
+    }
+
+    async function downloadPDF(snap) {
+        const jsPDF = await loadJsPDF();
+        const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+        const state = { doc, snap, y: 24 };
+
+        drawCover(state);
+        doc.addPage();
+        drawPageFrame(doc, snap);
+        state.y = 24;
+
+        switch (snap.tool) {
+            case 'brief': buildBriefBody(state); break;
+            case 'finvault': buildFinVaultBody(state); break;
+            case 'osiris': buildOsirisBody(state); break;
+            case 'sentinel': buildSentinelBody(state); break;
+            default: throw new Error('Unknown snapshot tool: ' + snap.tool);
+        }
 
         doc.save(makeFilename(snap, 'pdf'));
     }
@@ -608,19 +1026,34 @@
         toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 2400);
     }
 
+    // ── Page detection ─────────────────────────────────────────────
+    // Returns a descriptor { tool, snapshotFn, requireTicker } when the
+    // current page is one of the four downloadable surfaces; null
+    // otherwise (about, index, reports, etc — no download button there).
+    function detectPage() {
+        if (document.getElementById('brief-page')) {
+            return { tool: 'brief', snapshotFn: snapshotBrief, requireTicker: true };
+        }
+        // FinVault report — distinguished by ?company=slug + #company-name.
+        if (document.getElementById('company-name') && document.getElementById('stats-body')) {
+            return { tool: 'finvault', snapshotFn: snapshotFinVault, requireTicker: false };
+        }
+        // Osiris simulator — the canvas is unique to this page.
+        if (document.getElementById('osiris-canvas')) {
+            return { tool: 'osiris', snapshotFn: snapshotOsiris, requireTicker: true };
+        }
+        // Sentinel dashboard — the credit-card grid is unique to this page.
+        if (document.getElementById('sector-alpha-grid')) {
+            return { tool: 'sentinel', snapshotFn: snapshotSentinel, requireTicker: false };
+        }
+        return null;
+    }
+
     // ── Mount ──────────────────────────────────────────────────────
     function mount() {
-        // Brief-page only for phase 1. Identified by the brief-page section.
-        const briefPage = document.getElementById('brief-page');
-        if (!briefPage) return;
+        const page = detectPage();
+        if (!page) return;
         injectStyles();
-
-        // Make sure the brief-page is a positioning context for our
-        // absolute-positioned dropdown — it's already styled with auto
-        // margins but doesn't set `position`. Adding it on the parent
-        // is safer than mutating the existing rule.
-        const computed = window.getComputedStyle(briefPage).position;
-        if (computed === 'static') briefPage.style.position = 'relative';
 
         const wrap = document.createElement('div');
         wrap.className = 'dl-wrap';
@@ -643,7 +1076,7 @@
 
         wrap.appendChild(btn);
         wrap.appendChild(menu);
-        briefPage.appendChild(wrap);
+        document.body.appendChild(wrap);
 
         function close() {
             menu.classList.remove('open');
@@ -666,12 +1099,12 @@
             if (!t) return;
             close();
             const fmt = t.getAttribute('data-fmt');
-            const snap = snapshotBrief();
-            if (!snap.ticker) {
-                toast('No ticker selected', true);
-                return;
-            }
             try {
+                const snap = await Promise.resolve(page.snapshotFn());
+                if (page.requireTicker && !snap.ticker) {
+                    toast('No ticker selected', true);
+                    return;
+                }
                 if (fmt === 'json') { downloadJSON(snap); toast('JSON ready'); }
                 else if (fmt === 'csv') { downloadCSV(snap); toast('CSV ready'); }
                 else if (fmt === 'pdf') {
