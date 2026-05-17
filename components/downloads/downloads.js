@@ -135,6 +135,68 @@
     .dl-menu { min-width: 140px; }
     .dl-menu button { padding: 7px 12px; font-size: 0.72rem; }
 }
+
+/* ── Per-card Sentinel download button ──────────────────────────────
+   Lives inside each .bg-card-bg credit card (which is position:relative).
+   Positioned just left of the .stale-dot indicator so it doesn't
+   overlap. Click is stop-propagation'd so it doesn't fire the card's
+   onclick="openModal()" handler. */
+.dl-card-btn {
+    position: absolute;
+    top: 6px;
+    right: 22px;
+    background: rgba(0, 18, 0, 0.55);
+    color: rgba(57, 255, 20, 0.95);
+    border: 1px solid rgba(57, 255, 20, 0.35);
+    border-radius: 3px;
+    padding: 1px 6px 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.05;
+    cursor: pointer;
+    z-index: 6;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+.dl-card-btn:hover, .dl-card-btn.open {
+    background: rgba(57, 255, 20, 0.18);
+    border-color: rgba(57, 255, 20, 0.85);
+    box-shadow: 0 0 6px rgba(57, 255, 20, 0.4);
+    color: #39FF14;
+}
+.dl-card-menu {
+    position: absolute;
+    top: 30px;
+    right: 8px;
+    min-width: 130px;
+    background: rgba(0, 12, 0, 0.97);
+    border: 1px solid rgba(57, 255, 20, 0.4);
+    border-radius: 3px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6), 0 0 14px rgba(57, 255, 20, 0.15);
+    padding: 3px 0;
+    display: none;
+    z-index: 11;
+}
+.dl-card-menu.open { display: block; }
+.dl-card-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-left: 2px solid transparent;
+    color: rgba(255, 255, 255, 0.92);
+    padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.dl-card-menu button:hover {
+    background: rgba(57, 255, 20, 0.12);
+    color: #39FF14;
+    border-left-color: #39FF14;
+}
 `;
 
     function injectStyles() {
@@ -279,11 +341,18 @@
                 if (k) ratios[k] = v;
             }
         });
-        // Recent news headlines from the news feed (first ~5).
-        const news = [];
-        document.querySelectorAll('#news-feed .news-headline').forEach((h, i) => {
-            if (i < 8) news.push((h.textContent || '').trim());
+        // Company profile + revenue segments — both populated by the
+        // page's profile loader. Description sits as plain text in
+        // #profile-description; segments render as .segment-row blocks
+        // with .segment-label + .segment-share children.
+        const description = txt('profile-description');
+        const segments = [];
+        document.querySelectorAll('#segment-list .segment-row').forEach(row => {
+            const name = (row.querySelector('.segment-label') || {}).textContent || '';
+            const share = (row.querySelector('.segment-share') || {}).textContent || '';
+            if (name.trim()) segments.push({ name: name.trim(), share: share.trim() });
         });
+
         return {
             tool: 'finvault',
             displayName: 'NovaSect FinVault',
@@ -296,6 +365,10 @@
             exchange,
             asOf: new Date().toISOString(),
             methodologyVersion: METHODOLOGY,
+            profile: {
+                description: description || null,
+                segments
+            },
             marketContext: {
                 currentPrice: cellTxt('mc-current-price'),
                 week52Range: cellTxt('mc-52w-range'),
@@ -326,8 +399,7 @@
                 week52Return: cellTxt('fh-52w-return'),
                 revenueGrowth5Y: cellTxt('fh-revenue-growth'),
                 epsGrowth5Y: cellTxt('fh-eps-growth')
-            },
-            recentNews: news
+            }
         };
     }
 
@@ -392,32 +464,51 @@
         };
     }
 
-    // ── Sentinel snapshot (sentinel.html — universe-wide dashboard) ─
-    async function snapshotSentinel() {
+    // ── Sentinel snapshot (sentinel.html — per-ticker, card-driven) ──
+    // The download button lives on each company card and downloads the
+    // credit data for that specific ticker — static calibration anchors
+    // from universe.json plus the live spread / yield / risk values the
+    // card has already computed.
+    async function snapshotSentinelTicker(ticker) {
         const universe = await loadUniverse();
-        const tickers = (universe && universe.tickers) || {};
-        const rows = Object.values(tickers).map(t => ({
-            ticker: t.ticker,
-            name: t.name,
-            sector: t.sector,
-            country: t.country,
-            type: t.sentinel ? t.sentinel.type : null,
-            rating: t.sentinel ? t.sentinel.rating : null,
-            baseSpreadBps: t.sentinel ? t.sentinel.baseSpread : null,
-            marketBeta: t.sentinel ? t.sentinel.marketBeta : null,
-            sectorBeta: t.sentinel ? t.sentinel.sectorBeta : null,
-            baseRateType: t.sentinel ? t.sentinel.baseRateType : null,
-            lastVerified: t.sentinel ? t.sentinel.lastVerified : null
-        })).sort((a, b) => a.ticker.localeCompare(b.ticker));
+        const entry = universe && universe.tickers ? universe.tickers[ticker] : null;
+        const s = entry && entry.sentinel ? entry.sentinel : {};
+
+        // Live values straight off the card — same source of truth as the
+        // on-screen number so the PDF/JSON/CSV never disagree with the UI.
+        const card = document.getElementById('card-' + ticker);
+        const cardTxt = (sel) => {
+            if (!card) return null;
+            const el = card.querySelector(sel);
+            return el ? (el.textContent || '').trim() || null : null;
+        };
 
         return {
             tool: 'sentinel',
             displayName: 'NovaSect Sentinel',
             view: 'Normalized 10Y Senior Unsecured',
+            ticker,
+            name: entry ? entry.name : '',
+            sector: entry ? entry.sector : '',
+            country: entry ? entry.country : '',
             asOf: new Date().toISOString(),
             methodologyVersion: METHODOLOGY,
-            count: rows.length,
-            tickers: rows
+            sentinel: {
+                type: s.type || null,
+                rating: s.rating || null,
+                baseSpreadBps: s.baseSpread != null ? s.baseSpread : null,
+                marketBeta: s.marketBeta != null ? s.marketBeta : null,
+                sectorBeta: s.sectorBeta != null ? s.sectorBeta : null,
+                baseRateType: s.baseRateType || null,
+                anchorsLastVerified: s.lastVerified || null
+            },
+            live: {
+                currentSpread: cardTxt('.spread-val'),
+                impliedYield: cardTxt('.yield-val'),
+                riskLevel: cardTxt('.risk-val'),
+                lastCalibrated: cardTxt('.last-calibrated'),
+                marketPulse: cardTxt('.market-pulse-badge')
+            }
         };
     }
 
@@ -445,6 +536,105 @@
         }, 250);
     }
 
+    // ── Canvas-to-PDF capture helpers ──────────────────────────────
+    // toDataURL throws SecurityError on tainted (cross-origin) canvases
+    // and returns a data URL for same-origin ones. TradingView is the
+    // only cross-origin chart we touch; everything else is captureable.
+    function captureCanvasImage(canvas) {
+        if (!canvas || typeof canvas.toDataURL !== 'function') return null;
+        if (!canvas.width || !canvas.height) return null;
+        try { return canvas.toDataURL('image/png'); }
+        catch (e) { return null; }
+    }
+
+    // Add a captured canvas to the PDF at the current cursor. Fits to
+    // page width minus margins, capped at maxHeight. Returns true if
+    // the image was added, false if there's nothing to capture.
+    function addChartImage(state, canvas, opts) {
+        const dataURL = captureCanvasImage(canvas);
+        if (!dataURL) return false;
+        const W = state.doc.internal.pageSize.getWidth();
+        const margin = 14;
+        const maxW = W - margin * 2;
+        const maxH = (opts && opts.maxHeight) || 75; // mm
+        const aspect = canvas.width / canvas.height;
+        let imgW = maxW;
+        let imgH = imgW / aspect;
+        if (imgH > maxH) { imgH = maxH; imgW = imgH * aspect; }
+        ensureSpace(state, imgH + 6);
+        state.doc.addImage(dataURL, 'PNG', margin + (maxW - imgW) / 2, state.y, imgW, imgH);
+        state.y += imgH + 6;
+        return true;
+    }
+
+    function tryCaptureFinVaultChart(state) {
+        // The FinVault page either renders a TradingView iframe (cross-
+        // origin, can't capture) OR a same-origin fallback canvas. We
+        // grab any <canvas> child of #stock-chart-section.
+        const section = document.getElementById('stock-chart-section');
+        if (!section) return;
+        const canvas = section.querySelector('canvas');
+        if (!canvas) return;
+        sectionHeader(state, 'Price Chart');
+        if (!addChartImage(state, canvas, { maxHeight: 70 })) {
+            // Surfaced label so users understand why the chart slot is
+            // empty for TradingView-backed tickers.
+            ensureSpace(state, 10);
+            state.doc.setFont('helvetica', 'italic');
+            state.doc.setFontSize(8);
+            state.doc.setTextColor(...BRAND_MUTED);
+            state.doc.text('Chart preview available in-app only (third-party embed).', 14, state.y);
+            state.y += 6;
+        }
+    }
+
+    function tryCaptureOsirisChart(state) {
+        const canvas = document.getElementById('osiris-canvas');
+        if (!canvas) return;
+        sectionHeader(state, 'Price Simulation');
+        if (!addChartImage(state, canvas, { maxHeight: 90 })) {
+            ensureSpace(state, 10);
+            state.doc.setFont('helvetica', 'italic');
+            state.doc.setFontSize(8);
+            state.doc.setTextColor(...BRAND_MUTED);
+            state.doc.text('Run a simulation to populate the chart.', 14, state.y);
+            state.y += 6;
+        }
+    }
+
+    // For Sentinel per-card downloads we need to render the waterfall
+    // chart for a given ticker. The chart lives inside #focus-modal,
+    // which Chart.js can't paint into when display:none. We briefly
+    // open the modal off-screen (hidden by an inline opacity + pointer-
+    // events override) so Chart.js can size and paint, capture, then
+    // restore. The whole round-trip is ~700ms.
+    async function captureSentinelWaterfall(ticker) {
+        if (typeof window.openModal !== 'function') return null;
+        const modal = document.getElementById('focus-modal');
+        if (!modal) return null;
+        const origStyle = modal.getAttribute('style') || '';
+        modal.setAttribute('style',
+            origStyle + ';opacity:0 !important;pointer-events:none !important;');
+        try {
+            window.openModal(ticker);
+            // updateModal awaits the credit-engine call (~300ms-ish) then
+            // calls renderWaterfall synchronously. Wait long enough that
+            // Chart.js has actually painted into the canvas.
+            await new Promise(r => setTimeout(r, 750));
+            const canvas = document.getElementById('waterfall-chart');
+            // Capture dataURL + dims BEFORE closing the modal — Chart.js
+            // may resize/destroy the canvas on hide.
+            const dataURL = captureCanvasImage(canvas);
+            const out = (dataURL && canvas)
+                ? { dataURL, width: canvas.width, height: canvas.height }
+                : null;
+            if (typeof window.closeModal === 'function') window.closeModal();
+            return out;
+        } finally {
+            modal.setAttribute('style', origStyle);
+        }
+    }
+
     // ── JSON ───────────────────────────────────────────────────────
     function downloadJSON(snap) {
         const body = JSON.stringify(snap, null, 2);
@@ -459,24 +649,7 @@
         }
         return s;
     }
-    // Each tool builds its own (rows[], filename) tuple. We keep the
-    // wide-table sentinel snapshot as a proper N-row CSV (one row per
-    // ticker) since that's what consumers actually want for a universe
-    // dashboard; everything else uses the flat Section/Field/Value form.
     function downloadCSV(snap) {
-        if (snap.tool === 'sentinel') {
-            const head = ['Ticker', 'Name', 'Sector', 'Country', 'Type', 'Rating',
-                'Base Spread (bps)', 'Market Beta', 'Sector Beta', 'Base Rate Type', 'Last Verified'];
-            const rows = [head];
-            for (const t of snap.tickers) {
-                rows.push([t.ticker, t.name, t.sector, t.country, t.type, t.rating,
-                    t.baseSpreadBps, t.marketBeta, t.sectorBeta, t.baseRateType, t.lastVerified]);
-            }
-            const body = rows.map(r => r.map(csvEscape).join(',')).join('\n');
-            triggerDownload(makeFilename(snap, 'csv'), 'text/csv;charset=utf-8', body);
-            return;
-        }
-
         const rows = [['Section', 'Field', 'Value']];
         const push = (section, field, value) => rows.push([section, field, value == null ? '' : value]);
         push('Header', 'Tool', snap.displayName);
@@ -504,18 +677,27 @@
             push('Osiris · 1-Year', 'Upside Ceiling', snap.osiris.oneYear.upsideCeiling);
             push('Osiris · 1-Year', 'Stress Floor', snap.osiris.oneYear.stressFloor);
         } else if (snap.tool === 'finvault') {
+            if (snap.profile && snap.profile.description) {
+                push('Company Profile', 'Description', snap.profile.description);
+            }
+            if (snap.profile && snap.profile.segments) {
+                snap.profile.segments.forEach(seg => push('Revenue Segments', seg.name, seg.share));
+            }
             for (const k of Object.keys(snap.marketContext)) push('Market Context', k, snap.marketContext[k]);
             for (const k of Object.keys(snap.forwardEstimates)) push('Forward Estimates', k, snap.forwardEstimates[k]);
             for (const k of Object.keys(snap.multiples)) push('Multiples', k, snap.multiples[k]);
             for (const k of Object.keys(snap.ratios)) push('Financial Ratios', k, snap.ratios[k]);
             for (const k of Object.keys(snap.fundamentalsHighlights)) push('Fundamentals Highlights', k, snap.fundamentalsHighlights[k]);
-            snap.recentNews.forEach((h, i) => push('Recent News', 'Headline ' + (i + 1), h));
         } else if (snap.tool === 'osiris') {
             for (const k of Object.keys(snap.simulatorState)) push('Simulator State', k, snap.simulatorState[k]);
             if (snap.physics) {
                 for (const k of Object.keys(snap.physics)) push('Physics', k, snap.physics[k]);
             }
             for (const k of Object.keys(snap.oracle)) push('Oracle', k, snap.oracle[k]);
+        } else if (snap.tool === 'sentinel') {
+            push('Header', 'View', snap.view || '');
+            for (const k of Object.keys(snap.live)) push('Yield Stack (live)', k, snap.live[k]);
+            for (const k of Object.keys(snap.sentinel)) push('Credit Calibration', k, snap.sentinel[k]);
         }
 
         const body = rows.map(r => r.map(csvEscape).join(',')).join('\n');
@@ -577,14 +759,13 @@
         doc.setFillColor(...BRAND_GREEN);
         doc.rect(0, 0, W, 1.6, 'F');
 
-        // Top header — wordmark left, ticker (or "DASHBOARD") right
+        // Top header — wordmark left, ticker right
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(...BRAND_GREEN);
         doc.text(toolBrandLabel(snap), margin, 9);
         doc.setTextColor(...BRAND_INK);
-        const rightLabel = snap.tool === 'sentinel' ? 'DASHBOARD' : (snap.ticker || '');
-        if (rightLabel) doc.text(rightLabel, W - margin, 9, { align: 'right' });
+        if (snap.ticker) doc.text(snap.ticker, W - margin, 9, { align: 'right' });
 
         // Footer rule
         doc.setDrawColor(...BRAND_RULE);
@@ -687,7 +868,7 @@
             case 'brief': return 'NOVASECT  ·  BRIEF REPORT';
             case 'finvault': return 'NOVASECT  ·  FINVAULT REPORT';
             case 'osiris': return 'NOVASECT  ·  OSIRIS REPORT';
-            case 'sentinel': return 'NOVASECT  ·  SENTINEL DASHBOARD';
+            case 'sentinel': return 'NOVASECT  ·  SENTINEL REPORT';
             default: return 'NOVASECT REPORT';
         }
     }
@@ -710,42 +891,29 @@
         doc.line(W / 2 - 45, y, W / 2 + 45, y);
         y += 22;
 
-        // Hero block — ticker (per-ticker tools) OR "UNIVERSE" + count (dashboard).
-        if (snap.tool === 'sentinel') {
+        // Hero block — ticker (all four tools are now per-ticker).
+        doc.setFont('courier', 'bold');
+        doc.setFontSize(42);
+        doc.setTextColor(...BRAND_INK);
+        doc.text(snap.ticker || '—', W / 2, y, { align: 'center' });
+        y += 12;
+
+        if (snap.name) {
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(28);
+            doc.setFontSize(16);
             doc.setTextColor(...BRAND_INK);
-            doc.text('UNIVERSE', W / 2, y, { align: 'center' });
-            y += 10;
+            doc.text(snap.name, W / 2, y, { align: 'center' });
+            y += 9;
+        }
+        const metaParts = [snap.sector, snap.country, snap.exchange, snap.industry].filter(Boolean);
+        if (metaParts.length) {
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(11);
+            doc.setFontSize(9);
             doc.setTextColor(...BRAND_MUTED);
-            doc.text((snap.count || 0) + ' tickers  ·  ' + (snap.view || ''), W / 2, y, { align: 'center' });
+            doc.text(metaParts.join('  ·  '), W / 2, y, { align: 'center' });
             y += 18;
         } else {
-            doc.setFont('courier', 'bold');
-            doc.setFontSize(42);
-            doc.setTextColor(...BRAND_INK);
-            doc.text(snap.ticker || '—', W / 2, y, { align: 'center' });
-            y += 12;
-
-            if (snap.name) {
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(16);
-                doc.setTextColor(...BRAND_INK);
-                doc.text(snap.name, W / 2, y, { align: 'center' });
-                y += 9;
-            }
-            const metaParts = [snap.sector, snap.country, snap.exchange, snap.industry].filter(Boolean);
-            if (metaParts.length) {
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(9);
-                doc.setTextColor(...BRAND_MUTED);
-                doc.text(metaParts.join('  ·  '), W / 2, y, { align: 'center' });
-                y += 18;
-            } else {
-                y += 9;
-            }
+            y += 9;
         }
 
         doc.setFont('helvetica', 'normal');
@@ -838,6 +1006,43 @@
 
     function buildFinVaultBody(state) {
         const snap = state.snap;
+
+        // ── Company Profile (description + revenue segments) ──
+        // Goes at the very top so the report reads in narrative order:
+        // who/what the company is, then market data, then the math.
+        if (snap.profile && (snap.profile.description || snap.profile.segments.length)) {
+            sectionHeader(state, 'Company Profile');
+            if (snap.profile.description) {
+                ensureSpace(state, 18);
+                const W = state.doc.internal.pageSize.getWidth();
+                state.doc.setFont('helvetica', 'normal');
+                state.doc.setFontSize(9);
+                state.doc.setTextColor(...BRAND_INK);
+                const lines = state.doc.splitTextToSize(snap.profile.description, W - 28);
+                state.doc.text(lines, 14, state.y);
+                state.y += lines.length * 4.2 + 4;
+            }
+            if (snap.profile.segments && snap.profile.segments.length) {
+                subHeader(state, 'Revenue Segments');
+                writeTable(state,
+                    [['Segment', 'Share']],
+                    snap.profile.segments.map(s => [s.name, s.share]),
+                    {
+                        columnStyles: {
+                            0: { cellWidth: 'auto' },
+                            1: { halign: 'right', cellWidth: 28, fontStyle: 'bold' }
+                        }
+                    }
+                );
+            }
+        }
+
+        // ── Price Chart (only if a fallback canvas is rendered) ──
+        // TradingView embed is a cross-origin iframe and cannot be
+        // captured; for the ~22 restricted tickers report.html paints a
+        // fallback canvas which is same-origin and can be exported.
+        tryCaptureFinVaultChart(state);
+
         sectionHeader(state, 'Market Context');
         const mc = snap.marketContext;
         kvTable(state, [
@@ -892,23 +1097,14 @@
             ['EPS Growth 5Y', fh.epsGrowth5Y || '—']
         ]);
 
-        if (snap.recentNews && snap.recentNews.length) {
-            sectionHeader(state, 'Recent News');
-            writeTable(state,
-                [['#', 'Headline']],
-                snap.recentNews.map((h, i) => [String(i + 1), h]),
-                {
-                    columnStyles: {
-                        0: { cellWidth: 10, halign: 'center', fontStyle: 'bold' },
-                        1: { cellWidth: 'auto' }
-                    }
-                }
-            );
-        }
     }
 
     function buildOsirisBody(state) {
         const snap = state.snap;
+
+        // Price-simulation chart goes first if a simulation has been run.
+        tryCaptureOsirisChart(state);
+
         sectionHeader(state, 'Simulator State');
         const s = snap.simulatorState;
         kvTable(state, [
@@ -956,37 +1152,62 @@
         }
     }
 
-    function buildSentinelBody(state) {
+    async function buildSentinelBody(state) {
         const snap = state.snap;
-        sectionHeader(state, 'Credit Dashboard · ' + snap.count + ' Tickers');
-        writeTable(state,
-            [['Ticker', 'Name', 'Sector', 'Country', 'Rating',
-                'Spread (bps)', 'M-β', 'S-β', 'Rate Type']],
-            snap.tickers.map(t => [
-                t.ticker,
-                t.name || '—',
-                t.sector || '—',
-                t.country || '—',
-                t.rating || '—',
-                t.baseSpreadBps != null ? String(t.baseSpreadBps) : '—',
-                t.marketBeta != null ? Number(t.marketBeta).toFixed(2) : '—',
-                t.sectorBeta != null ? Number(t.sectorBeta).toFixed(2) : '—',
-                t.baseRateType || '—'
-            ]),
-            {
-                columnStyles: {
-                    0: { fontStyle: 'bold', cellWidth: 18 },
-                    1: { cellWidth: 'auto' },
-                    2: { cellWidth: 22 },
-                    3: { cellWidth: 14, halign: 'center' },
-                    4: { cellWidth: 14, halign: 'center' },
-                    5: { cellWidth: 18, halign: 'right' },
-                    6: { cellWidth: 12, halign: 'right' },
-                    7: { cellWidth: 12, halign: 'right' },
-                    8: { cellWidth: 18, halign: 'center' }
-                }
+
+        // Live snapshot from the card — the yield/spread the user sees.
+        sectionHeader(state, 'Yield Stack (live)');
+        kvTable(state, [
+            ['Implied Total Yield', snap.live.impliedYield || '—'],
+            ['Current Spread', snap.live.currentSpread || '—'],
+            ['Risk Level', snap.live.riskLevel || '—'],
+            ['Market Pulse', snap.live.marketPulse || '—'],
+            ['Last Calibrated', snap.live.lastCalibrated || '—']
+        ]);
+
+        // Regression Attribution Waterfall — opens the modal off-screen
+        // for ~700ms so Chart.js can paint, captures the canvas, closes.
+        sectionHeader(state, 'Regression Attribution Waterfall');
+        try {
+            const chart = await captureSentinelWaterfall(snap.ticker);
+            if (chart && chart.dataURL) {
+                const W = state.doc.internal.pageSize.getWidth();
+                const margin = 14;
+                const maxW = W - margin * 2;
+                const maxH = 85;
+                const aspect = chart.width / chart.height;
+                let imgW = maxW;
+                let imgH = imgW / aspect;
+                if (imgH > maxH) { imgH = maxH; imgW = imgH * aspect; }
+                ensureSpace(state, imgH + 6);
+                state.doc.addImage(chart.dataURL, 'PNG',
+                    margin + (maxW - imgW) / 2, state.y, imgW, imgH);
+                state.y += imgH + 6;
+            } else {
+                ensureSpace(state, 10);
+                state.doc.setFont('helvetica', 'italic');
+                state.doc.setFontSize(8);
+                state.doc.setTextColor(...BRAND_MUTED);
+                state.doc.text('Waterfall chart unavailable.', 14, state.y);
+                state.y += 6;
             }
-        );
+        } catch (e) {
+            console.warn('[Downloads] waterfall capture failed', e);
+        }
+
+        // Static calibration anchors from universe.json.
+        sectionHeader(state, 'Credit Calibration');
+        const s = snap.sentinel;
+        kvTable(state, [
+            ['Instrument Type', s.type || '—'],
+            ['Rating', s.rating || '—'],
+            ['Base Spread (bps)', s.baseSpreadBps != null ? String(s.baseSpreadBps) : '—'],
+            ['Market Beta', s.marketBeta != null ? Number(s.marketBeta).toFixed(2) : '—'],
+            ['Sector Beta', s.sectorBeta != null ? Number(s.sectorBeta).toFixed(2) : '—'],
+            ['Base Rate Type', s.baseRateType || '—'],
+            ['Anchors Last Verified', s.anchorsLastVerified || '—'],
+            ['Reference View', snap.view || '—']
+        ]);
     }
 
     async function downloadPDF(snap) {
@@ -1003,7 +1224,7 @@
             case 'brief': buildBriefBody(state); break;
             case 'finvault': buildFinVaultBody(state); break;
             case 'osiris': buildOsirisBody(state); break;
-            case 'sentinel': buildSentinelBody(state); break;
+            case 'sentinel': await buildSentinelBody(state); break;
             default: throw new Error('Unknown snapshot tool: ' + snap.tool);
         }
 
@@ -1027,26 +1248,141 @@
     }
 
     // ── Page detection ─────────────────────────────────────────────
-    // Returns a descriptor { tool, snapshotFn, requireTicker } when the
-    // current page is one of the four downloadable surfaces; null
-    // otherwise (about, index, reports, etc — no download button there).
+    // Returns a descriptor describing how to mount on the current page,
+    // or null when the page is not a download surface.
+    //   - { kind: 'global', tool, snapshotFn, requireTicker } — single
+    //     top-right dropdown (brief / finvault / osiris)
+    //   - { kind: 'sentinel-cards' } — per-card buttons injected as
+    //     credit cards render (sentinel)
     function detectPage() {
         if (document.getElementById('brief-page')) {
-            return { tool: 'brief', snapshotFn: snapshotBrief, requireTicker: true };
+            return { kind: 'global', tool: 'brief', snapshotFn: snapshotBrief, requireTicker: true };
         }
-        // FinVault report — distinguished by ?company=slug + #company-name.
         if (document.getElementById('company-name') && document.getElementById('stats-body')) {
-            return { tool: 'finvault', snapshotFn: snapshotFinVault, requireTicker: false };
+            return { kind: 'global', tool: 'finvault', snapshotFn: snapshotFinVault, requireTicker: false };
         }
-        // Osiris simulator — the canvas is unique to this page.
         if (document.getElementById('osiris-canvas')) {
-            return { tool: 'osiris', snapshotFn: snapshotOsiris, requireTicker: true };
+            return { kind: 'global', tool: 'osiris', snapshotFn: snapshotOsiris, requireTicker: true };
         }
-        // Sentinel dashboard — the credit-card grid is unique to this page.
         if (document.getElementById('sector-alpha-grid')) {
-            return { tool: 'sentinel', snapshotFn: snapshotSentinel, requireTicker: false };
+            return { kind: 'sentinel-cards' };
         }
         return null;
+    }
+
+    // ── Mount: Sentinel per-card buttons ───────────────────────────
+    function runExport(fmt, snap, ticker) {
+        // Centralised handler used by both global dropdown and per-card.
+        return (async () => {
+            try {
+                if (fmt === 'json') { downloadJSON(snap); toast('JSON ready'); }
+                else if (fmt === 'csv') { downloadCSV(snap); toast('CSV ready'); }
+                else if (fmt === 'pdf') {
+                    toast('Building PDF…');
+                    await downloadPDF(snap);
+                    toast('PDF ready');
+                }
+            } catch (err) {
+                console.error('[Downloads] export failed', err);
+                toast('Download failed (' + (ticker || 'unknown') + ')', true);
+            }
+        })();
+    }
+
+    function injectCardButton(card) {
+        if (!card || card.nodeType !== 1) return;
+        if (!card.id || !card.id.startsWith('card-')) return;
+        if (card.querySelector('.dl-card-btn')) return; // already injected
+        const ticker = card.id.slice(5);
+
+        const btn = document.createElement('button');
+        btn.className = 'dl-card-btn';
+        btn.type = 'button';
+        btn.title = 'Download ' + ticker + ' credit report';
+        btn.setAttribute('aria-label', 'Download ' + ticker + ' credit report');
+        btn.setAttribute('aria-haspopup', 'true');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.textContent = '⤓';
+
+        const menu = document.createElement('div');
+        menu.className = 'dl-card-menu';
+        menu.setAttribute('role', 'menu');
+        menu.innerHTML = [
+            '<button type="button" data-fmt="pdf" role="menuitem">PDF</button>',
+            '<button type="button" data-fmt="json" role="menuitem">JSON</button>',
+            '<button type="button" data-fmt="csv" role="menuitem">CSV</button>'
+        ].join('');
+
+        const close = () => {
+            menu.classList.remove('open');
+            btn.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+        };
+
+        // stopPropagation is critical — the card's onclick="openModal()"
+        // would otherwise fire and pop the modal whenever the button is
+        // clicked. Same goes for menu clicks.
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            // Close any other open card menus first.
+            document.querySelectorAll('.dl-card-menu.open').forEach(m => {
+                if (m !== menu) m.classList.remove('open');
+            });
+            document.querySelectorAll('.dl-card-btn.open').forEach(b => {
+                if (b !== btn) b.classList.remove('open');
+            });
+            const willOpen = !menu.classList.contains('open');
+            menu.classList.toggle('open', willOpen);
+            btn.classList.toggle('open', willOpen);
+            btn.setAttribute('aria-expanded', String(willOpen));
+        });
+
+        menu.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const t = e.target.closest('button[data-fmt]');
+            if (!t) return;
+            const fmt = t.getAttribute('data-fmt');
+            close();
+            const snap = await snapshotSentinelTicker(ticker);
+            await runExport(fmt, snap, ticker);
+        });
+
+        card.appendChild(btn);
+        card.appendChild(menu);
+    }
+
+    function mountSentinelCards() {
+        const grids = ['sector-alpha-grid', 'sector-beta-grid']
+            .map(id => document.getElementById(id))
+            .filter(Boolean);
+        if (grids.length === 0) return;
+
+        // Process any cards already present (unlikely on first paint, but
+        // safe if the script runs after grid render — defer wouldn't
+        // catch every order).
+        grids.forEach(grid => Array.from(grid.children).forEach(injectCardButton));
+
+        // Cards are JS-rendered into the grids after the credit engine
+        // resolves. Observe for additions and inject as they arrive.
+        const obs = new MutationObserver(mutations => {
+            for (const m of mutations) {
+                for (const n of m.addedNodes) injectCardButton(n);
+            }
+        });
+        grids.forEach(grid => obs.observe(grid, { childList: true }));
+
+        // Global dismiss for any open card menu.
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.dl-card-menu') || e.target.closest('.dl-card-btn')) return;
+            document.querySelectorAll('.dl-card-menu.open').forEach(m => m.classList.remove('open'));
+            document.querySelectorAll('.dl-card-btn.open').forEach(b => b.classList.remove('open'));
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            document.querySelectorAll('.dl-card-menu.open').forEach(m => m.classList.remove('open'));
+            document.querySelectorAll('.dl-card-btn.open').forEach(b => b.classList.remove('open'));
+        });
     }
 
     // ── Mount ──────────────────────────────────────────────────────
@@ -1054,6 +1390,11 @@
         const page = detectPage();
         if (!page) return;
         injectStyles();
+
+        if (page.kind === 'sentinel-cards') {
+            mountSentinelCards();
+            return;
+        }
 
         const wrap = document.createElement('div');
         wrap.className = 'dl-wrap';
@@ -1105,15 +1446,9 @@
                     toast('No ticker selected', true);
                     return;
                 }
-                if (fmt === 'json') { downloadJSON(snap); toast('JSON ready'); }
-                else if (fmt === 'csv') { downloadCSV(snap); toast('CSV ready'); }
-                else if (fmt === 'pdf') {
-                    toast('Building PDF…');
-                    await downloadPDF(snap);
-                    toast('PDF ready');
-                }
+                await runExport(fmt, snap, snap.ticker);
             } catch (err) {
-                console.error('[Downloads] export failed', err);
+                console.error('[Downloads] snapshot failed', err);
                 toast('Download failed', true);
             }
         });
