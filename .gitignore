@@ -138,3 +138,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vercel
+
+# Health-check dedup state — written at runtime by scripts/health/.
+# Persisted across runs via actions/cache, not git.
+.health/
