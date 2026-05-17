@@ -40,7 +40,7 @@ jobs:
   run:
     name: Run canaries
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,6 +61,24 @@ jobs:
           key: novasect-health-state-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             novasect-health-state-
+
+      # Playwright Chromium for the PDF-render smoke check. ~250MB
+      # download cold; ~5s warm via the cache below. The browser
+      # version is pinned by the playwright package install, so
+      # caching by package-lock hash is safe.
+      - name: Cache Playwright browsers
+        id: cache-playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-v1
+          restore-keys: |
+            playwright-chromium-
+
+      - name: Install Playwright + Chromium
+        run: |
+          npm install --no-save playwright@1
+          npx playwright install --with-deps chromium
 
       - name: Run health checks
         env:

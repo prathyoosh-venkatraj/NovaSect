@@ -13,7 +13,11 @@
  * POST. Useful for local testing.
  */
 import { notify } from './notify.mjs';
-import { checkYahoo, checkFinnhub, checkUniverse, checkPublicAssets } from './checks.mjs';
+import {
+    checkYahoo, checkFinnhub, checkUniverse, checkPublicAssets,
+    checkFred, checkStaleAnchors, checkUniverseDrift, checkFinnhubAuthz,
+    checkOsirisEngine, checkPdfRender
+} from './checks.mjs';
 
 const SITE_URL = (process.env.SITE_URL || 'https://novasect.space').replace(/\/$/, '');
 const SMOKE_TEST = process.env.SMOKE_TEST === 'true';
@@ -62,11 +66,19 @@ if (SMOKE_TEST) {
     }
 }
 
+// Order from cheapest → heaviest. Heavy ones (engine, PDF render)
+// run last so transient external-API blips don't waste their compute.
 const CHECKS = [
-    { name: 'yahoo-canary',      fn: () => checkYahoo(SITE_URL) },
-    { name: 'finnhub-canary',    fn: () => checkFinnhub(SITE_URL) },
-    { name: 'universe-coverage', fn: () => checkUniverse(SITE_URL) },
-    { name: 'public-assets',     fn: () => checkPublicAssets(SITE_URL) }
+    { name: 'yahoo-canary',         fn: () => checkYahoo(SITE_URL) },
+    { name: 'finnhub-canary',       fn: () => checkFinnhub(SITE_URL) },
+    { name: 'fred-canary',          fn: () => checkFred(SITE_URL) },
+    { name: 'universe-coverage',    fn: () => checkUniverse(SITE_URL) },
+    { name: 'public-assets',        fn: () => checkPublicAssets(SITE_URL) },
+    { name: 'finnhub-authz',        fn: () => checkFinnhubAuthz(SITE_URL) },
+    { name: 'stale-anchors',        fn: () => checkStaleAnchors() },
+    { name: 'universe-drift',       fn: () => checkUniverseDrift() },
+    { name: 'osiris-engine',        fn: () => checkOsirisEngine() },
+    { name: 'pdf-render',           fn: () => checkPdfRender(SITE_URL) }
 ];
 
 let anyFailed = false;

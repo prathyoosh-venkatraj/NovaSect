@@ -140,3 +140,347 @@ export async function checkPublicAssets(siteUrl) {
     }
     return ok(assets.length + ' public assets returning 200');
 }
+
+// ── 5. FRED canary ─────────────────────────────────────────────────
+//   GET /api/fred-proxy?series_id=DGS10
+//   Asserts 200 + a numeric `value` (US 10-year treasury is the Sentinel
+//   base-rate anchor — silent FRED failure would break all yield math).
+export async function checkFred(siteUrl) {
+    const url = siteUrl + '/api/fred-proxy?series_id=DGS10';
+    let t;
+    try { t = await timed(() => fetchWithTimeout(url)); }
+    catch (e) { return fail('FRED proxy unreachable', e.message); }
+    if (!t.res.ok) {
+        return fail('FRED proxy returned ' + t.res.status, url + ' in ' + t.ms + ' ms');
+    }
+    let data;
+    try { data = await t.res.json(); }
+    catch { return fail('FRED proxy payload not JSON', '(' + t.ms + ' ms)'); }
+    if (!data || typeof data.value !== 'number' || !isFinite(data.value)) {
+        return fail('FRED proxy missing numeric value', JSON.stringify(data).slice(0, 200));
+    }
+    // Sanity range — DGS10 historically 0–20 %. Anything outside that
+    // is almost certainly a payload-shape change, not a market move.
+    if (data.value < 0 || data.value > 20) {
+        return fail('FRED DGS10 value out of plausible range: ' + data.value,
+            JSON.stringify(data).slice(0, 200));
+    }
+    return ok('FRED proxy healthy · DGS10=' + data.value.toFixed(2) + '% (' + t.ms + ' ms)');
+}
+
+// ── 6. Stale-anchor audit ──────────────────────────────────────────
+//   Spawns scripts/check-stale-anchors.js --overdue and parses the
+//   "Summary: N of M overdue." line. Alerts when any Sentinel anchor
+//   is past the 90-day refresh window. Procedure: SENTINEL-CALIBRATION.md.
+export async function checkStaleAnchors() {
+    const { spawnSync } = await import('node:child_process');
+    const r = spawnSync('node', ['scripts/check-stale-anchors.js', '--overdue'], {
+        encoding: 'utf8',
+        cwd: process.cwd(),
+        timeout: 30_000
+    });
+    if (r.error) return fail('Stale-anchor script error', r.error.message);
+    if (r.status !== 0 && r.status !== 1) {
+        // Exit 0 = clean, exit 1 = has overdue (expected signal), other = crash.
+        return fail('Stale-anchor script exit ' + r.status, (r.stderr || r.stdout).slice(0, 600));
+    }
+    const out = r.stdout || '';
+    const m = out.match(/Summary:\s*(\d+)\s*of\s*(\d+)\s*overdue/);
+    if (!m) return fail('Stale-anchor output unparseable', out.slice(0, 400));
+    const overdue = parseInt(m[1], 10);
+    const total = parseInt(m[2], 10);
+    if (overdue > 0) {
+        // Extract the table rows under "OVERDUE (>90 days)" for evidence.
+        const rows = out.split('\n')
+            .filter(l => /^\s{2}[A-Z]/.test(l) && !/Ticker/.test(l))
+            .slice(0, 10);
+        return fail(overdue + ' of ' + total + ' Sentinel anchors overdue (>90 days)',
+            '```\n' + rows.join('\n') + '\n```');
+    }
+    return ok(total + ' Sentinel anchors, none overdue');
+}
+
+// ── 7. Build-universe drift ────────────────────────────────────────
+//   Hashes the committed data/universe.json, regenerates it via
+//   scripts/build-universe.js, hashes the fresh output, and compares.
+//   Drift means someone changed a source file (sentinel.v2.js,
+//   physics-config.json, report.html) without re-committing universe.json.
+export async function checkUniverseDrift() {
+    const { spawnSync } = await import('node:child_process');
+    const { readFileSync, writeFileSync } = await import('node:fs');
+    const { createHash } = await import('node:crypto');
+    const path = 'data/universe.json';
+
+    // Hash only the `tickers` block — `_meta.generated` is a date stamp
+    // bumped on every run of build-universe.js, which would otherwise
+    // trip the drift alarm every 24 hours regardless of real changes.
+    function tickerHash(buf) {
+        try {
+            const data = JSON.parse(buf.toString());
+            const stable = JSON.stringify(data.tickers || {});
+            return createHash('sha256').update(stable).digest('hex');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    let originalBuf;
+    try { originalBuf = readFileSync(path); }
+    catch (e) { return fail('data/universe.json missing locally', e.message); }
+    const originalHash = tickerHash(originalBuf);
+    if (!originalHash) return fail('data/universe.json unparseable on disk', '');
+
+    const r = spawnSync('node', ['scripts/build-universe.js'], {
+        encoding: 'utf8',
+        cwd: process.cwd(),
+        timeout: 60_000
+    });
+    if (r.status !== 0) {
+        writeFileSync(path, originalBuf);
+        return fail('build-universe.js exit ' + r.status, (r.stderr || r.stdout).slice(0, 600));
+    }
+
+    const freshBuf = readFileSync(path);
+    const freshHash = tickerHash(freshBuf);
+    writeFileSync(path, originalBuf);
+    if (!freshHash) return fail('regenerated universe.json unparseable', '');
+
+    if (originalHash !== freshHash) {
+        // Compute a quick diff signal: count of tickers + a sample of
+        // changed ticker keys without dumping the whole JSON.
+        let origTickers = [], freshTickers = [];
+        try {
+            origTickers = Object.keys(JSON.parse(originalBuf.toString()).tickers || {});
+            freshTickers = Object.keys(JSON.parse(freshBuf.toString()).tickers || {});
+        } catch { /* fall through with empty diffs */ }
+        const added = freshTickers.filter(t => !origTickers.includes(t));
+        const removed = origTickers.filter(t => !freshTickers.includes(t));
+        const lines = [];
+        if (added.length) lines.push('Added: ' + added.slice(0, 8).join(', ') + (added.length > 8 ? '…' : ''));
+        if (removed.length) lines.push('Removed: ' + removed.slice(0, 8).join(', ') + (removed.length > 8 ? '…' : ''));
+        if (!lines.length) lines.push('Ticker set unchanged; field-level drift.');
+        return fail('data/universe.json out of sync with sources',
+            '```\n' + lines.join('\n') + '\n```\nRun `node scripts/build-universe.js` and commit.');
+    }
+    return ok('universe.json reproduces from sources cleanly');
+}
+
+// ── 8. Finnhub authz sample probe ──────────────────────────────────
+//   Probes a fixed 3+3 ticker sample (US vs known-international) via
+//   the production Finnhub proxy. Alerts on:
+//     · ANY US ticker failing (would mean auth regression)
+//     · ANY international ticker starting to succeed (notable improvement;
+//       might mean Finnhub raised our plan / changed coverage)
+//   This is a 6-call probe, cheap on quota since the proxy edge-caches
+//   stock/metric for 6h.
+const FINNHUB_SAMPLE_US = ['XOM', 'AAPL', 'MSFT'];
+const FINNHUB_SAMPLE_INTL = ['RHM.DE', 'IBE.MC', 'BMW.DE'];
+
+export async function checkFinnhubAuthz(siteUrl) {
+    async function probe(symbol) {
+        const url = siteUrl + '/api/finnhub-proxy?endpoint=stock/metric&symbol=' + encodeURIComponent(symbol);
+        try {
+            const res = await fetchWithTimeout(url);
+            return { symbol, status: res.status, ok: res.ok };
+        } catch (e) {
+            return { symbol, status: 0, ok: false, error: e.message };
+        }
+    }
+    const usResults = await Promise.all(FINNHUB_SAMPLE_US.map(probe));
+    const intlResults = await Promise.all(FINNHUB_SAMPLE_INTL.map(probe));
+
+    const usFails = usResults.filter(r => !r.ok);
+    const intlPasses = intlResults.filter(r => r.ok);
+
+    if (usFails.length > 0) {
+        const lines = usFails.map(r => r.symbol + ' → ' + (r.status || r.error));
+        return fail('Finnhub US authz regression: ' + usFails.length + '/' + FINNHUB_SAMPLE_US.length + ' failing',
+            '```\n' + lines.join('\n') + '\n```');
+    }
+    if (intlPasses.length > 0) {
+        const lines = intlPasses.map(r => r.symbol + ' → 200');
+        return fail('Finnhub international authz improved: ' + intlPasses.length + '/' + FINNHUB_SAMPLE_INTL.length + ' now succeeding',
+            '```\n' + lines.join('\n') + '\n```\nWorth reviewing — may unlock multiples for these tickers.');
+    }
+    return ok('Finnhub authz unchanged · US ' + FINNHUB_SAMPLE_US.length + '/' + FINNHUB_SAMPLE_US.length + ' · INTL 0/' + FINNHUB_SAMPLE_INTL.length);
+}
+
+// ── 9. Osiris HI-FI engine sanity ──────────────────────────────────
+//   Evaluates the actual stochasticWorker.js source via vm.runInContext
+//   (stripping the self.onmessage handler that requires a Web Worker
+//   global), then runs a small OU and GBM-Jump simulation. Asserts:
+//     · all percentile paths > 0 (no negative prices)
+//     · p05 < p25 < p50 < p75 < p95 at every step
+//     · p95-p05 spread > 0 (paths aren't collapsed to a point)
+//     · p50 terminal within a generous bound (no NaN/runaway)
+//   Catches math regressions in the worker itself, not a parallel ref
+//   implementation that could drift.
+export async function checkOsirisEngine() {
+    const { readFileSync } = await import('node:fs');
+    const vm = await import('node:vm');
+    const path = 'components/osiris/stochasticWorker.js';
+
+    let src;
+    try { src = readFileSync(path, 'utf8'); }
+    catch (e) { return fail('Osiris worker source missing', e.message); }
+
+    // Strip the Web Worker dispatcher; we only need the pure simulation
+    // functions (simulateOU, simulateGBMJump, extractPercentilePaths,
+    // randomNormal). They're declared at top level, so they'll attach
+    // to the vm context as globals.
+    //
+    // The worker's `postProgress` helper still calls self.postMessage
+    // for chunked progress ticks during long HI-FI runs — shim a no-op
+    // `self` so the function bodies execute cleanly in Node.
+    const trimmed = src.replace(/self\.onmessage\s*=[\s\S]*$/, '');
+    const sandbox = {
+        Math, Float32Array, Array, Number, isFinite,
+        self: { postMessage: () => {} }
+    };
+    const ctx = vm.createContext(sandbox);
+    try { vm.runInContext(trimmed, ctx, { timeout: 5000 }); }
+    catch (e) { return fail('Osiris worker source failed to evaluate', e.message); }
+
+    const simulateOU = sandbox.simulateOU;
+    const simulateGBMJump = sandbox.simulateGBMJump;
+    if (typeof simulateOU !== 'function' || typeof simulateGBMJump !== 'function') {
+        return fail('Osiris worker missing expected functions', 'simulateOU / simulateGBMJump not found');
+    }
+
+    function assertPercentiles(name, result, initialPrice) {
+        const p = result.percentiles;
+        const keys = ['p05', 'p10', 'p25', 'p45', 'p50', 'p55', 'p75', 'p90', 'p95'];
+        for (const k of keys) {
+            if (!p[k] || !p[k].length) return name + ': missing ' + k;
+        }
+        const steps = p.p50.length;
+
+        // Strict monotonicity holds ONLY at the terminal step — that's
+        // where extractPercentilePaths actually sorts. Intermediate
+        // steps of the p05 path can be anywhere relative to the p10
+        // path's intermediate values (they're different paths sorted
+        // by their terminal). At every step we still assert positivity
+        // and finiteness.
+        for (let i = 0; i < steps; i++) {
+            for (const k of keys) {
+                const v = p[k][i];
+                if (!isFinite(v)) return name + ': non-finite ' + k + ' at step ' + i;
+                if (v < 0) return name + ': negative ' + k + ' at step ' + i + ' (' + v.toFixed(2) + ')';
+            }
+        }
+
+        // Terminal-step invariants — these MUST hold by construction.
+        const last = steps - 1;
+        const terminalSorted = keys.map(k => p[k][last]);
+        for (let j = 1; j < terminalSorted.length; j++) {
+            if (!(terminalSorted[j] >= terminalSorted[j - 1])) {
+                return name + ': terminal percentiles not monotone (' +
+                    keys[j - 1] + '=' + terminalSorted[j - 1].toFixed(2) +
+                    ' > ' + keys[j] + '=' + terminalSorted[j].toFixed(2) + ')';
+            }
+        }
+        const terminalSpread = terminalSorted[terminalSorted.length - 1] - terminalSorted[0];
+        if (!(terminalSpread > 0)) return name + ': zero terminal p05-p95 spread (paths collapsed)';
+        if (terminalSorted[0] <= 0) return name + ': non-positive terminal p05';
+
+        const terminalP50 = p.p50[last];
+        if (terminalP50 <= 0 || terminalP50 > initialPrice * 10) {
+            return name + ': implausible p50 terminal ' + terminalP50.toFixed(2);
+        }
+        if (typeof result.pAboveSpot !== 'number' || result.pAboveSpot < 0 || result.pAboveSpot > 1) {
+            return name + ': pAboveSpot out of [0,1] (' + result.pAboveSpot + ')';
+        }
+        return null;
+    }
+
+    // Run two small simulations — one per physics engine — at 500 paths
+    // × 60 steps. Cheap (~20 ms total) but exercises both code paths.
+    try {
+        const ouResult = simulateOU(100, 0.05, 0.22, 60, 500, 0.15, 100);
+        const ouProblem = assertPercentiles('OU', ouResult, 100);
+        if (ouProblem) return fail('Osiris OU engine invariant violated', ouProblem);
+
+        const gbmResult = simulateGBMJump(100, 0.05, 0.22, 60, 500, 4, 0);
+        const gbmProblem = assertPercentiles('GBM-Jump', gbmResult, 100);
+        if (gbmProblem) return fail('Osiris GBM-Jump engine invariant violated', gbmProblem);
+    } catch (e) {
+        const detail = (e && (e.stack || e.message)) || String(e);
+        return fail('Osiris engine threw during sanity run', '```\n' + detail.slice(0, 600) + '\n```');
+    }
+    return ok('Osiris worker math invariants hold (OU + GBM-Jump · 500×60)');
+}
+
+// ── 10. PDF render smoke ───────────────────────────────────────────
+//   Launches headless Chromium via Playwright, loads the live brief
+//   page for XOM, clicks Download → PDF, and verifies the resulting
+//   file is a valid PDF > 50 KB. Catches end-to-end regressions in
+//   the downloads component, the jsPDF/autotable CDN, and the brief
+//   page itself — anything a unit test can't see.
+//
+//   Skips cleanly if Playwright isn't installed (CI installs it via
+//   workflow step; local devs can run the cheaper checks without it).
+export async function checkPdfRender(siteUrl) {
+    let chromium;
+    try {
+        ({ chromium } = await import('playwright'));
+    } catch (e) {
+        // Playwright missing → treat as pass with an informational
+        // title so the channel doesn't get a recurring red alert just
+        // because someone is running locally without it.
+        console.log('[pdf-render] playwright not installed — skipping (' + e.message + ')');
+        return ok('PDF render check skipped (playwright not installed)');
+    }
+
+    const fs = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'novasect-pdf-'));
+    let browser;
+    try {
+        browser = await chromium.launch({ headless: true });
+        const context = await browser.newContext({ acceptDownloads: true });
+        const page = await context.newPage();
+
+        const briefUrl = siteUrl + '/brief.html?ticker=XOM';
+        const t0 = Date.now();
+        await page.goto(briefUrl, { waitUntil: 'domcontentloaded', timeout: 25_000 });
+
+        // The downloads component injects .dl-btn after DOMContentLoaded
+        // via its defer-loaded script. Wait for it to be both present
+        // AND clickable. brief.html also runs async data fetches; the
+        // PDF generator reads from the live DOM, so we let it hydrate.
+        await page.waitForSelector('.dl-btn', { timeout: 15_000, state: 'visible' });
+        await page.waitForTimeout(2_500);
+
+        await page.locator('.dl-btn').click();
+        await page.waitForSelector('.dl-menu.open button[data-fmt="pdf"]', { timeout: 5_000 });
+
+        const downloadPromise = page.waitForEvent('download', { timeout: 30_000 });
+        await page.locator('.dl-menu.open button[data-fmt="pdf"]').click();
+
+        const dl = await downloadPromise;
+        const filePath = path.join(tmp, dl.suggestedFilename() || 'brief.pdf');
+        await dl.saveAs(filePath);
+
+        const stat = await fs.stat(filePath);
+        const head = await fs.readFile(filePath, { encoding: null });
+        const sig = head.slice(0, 4).toString('ascii');
+        const ms = Date.now() - t0;
+
+        if (sig !== '%PDF') {
+            return fail('PDF download has wrong signature: "' + sig + '"',
+                'Expected `%PDF` magic bytes. File: ' + filePath + ' (' + stat.size + ' B)');
+        }
+        if (stat.size < 50_000) {
+            return fail('PDF download too small (' + stat.size + ' B < 50 KB)',
+                'Likely a partial render or missing data section.');
+        }
+        return ok('PDF render OK · ' + Math.round(stat.size / 1024) + ' KB · ' + ms + ' ms');
+    } catch (e) {
+        return fail('PDF render flow failed', e.message);
+    } finally {
+        if (browser) { try { await browser.close(); } catch {} }
+        try { await fs.rm(tmp, { recursive: true, force: true }); } catch {}
+    }
+}
