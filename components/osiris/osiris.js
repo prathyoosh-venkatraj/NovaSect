@@ -2,12 +2,34 @@ import { osirisIngestion } from './osirisIngestion.js';
 import { OsirisCloudCanvas } from './osirisCloudCanvas.js';
 import { OsirisOracle } from './osirisOracle.js';
 
+// ── Device classification & path budgets ───────────────────────────────
+// Detected once at orchestrator init and held in `this.deviceClass`.
+//   mobile     — coarse pointer, narrow viewport, or low-memory device.
+//                No HI-FI toggle. Capped at the mobile budget.
+//   desktop_lo — anything desktop-class but not high-end. HI-FI up to 100K.
+//   desktop_hi — ≥ 8 GB device memory and ≥ 8 logical cores. HI-FI up to 250K.
+const DEVICE_DEFAULT_PATHS = { mobile: 10000, desktop_lo: 25000, desktop_hi: 25000 };
+const DEVICE_HIFI_CAP =      { mobile: 0,     desktop_lo: 100000, desktop_hi: 250000 };
+
+function detectDeviceClass() {
+    const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    const narrow = typeof matchMedia === 'function' && matchMedia('(max-width: 768px)').matches;
+    const mem = (typeof navigator !== 'undefined' && navigator.deviceMemory) || 4;
+    const cores = (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 4;
+    if (coarse || narrow || mem <= 2) return 'mobile';
+    if (mem >= 8 && cores >= 8) return 'desktop_hi';
+    return 'desktop_lo';
+}
+
 class OsirisOrchestrator {
     constructor() {
         this.activeWorker = null;
         this.physicsConfig = null;
         this.canvas = null;
         this.oracle = null;
+        this.deviceClass = detectDeviceClass();
+        // HI-FI session state — resets every page load. Not persisted.
+        this.hifi = { enabled: false, paths: 50000 };
 
         this.init();
     }
@@ -37,8 +59,17 @@ class OsirisOrchestrator {
         try {
             const configRes = await fetch('/physics-config.json');
             this.physicsConfig = await configRes.json();
-            console.log('[OSIRIS] Physics configuration loaded', this.physicsConfig.version);
-            
+            // Override the baked-in defaultPaths with a device-class budget
+            // so mobile users don't blow memory and high-end desktops can
+            // use a sensible non-HI-FI default. HI-FI overrides this again
+            // at run-time when toggled on.
+            this.physicsConfig.defaultPaths = DEVICE_DEFAULT_PATHS[this.deviceClass]
+                || this.physicsConfig.defaultPaths;
+            console.log('[OSIRIS] Physics configuration loaded',
+                this.physicsConfig.version,
+                '· device class:', this.deviceClass,
+                '· base paths:', this.physicsConfig.defaultPaths);
+
             const tickerSelect = document.getElementById('osiris-ticker-select');
             if (tickerSelect) {
                 this.syncUIState(tickerSelect.value);
@@ -46,6 +77,14 @@ class OsirisOrchestrator {
         } catch (e) {
             console.error('[OSIRIS] Failed to load physics-config.json', e);
         }
+
+        // Bind HI-FI controls (no-op on mobile — the controls are hidden
+        // there via the device-class attribute on <body> set just below).
+        this.bindHifiControls();
+        // Tag <body> with the device class so CSS can hide/show controls
+        // without per-element JS toggling. The HI-FI controls in
+        // osiris.html use `body[data-device='mobile'] .osiris-hifi { display:none }`.
+        document.body.setAttribute('data-device', this.deviceClass);
 
         // Cache Macro Hubs on Initialization
         await osirisIngestion.getMacroHubs();
@@ -557,15 +596,33 @@ class OsirisOrchestrator {
             // Instantiate New Worker
             this.activeWorker = new Worker('/components/osiris/stochasticWorker.js');
 
-            this.oracle.container.innerHTML = `> ALLOCATING ${this.physicsConfig.defaultPaths} PATHS TO COMPUTE SANDBOX... <span class="blinking-cursor">_</span>`;
+            // Resolve path budget: HI-FI selection wins when enabled, else
+            // the device-class baseline that was applied in init().
+            const runPaths = this.hifi.enabled
+                ? Math.min(this.hifi.paths, DEVICE_HIFI_CAP[this.deviceClass] || 0)
+                : this.physicsConfig.defaultPaths;
+            const useAntithetic = this.hifi.enabled;
+
+            const hifiTag = this.hifi.enabled ? ' [HI-FI · antithetic]' : '';
+            this.oracle.container.innerHTML = `> ALLOCATING ${runPaths.toLocaleString()} PATHS${hifiTag} TO COMPUTE SANDBOX... <span class="blinking-cursor">_</span>`;
+            this.showHifiProgress(0);
 
             this.activeWorker.onmessage = (e) => {
                 if (e.data.error) {
                     console.error('[OSIRIS] Worker Error:', e.data.error);
                     this.oracle.container.innerHTML = `<span style="color: red;">> SYSTEM FAULT: WORKER EXCEPTION.</span>`;
+                    this.hideHifiProgress();
                     return;
                 }
 
+                // Worker streams {progress: 0..1} ticks during long HI-FI
+                // runs. They're delivered before the final result message.
+                if (typeof e.data.progress === 'number') {
+                    this.showHifiProgress(e.data.progress);
+                    return;
+                }
+
+                this.hideHifiProgress();
                 const percentiles = e.data.percentiles;
 
                 // Render Cloud
@@ -604,15 +661,74 @@ class OsirisOrchestrator {
                 drift: drift,
                 volatility: volatility,
                 steps: final_steps,
-                paths: this.physicsConfig.defaultPaths,
+                paths: runPaths,
                 physicsType: physicsType,
-                physicsParams: physicsParams
+                physicsParams: physicsParams,
+                antithetic: useAntithetic
             });
 
         } catch (error) {
             console.error('[OSIRIS] Simulation Initialization Error:', error);
             this.oracle.container.innerHTML = `<span style="color: red;">> SYSTEM FAULT: DATA ACQUISITION FAILED.</span>`;
         }
+    }
+
+    // ── HI-FI controls ─────────────────────────────────────────────────
+    // Session-only state (this.hifi). Persistence intentionally omitted —
+    // user toggles fresh each visit so a casual click doesn't lock them
+    // into long-running 250K-path simulations on every reload.
+    bindHifiControls() {
+        const toggle = document.getElementById('osiris-hifi-toggle');
+        const pillRow = document.getElementById('osiris-hifi-pills');
+        const pills = document.querySelectorAll('.hifi-pill');
+        if (!toggle || !pillRow) return; // controls absent (older HTML)
+
+        // Hide any pill whose value exceeds the device's cap. Mobile
+        // hides the whole control via CSS data-device selector, but if
+        // the markup ever appears, this still keeps it safe.
+        const cap = DEVICE_HIFI_CAP[this.deviceClass] || 0;
+        pills.forEach(pill => {
+            const v = parseInt(pill.getAttribute('data-paths'), 10);
+            if (v > cap) pill.style.display = 'none';
+        });
+
+        // Default selection: first available pill ≤ cap.
+        const visiblePills = Array.from(pills).filter(p => p.style.display !== 'none');
+        if (visiblePills.length) {
+            visiblePills[0].classList.add('active');
+            this.hifi.paths = parseInt(visiblePills[0].getAttribute('data-paths'), 10);
+        }
+
+        toggle.addEventListener('click', () => {
+            this.hifi.enabled = !this.hifi.enabled;
+            toggle.classList.toggle('active', this.hifi.enabled);
+            toggle.setAttribute('aria-pressed', String(this.hifi.enabled));
+            pillRow.style.display = this.hifi.enabled ? '' : 'none';
+        });
+
+        pills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                pills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                this.hifi.paths = parseInt(pill.getAttribute('data-paths'), 10);
+            });
+        });
+    }
+
+    showHifiProgress(frac) {
+        const bar = document.getElementById('osiris-hifi-progress');
+        if (!bar) return;
+        const fill = bar.querySelector('.osiris-hifi-progress-fill');
+        if (!fill) return;
+        bar.style.display = 'block';
+        fill.style.width = Math.max(0, Math.min(1, frac)) * 100 + '%';
+    }
+    hideHifiProgress() {
+        const bar = document.getElementById('osiris-hifi-progress');
+        if (!bar) return;
+        bar.style.display = 'none';
+        const fill = bar.querySelector('.osiris-hifi-progress-fill');
+        if (fill) fill.style.width = '0%';
     }
 }
 

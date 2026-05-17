@@ -284,11 +284,17 @@
             background: rgba(0, 255, 0, 0.5);
         }
 
-        .time-pill.active {
+        .time-pill.active,
+        .hifi-pill.active,
+        #osiris-hifi-toggle.active {
             background: rgba(0, 255, 0, 0.2);
             box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
             border-color: #0f0;
         }
+
+        /* HI-FI controls are desktop-only — orchestrator stamps
+           data-device on <body> at init time. */
+        body[data-device='mobile'] .osiris-hifi { display: none !important; }
 
         .canvas-wrapper {
             position: relative;
@@ -627,6 +633,27 @@
                             <button class="osiris-btn time-pill" data-value="189" style="padding: 5px 15px; font-size: 0.8em;">9 Months</button>
                             <button class="osiris-btn time-pill active" data-value="252" style="padding: 5px 15px; font-size: 0.8em;">12 Months</button>
                             <input type="number" id="osiris-custom-days" class="osiris-input" placeholder="Custom Days" value="252" style="width: 120px; padding: 5px 10px; font-size: 0.9em; height: 32px;" min="1" max="1000">
+                        </div>
+                    </div>
+
+                    <!-- HI-FI Toggle — high-path-count Monte Carlo with
+                         antithetic variates. Hidden on mobile via the
+                         body[data-device='mobile'] selector. The 250K
+                         pill is hidden on desktop_lo via JS based on
+                         memory/core probe. -->
+                    <div class="osiris-hifi" style="display: flex; flex-direction: column; gap: 8px;">
+                        <span style="color: var(--accent-green); font-family: monospace; font-size: 0.85em;">HIGH-FIDELITY MODE:</span>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button id="osiris-hifi-toggle" type="button" class="osiris-btn" aria-pressed="false" style="padding: 5px 15px; font-size: 0.8em;">HI-FI</button>
+                            <div id="osiris-hifi-pills" style="display: none; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                <button class="osiris-btn hifi-pill" data-paths="50000" type="button" style="padding: 5px 12px; font-size: 0.75em;">50K paths</button>
+                                <button class="osiris-btn hifi-pill" data-paths="100000" type="button" style="padding: 5px 12px; font-size: 0.75em;">100K paths</button>
+                                <button class="osiris-btn hifi-pill" data-paths="250000" type="button" style="padding: 5px 12px; font-size: 0.75em;">250K paths</button>
+                                <span style="font-family: monospace; font-size: 0.7em; color: rgba(255,255,255,0.45); letter-spacing: 0.5px;">antithetic variates · ~½ MC variance · sec-scale wait</span>
+                            </div>
+                        </div>
+                        <div id="osiris-hifi-progress" style="display:none; margin-top: 4px; height: 4px; width: 100%; max-width: 320px; background: rgba(57, 255, 20, 0.08); border: 1px solid rgba(57, 255, 20, 0.25); border-radius: 2px; overflow: hidden;">
+                            <div class="osiris-hifi-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, rgba(57, 255, 20, 0.4), rgba(57, 255, 20, 0.95)); transition: width 0.18s ease;"></div>
                         </div>
                     </div>
 
