@@ -448,10 +448,31 @@ export async function checkPdfRender(siteUrl) {
 
         // The downloads component injects .dl-btn after DOMContentLoaded
         // via its defer-loaded script. Wait for it to be both present
-        // AND clickable. brief.html also runs async data fetches; the
-        // PDF generator reads from the live DOM, so we let it hydrate.
+        // AND clickable.
         await page.waitForSelector('.dl-btn', { timeout: 15_000, state: 'visible' });
-        await page.waitForTimeout(2_500);
+
+        // Wait for the brief to ACTUALLY hydrate before clicking — not
+        // a fixed sleep. brief.html runs async fetches for universe.json
+        // + live Yahoo/Finnhub data, and the PDF body skips the
+        // Financial Ratios section entirely when #fv-ratios is empty,
+        // producing a ~9 KB file instead of the real ~80 KB. We wait
+        // for:
+        //   (a) #fv-ratios populated  — confirms universe.json loaded
+        //   (b) #fv-price NOT '—'    — confirms live multiples backfill
+        //                              completed (the slowest hop)
+        try {
+            await page.waitForFunction(() => {
+                const ratios = document.querySelectorAll('#fv-ratios .brief-ratio-row');
+                if (ratios.length === 0) return false;
+                const priceEl = document.getElementById('fv-price');
+                if (!priceEl) return false;
+                const price = (priceEl.textContent || '').trim();
+                return price && price !== '—' && price !== '$—';
+            }, { timeout: 25_000 });
+        } catch (e) {
+            return fail('Brief page failed to hydrate within 25 s',
+                'Either #fv-ratios stayed empty or #fv-price stayed `—`. Live data fetches may be slow / failing in CI.');
+        }
 
         await page.locator('.dl-btn').click();
         await page.waitForSelector('.dl-menu.open button[data-fmt="pdf"]', { timeout: 5_000 });
@@ -474,7 +495,7 @@ export async function checkPdfRender(siteUrl) {
         }
         if (stat.size < 50_000) {
             return fail('PDF download too small (' + stat.size + ' B < 50 KB)',
-                'Likely a partial render or missing data section.');
+                'Even after hydration. Either the downloads module is producing a partial render, or the brief layout changed.');
         }
         return ok('PDF render OK · ' + Math.round(stat.size / 1024) + ' KB · ' + ms + ' ms');
     } catch (e) {
