@@ -1,6 +1,6 @@
 {
   "version": "1.6-global",
-  "defaultPaths": 5000,
+  "defaultPaths": 25000,
   "timeHorizonDays": 252,
   "notes": "beta, dividendYield, longTermMeanPrice are auto-computed in osirisIngestion. Drift = US10Y - dividendYield. OU mean target = 1y arithmetic mean. Phase 4: GBM industrials use positively-skewed lognormal jumps (jumpMu > 0). Operational-shock multiplier scales BOTH jumpFrequencyLambda AND jumpMu. v1.5 expands the universe from 8 to 61 names to match Sentinel. Per-ticker reversionSpeedTheta / jumpFrequencyLambda / jumpMu / baselineVolatility are sub-sector defaults; creditRating mirrors Sentinel's rating bucket. International (.MI/.PA/.L/.DE/.MC) tickers depend on Yahoo coverage and may need fallback handling during the API-usage review.",
   "cohorts": {

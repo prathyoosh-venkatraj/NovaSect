@@ -620,6 +620,8 @@
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                         <span style="color: var(--accent-green); font-family: monospace; font-size: 0.85em;">TIME HORIZON:</span>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button class="osiris-btn time-pill" data-value="5" style="padding: 5px 15px; font-size: 0.8em;">1 Week</button>
+                            <button class="osiris-btn time-pill" data-value="21" style="padding: 5px 15px; font-size: 0.8em;">1 Month</button>
                             <button class="osiris-btn time-pill" data-value="63" style="padding: 5px 15px; font-size: 0.8em;">3 Months</button>
                             <button class="osiris-btn time-pill" data-value="126" style="padding: 5px 15px; font-size: 0.8em;">6 Months</button>
                             <button class="osiris-btn time-pill" data-value="189" style="padding: 5px 15px; font-size: 0.8em;">9 Months</button>
@@ -669,7 +671,7 @@
                                     <span>TIME HORIZON (DAYS)</span>
                                     <span id="val-horizon">252</span>
                                 </div>
-                                <input type="range" id="slider-horizon" min="21" max="504" step="21" value="252" style="accent-color: var(--accent-green);">
+                                <input type="range" id="slider-horizon" min="5" max="504" step="1" value="252" style="accent-color: var(--accent-green);">
                             </div>
                         </div>
                     </details>
