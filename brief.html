@@ -654,6 +654,17 @@
             const industry = entry.finvault ? entry.finvault.industry : entry.sector;
             setText('b-meta', [entry.sector, entry.country, exch, industry].filter(Boolean).join(' · '));
 
+            // Expose canonical metadata for the downloads module — saves it
+            // from having to re-parse the dot-separated meta line in the DOM.
+            window.__briefMeta = {
+                ticker: entry.ticker,
+                name: entry.name,
+                sector: entry.sector,
+                country: entry.country,
+                exchange: exch,
+                industry
+            };
+
             // ── FINVAULT band ───────────────────────────────────────
             document.getElementById('brief-finvault').style.display = '';
             const fvBtn = document.getElementById('fv-btn');
@@ -1047,5 +1058,6 @@
 
     <script src="components/global-search/global-search.js" defer></script>
     <script src="components/mobile-nav/mobile-nav.js" defer></script>
+    <script src="components/downloads/downloads.js" defer></script>
 </body>
 </html>
