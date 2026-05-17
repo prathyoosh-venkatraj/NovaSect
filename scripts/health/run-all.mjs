@@ -16,6 +16,51 @@ import { notify } from './notify.mjs';
 import { checkYahoo, checkFinnhub, checkUniverse, checkPublicAssets } from './checks.mjs';
 
 const SITE_URL = (process.env.SITE_URL || 'https://novasect.space').replace(/\/$/, '');
+const SMOKE_TEST = process.env.SMOKE_TEST === 'true';
+
+// ── Smoke-test path ──────────────────────────────────────────────────
+// Triggered from the Actions UI via the workflow_dispatch input. Posts
+// a single explicit test embed and exits — does NOT touch dedup state,
+// does NOT run real checks. Used to verify the webhook is alive after
+// a channel/secret change without having to break a real check.
+if (SMOKE_TEST) {
+    const webhook = process.env.DISCORD_WEBHOOK_URL;
+    console.log('[health] smoke-test mode · ' + new Date().toISOString());
+    if (!webhook) {
+        console.error('[health] DISCORD_WEBHOOK_URL not set — cannot smoke-test');
+        process.exit(1);
+    }
+    try {
+        const res = await fetch(webhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: 'NovaSect Health',
+                embeds: [{
+                    title: 'Smoke test',
+                    description: 'Webhook is wired up. This is a one-off test post triggered from GitHub Actions — no real check failed.',
+                    color: 0x5DADE2,
+                    fields: [
+                        { name: 'Check',    value: '`smoke-test`',     inline: true },
+                        { name: 'Severity', value: 'INFO',             inline: true },
+                        { name: 'Source',   value: 'workflow_dispatch', inline: true }
+                    ],
+                    footer: { text: 'novasect-health · ' + new Date().toISOString() }
+                }]
+            })
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => '');
+            console.error('[health] smoke-test POST failed:', res.status, text.slice(0, 200));
+            process.exit(1);
+        }
+        console.log('[health] smoke-test posted · HTTP ' + res.status);
+        process.exit(0);
+    } catch (e) {
+        console.error('[health] smoke-test threw:', e.message);
+        process.exit(1);
+    }
+}
 
 const CHECKS = [
     { name: 'yahoo-canary',      fn: () => checkYahoo(SITE_URL) },

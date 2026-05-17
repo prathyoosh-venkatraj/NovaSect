@@ -19,7 +19,13 @@ on:
   schedule:
     # Every 2 hours, on the hour. UTC.
     - cron: '0 */2 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      smoke_test:
+        description: 'Post a one-off test embed to Discord instead of running real checks. Verifies the webhook is wired up correctly.'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -60,6 +66,7 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           SITE_URL: https://novasect.space
+          SMOKE_TEST: ${{ inputs.smoke_test }}
         run: node scripts/health/run-all.mjs
 
       # Persist updated dedup state for the next scheduled run.
