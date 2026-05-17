@@ -413,9 +413,11 @@
         const cellTxt = (id) => asNumOrText(txt(id));
 
         // Oracle outputs — rendered by osirisOracle.js as a headline +
-        // three badges (Upside / Expected / Stress). We scrape the
-        // human-formatted prices and the headline text so PDF/JSON/CSV
-        // mirror what the user sees post-simulation.
+        // three badges (Upside / Expected / Stress). Prefer the stable
+        // class hooks the oracle module emits (.oracle-badge--upside /
+        // --expected / --stress with .oracle-badge-price children).
+        // Fall back to positional children if the page is on an older
+        // oracle.js bundle that hasn't been redeployed yet.
         const oracleEl = document.getElementById('oracle-readout');
         const oracle = {};
         if (oracleEl) {
@@ -423,15 +425,23 @@
             if (headlineEl) {
                 oracle.headline = (headlineEl.textContent || '').replace(/\s+/g, ' ').trim();
             }
-            oracleEl.querySelectorAll('.oracle-badge').forEach(b => {
-                const labelEl = b.children[0];
-                const priceEl = b.children[2];
-                const label = labelEl ? (labelEl.textContent || '').trim() : '';
-                const price = priceEl ? (priceEl.textContent || '').trim() : '';
-                if (/upside/i.test(label)) oracle.upsideCeiling = price;
-                else if (/expected/i.test(label)) oracle.expectedValue = price;
-                else if (/stress/i.test(label)) oracle.stressFloor = price;
-            });
+            const readBadgePrice = (slugClass, positionalIdx) => {
+                const cls = oracleEl.querySelector('.oracle-badge--' + slugClass + ' .oracle-badge-price');
+                if (cls && cls.textContent) return cls.textContent.trim();
+                const badges = oracleEl.querySelectorAll('.oracle-badge');
+                const b = badges[positionalIdx];
+                if (!b) return null;
+                // Old structure: index-2 div carries the price.
+                const priceEl = b.querySelector('.oracle-badge-price') || b.children[2];
+                return priceEl ? (priceEl.textContent || '').trim() : null;
+            };
+            // Order matches osirisOracle.js: 0=Upside, 1=Expected, 2=Stress.
+            const u = readBadgePrice('upside', 0);
+            const e = readBadgePrice('expected', 1);
+            const s = readBadgePrice('stress', 2);
+            if (u) oracle.upsideCeiling = u;
+            if (e) oracle.expectedValue = e;
+            if (s) oracle.stressFloor = s;
         }
 
         return {
@@ -547,6 +557,41 @@
         catch (e) { return null; }
     }
 
+    // Returns true if the canvas appears to have no drawn content —
+    // either fully transparent or a single uniform color across all
+    // sample points (i.e., it's still the default clear state). Used
+    // to skip embedding the Osiris simulation chart in the PDF when
+    // the user hasn't run a simulation yet (alpha:false canvas would
+    // otherwise serialize as a solid black rectangle).
+    function isCanvasBlank(canvas) {
+        if (!canvas || !canvas.width || !canvas.height) return true;
+        let ctx;
+        try { ctx = canvas.getContext('2d'); }
+        catch (e) { return false; } // WebGL or claimed by another API — assume content
+        if (!ctx) return false;
+        const w = canvas.width, h = canvas.height;
+        // 7-point sample — corners-skipped + centre + edge midpoints.
+        // Cheap (~7 × getImageData(1×1)), enough to distinguish a
+        // uniform clear state from any actual chart rendering.
+        const pts = [
+            [w * 0.15, h * 0.25], [w * 0.5, h * 0.25], [w * 0.85, h * 0.25],
+            [w * 0.5, h * 0.5],
+            [w * 0.15, h * 0.75], [w * 0.5, h * 0.75], [w * 0.85, h * 0.75]
+        ];
+        let firstRGBA = null;
+        try {
+            for (const [x, y] of pts) {
+                const d = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+                const a = d[3];
+                if (a === 0) continue; // transparent — still "blank"-compatible
+                const sig = d[0] + ',' + d[1] + ',' + d[2];
+                if (firstRGBA === null) firstRGBA = sig;
+                else if (sig !== firstRGBA) return false; // variation -> content
+            }
+        } catch (e) { return false; }
+        return true; // all samples transparent, or all the exact same color
+    }
+
     // Add a captured canvas to the PDF at the current cursor. Fits to
     // page width minus margins, capped at maxHeight. Returns true if
     // the image was added, false if there's nothing to capture.
@@ -592,7 +637,11 @@
         const canvas = document.getElementById('osiris-canvas');
         if (!canvas) return;
         sectionHeader(state, 'Price Simulation');
-        if (!addChartImage(state, canvas, { maxHeight: 90 })) {
+        // The canvas has its default 300×150 even before a simulation
+        // runs, so toDataURL would happily serialize an opaque-black
+        // rectangle. Detect the blank/uniform state by pixel sampling
+        // and surface the prompt-to-run note instead.
+        if (isCanvasBlank(canvas) || !addChartImage(state, canvas, { maxHeight: 90 })) {
             ensureSpace(state, 10);
             state.doc.setFont('helvetica', 'italic');
             state.doc.setFontSize(8);
@@ -685,6 +734,15 @@
             return out;
         } finally {
             modal.setAttribute('style', origStyle);
+            // Safety net — if window.closeModal wasn't available, was
+            // renamed, or threw, force the modal back to its hidden
+            // state directly. The page's openModal toggles .hidden /
+            // .flex on this element; this restores parity. Since the
+            // modal is a full-screen overlay (z-index 100) the user
+            // can't have been clicking a card behind it, so always-
+            // closing on capture-finish is safe.
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
     }
 
@@ -696,7 +754,12 @@
 
     // ── CSV ────────────────────────────────────────────────────────
     function csvEscape(v) {
-        const s = v == null ? '' : String(v);
+        let s = v == null ? '' : String(v);
+        // CSV injection guard — cells starting with =, +, -, @, tab or CR
+        // are evaluated as formulas by Excel/Sheets/Numbers. Prefix with
+        // a leading apostrophe so the spreadsheet treats them as text;
+        // Excel hides the apostrophe in the displayed cell value.
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
         if (s.includes(',') || s.includes('"') || s.includes('\n')) {
             return '"' + s.replace(/"/g, '""') + '"';
         }
@@ -1325,11 +1388,55 @@
         return null;
     }
 
+    // Returns a short reason string when the snapshot looks like it
+    // was taken before async hydration finished (live price, multiples,
+    // simulation results, etc), or null when the snapshot is populated
+    // enough to make a useful report. Used to surface a non-blocking
+    // toast — the export still proceeds so users can grab partial data.
+    function snapshotStaleReason(snap) {
+        const empty = (v) => v == null || v === '' || v === '—'
+            || /^--/.test(String(v)) || String(v).indexOf('—') === 0;
+        switch (snap.tool) {
+            case 'brief': {
+                const mc = (snap.finvault && snap.finvault.marketContext) || {};
+                if (empty(mc.currentPrice)) return 'live price';
+                return null;
+            }
+            case 'finvault': {
+                const mc = snap.marketContext || {};
+                if (empty(mc.currentPrice)) return 'live price';
+                return null;
+            }
+            case 'osiris': {
+                const oracleEmpty = !snap.oracle || Object.keys(snap.oracle).length === 0;
+                const stateEmpty = !snap.simulatorState || empty(snap.simulatorState.dataSource);
+                if (oracleEmpty && stateEmpty) return 'simulator not yet initialised';
+                if (oracleEmpty) return 'oracle output (run a simulation first)';
+                return null;
+            }
+            case 'sentinel': {
+                const live = snap.live || {};
+                if (empty(live.impliedYield) && empty(live.currentSpread)) return 'card live values';
+                return null;
+            }
+        }
+        return null;
+    }
+
     // ── Mount: Sentinel per-card buttons ───────────────────────────
     function runExport(fmt, snap, ticker) {
         // Centralised handler used by both global dropdown and per-card.
         return (async () => {
             try {
+                const staleReason = snapshotStaleReason(snap);
+                if (staleReason) {
+                    // Non-blocking warning — the export still runs so users
+                    // can grab partial data, but they know what's missing.
+                    toast('Heads-up: ' + staleReason + ' still loading', true);
+                    // Brief pause so the warning toast is readable before
+                    // it's replaced by the success toast.
+                    await new Promise(r => setTimeout(r, 600));
+                }
                 if (fmt === 'json') { downloadJSON(snap); toast('JSON ready'); }
                 else if (fmt === 'csv') { downloadCSV(snap); toast('CSV ready'); }
                 else if (fmt === 'pdf') {
@@ -1413,19 +1520,18 @@
             .filter(Boolean);
         if (grids.length === 0) return;
 
-        // Process any cards already present (unlikely on first paint, but
-        // safe if the script runs after grid render — defer wouldn't
-        // catch every order).
-        grids.forEach(grid => Array.from(grid.children).forEach(injectCardButton));
-
-        // Cards are JS-rendered into the grids after the credit engine
-        // resolves. Observe for additions and inject as they arrive.
+        // Observe first, THEN sweep existing children — guarantees that
+        // any cards added between these two steps are still caught.
+        // injectCardButton is idempotent (guards on .dl-card-btn) so
+        // re-processing a card that both the observer and the initial
+        // sweep see is a no-op.
         const obs = new MutationObserver(mutations => {
             for (const m of mutations) {
                 for (const n of m.addedNodes) injectCardButton(n);
             }
         });
         grids.forEach(grid => obs.observe(grid, { childList: true }));
+        grids.forEach(grid => Array.from(grid.children).forEach(injectCardButton));
 
         // Global dismiss for any open card menu.
         document.addEventListener('mousedown', (e) => {

@@ -141,9 +141,15 @@ export class OsirisOracle {
             { label: 'Stress Floor', sub: 'Bottom 5%', value: p05, color: '#ff4444' }
         ];
 
+        // Per-badge slug used by external readers (e.g. the downloads
+        // module) to look up the right card via .oracle-badge--<slug>
+        // instead of fragile positional indexing.
+        const badgeSlugs = ['upside', 'expected', 'stress'];
+
         badges.forEach((badge, idx) => {
             const card = document.createElement('div');
-            card.className = 'oracle-badge';
+            const slug = badgeSlugs[idx] || ('badge-' + idx);
+            card.className = 'oracle-badge oracle-badge--' + slug;
             card.style.cssText = `
                 background: rgba(0,0,0,0.6);
                 border: 1px solid ${badge.color}33;
@@ -159,10 +165,10 @@ export class OsirisOracle {
             const badgeDirColor = badgePctChange >= 0 ? '#00ff88' : '#ff4444';
 
             card.innerHTML = `
-                <div style="font-size:0.7em;color:${badge.color};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">${badge.label}</div>
-                <div style="font-size:0.6em;color:rgba(255,255,255,0.4);margin-bottom:10px;">(${badge.sub})</div>
-                <div style="font-size:1.5em;font-weight:bold;color:#fff;text-shadow:0 0 8px ${badge.color}33;">${this._fmtPrice(badge.value)}</div>
-                <div style="font-size:0.75em;color:${badgeDirColor};margin-top:6px;">${badgeDir} ${badgePctChange.toFixed(1)}%</div>
+                <div class="oracle-badge-label" style="font-size:0.7em;color:${badge.color};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">${badge.label}</div>
+                <div class="oracle-badge-sub" style="font-size:0.6em;color:rgba(255,255,255,0.4);margin-bottom:10px;">(${badge.sub})</div>
+                <div class="oracle-badge-price" style="font-size:1.5em;font-weight:bold;color:#fff;text-shadow:0 0 8px ${badge.color}33;">${this._fmtPrice(badge.value)}</div>
+                <div class="oracle-badge-pct" style="font-size:0.75em;color:${badgeDirColor};margin-top:6px;">${badgeDir} ${badgePctChange.toFixed(1)}%</div>
             `;
             badgeRow.appendChild(card);
         });
