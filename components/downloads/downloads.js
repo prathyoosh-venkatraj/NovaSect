@@ -1166,7 +1166,15 @@
         ]);
 
         // Regression Attribution Waterfall — opens the modal off-screen
-        // for ~700ms so Chart.js can paint, captures the canvas, closes.
+        // for ~750ms so Chart.js can paint, captures the canvas, closes.
+        //
+        // The Chart.js config in sentinel.v2.js renders y-tick labels in
+        // pure white and x-tick / gridlines in low-opacity white because
+        // the modal sits on a near-black background. On a white PDF page
+        // those pixels are invisible — labels and gridlines vanish, only
+        // the green bars survive. We lay a near-black fill behind the
+        // captured PNG so transparency reveals the dark surface the
+        // chart was designed for, restoring contrast.
         sectionHeader(state, 'Regression Attribution Waterfall');
         try {
             const chart = await captureSentinelWaterfall(snap.ticker);
@@ -1179,10 +1187,14 @@
                 let imgW = maxW;
                 let imgH = imgW / aspect;
                 if (imgH > maxH) { imgH = maxH; imgW = imgH * aspect; }
-                ensureSpace(state, imgH + 6);
-                state.doc.addImage(chart.dataURL, 'PNG',
-                    margin + (maxW - imgW) / 2, state.y, imgW, imgH);
-                state.y += imgH + 6;
+                ensureSpace(state, imgH + 8);
+                const x = margin + (maxW - imgW) / 2;
+                const y = state.y;
+                const pad = 3;
+                state.doc.setFillColor(8, 14, 8); // near-black, matches terminal-bg
+                state.doc.rect(x - pad, y - pad, imgW + pad * 2, imgH + pad * 2, 'F');
+                state.doc.addImage(chart.dataURL, 'PNG', x, y, imgW, imgH);
+                state.y = y + imgH + 6;
             } else {
                 ensureSpace(state, 10);
                 state.doc.setFont('helvetica', 'italic');
