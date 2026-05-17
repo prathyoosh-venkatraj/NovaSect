@@ -602,12 +602,30 @@
         }
     }
 
-    // For Sentinel per-card downloads we need to render the waterfall
-    // chart for a given ticker. The chart lives inside #focus-modal,
-    // which Chart.js can't paint into when display:none. We briefly
-    // open the modal off-screen (hidden by an inline opacity + pointer-
-    // events override) so Chart.js can size and paint, capture, then
-    // restore. The whole round-trip is ~700ms.
+    // Print-friendly palette for the waterfall — mirrors the in-app
+    // colorMap but swaps the white-on-white pieces ('Base', 'Sovereign
+    // Delta', 'Residual') for opaque dark grays so they read against
+    // white PDF paper.
+    const WATERFALL_PDF_PALETTE = {
+        'Base':               'rgba(80, 80, 80, 0.55)',
+        'Sovereign Delta':    'rgba(120, 120, 120, 0.7)',
+        'Market Beta':        'rgba(22, 163, 74, 0.85)',
+        'Sector Beta':        'rgba(22, 163, 74, 0.55)',
+        'Volatility Premium': 'rgba(34, 197, 94, 0.7)',
+        'Calibrated Residual':'rgba(140, 140, 140, 0.5)',
+        'Residual':           'rgba(140, 140, 140, 0.5)',
+        'Seniority Delta':    'rgba(234, 88, 12, 0.85)',
+        'Duration Beta':      'rgba(37, 99, 235, 0.75)',
+        'Final Spread':       'rgba(22, 163, 74, 1)'
+    };
+
+    // For Sentinel per-card downloads we render the waterfall chart for
+    // the given ticker. The chart lives inside #focus-modal, which
+    // Chart.js can't paint into when display:none. We briefly open the
+    // modal off-screen (opacity:0 + pointer-events:none) so Chart.js
+    // can size and paint, then RE-TINT the chart for print (dark
+    // labels/gridlines + opaque bar colors with no white-on-white
+    // pieces), repaint, capture, close. ~900ms round trip, invisible.
     async function captureSentinelWaterfall(ticker) {
         if (typeof window.openModal !== 'function') return null;
         const modal = document.getElementById('focus-modal');
@@ -617,13 +635,48 @@
             origStyle + ';opacity:0 !important;pointer-events:none !important;');
         try {
             window.openModal(ticker);
-            // updateModal awaits the credit-engine call (~300ms-ish) then
-            // calls renderWaterfall synchronously. Wait long enough that
-            // Chart.js has actually painted into the canvas.
-            await new Promise(r => setTimeout(r, 750));
+            // updateModal awaits the credit-engine call (~300ms-ish)
+            // then calls renderWaterfall synchronously.
+            await new Promise(r => setTimeout(r, 600));
             const canvas = document.getElementById('waterfall-chart');
-            // Capture dataURL + dims BEFORE closing the modal — Chart.js
-            // may resize/destroy the canvas on hide.
+            if (!canvas) {
+                if (typeof window.closeModal === 'function') window.closeModal();
+                return null;
+            }
+
+            // Mutate the Chart.js instance options + dataset colors
+            // before capture. The mutations don't persist — the chart
+            // instance is destroyed and recreated on each openModal
+            // call in sentinel.v2.js, so the in-app render is unaffected
+            // the next time the user opens the modal manually.
+            const ChartLib = window.Chart;
+            if (ChartLib && typeof ChartLib.getChart === 'function') {
+                const inst = ChartLib.getChart(canvas);
+                if (inst) {
+                    const o = inst.options || {};
+                    if (o.scales && o.scales.x) {
+                        if (o.scales.x.grid) o.scales.x.grid.color = 'rgba(0, 0, 0, 0.12)';
+                        if (o.scales.x.ticks) o.scales.x.ticks.color = 'rgba(0, 0, 0, 0.7)';
+                    }
+                    if (o.scales && o.scales.y && o.scales.y.ticks) {
+                        o.scales.y.ticks.color = 'rgba(0, 0, 0, 0.85)';
+                    }
+                    const ds = inst.data && inst.data.datasets && inst.data.datasets[0];
+                    const labels = inst.data && inst.data.labels;
+                    if (ds && Array.isArray(labels)) {
+                        ds.backgroundColor = labels.map(l =>
+                            WATERFALL_PDF_PALETTE[l] || 'rgba(22, 163, 74, 0.65)'
+                        );
+                        ds.borderColor = 'rgba(22, 163, 74, 1)';
+                        ds.borderWidth = 1;
+                    }
+                    inst.update('none');
+                    // Brief paint cycle so the canvas reflects the
+                    // re-tinted state before we read pixels off it.
+                    await new Promise(r => setTimeout(r, 180));
+                }
+            }
+
             const dataURL = captureCanvasImage(canvas);
             const out = (dataURL && canvas)
                 ? { dataURL, width: canvas.width, height: canvas.height }
@@ -1165,16 +1218,10 @@
             ['Last Calibrated', snap.live.lastCalibrated || '—']
         ]);
 
-        // Regression Attribution Waterfall — opens the modal off-screen
-        // for ~750ms so Chart.js can paint, captures the canvas, closes.
-        //
-        // The Chart.js config in sentinel.v2.js renders y-tick labels in
-        // pure white and x-tick / gridlines in low-opacity white because
-        // the modal sits on a near-black background. On a white PDF page
-        // those pixels are invisible — labels and gridlines vanish, only
-        // the green bars survive. We lay a near-black fill behind the
-        // captured PNG so transparency reveals the dark surface the
-        // chart was designed for, restoring contrast.
+        // Regression Attribution Waterfall — chart is re-tinted for
+        // print inside captureSentinelWaterfall (dark labels/gridlines,
+        // opaque bars) so it reads natively against the white PDF
+        // surface. We just embed it as a normal image here.
         sectionHeader(state, 'Regression Attribution Waterfall');
         try {
             const chart = await captureSentinelWaterfall(snap.ticker);
@@ -1182,19 +1229,15 @@
                 const W = state.doc.internal.pageSize.getWidth();
                 const margin = 14;
                 const maxW = W - margin * 2;
-                const maxH = 85;
+                const maxH = 130;
                 const aspect = chart.width / chart.height;
                 let imgW = maxW;
                 let imgH = imgW / aspect;
                 if (imgH > maxH) { imgH = maxH; imgW = imgH * aspect; }
-                ensureSpace(state, imgH + 8);
-                const x = margin + (maxW - imgW) / 2;
-                const y = state.y;
-                const pad = 3;
-                state.doc.setFillColor(8, 14, 8); // near-black, matches terminal-bg
-                state.doc.rect(x - pad, y - pad, imgW + pad * 2, imgH + pad * 2, 'F');
-                state.doc.addImage(chart.dataURL, 'PNG', x, y, imgW, imgH);
-                state.y = y + imgH + 6;
+                ensureSpace(state, imgH + 6);
+                state.doc.addImage(chart.dataURL, 'PNG',
+                    margin + (maxW - imgW) / 2, state.y, imgW, imgH);
+                state.y += imgH + 6;
             } else {
                 ensureSpace(state, 10);
                 state.doc.setFont('helvetica', 'italic');
