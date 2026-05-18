@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — NovaSect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.min.css">
+    <style>
+        .error-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            background: var(--bg-dark, #000);
+        }
+        .error-code {
+            font-size: clamp(6rem, 20vw, 12rem);
+            font-weight: 900;
+            color: var(--accent-green, #39ff14);
+            line-height: 1;
+            text-shadow: 0 0 40px rgba(57, 255, 20, 0.4);
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+        .error-label {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.35em;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            margin: 1.2rem 0 2.5rem;
+        }
+        .error-msg {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.35);
+            max-width: 480px;
+            line-height: 1.6;
+            margin: 0 0 3rem;
+        }
+        .error-home-btn {
+            display: inline-block;
+            padding: 0.75rem 2.5rem;
+            border: 1px solid rgba(57, 255, 20, 0.5);
+            color: var(--accent-green, #39ff14);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .error-home-btn:hover {
+            background: rgba(57, 255, 20, 0.1);
+            box-shadow: 0 0 18px rgba(57, 255, 20, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <a href="index.html" class="logo" style="color: white; text-decoration: none;">NovaSect</a>
+        <nav class="nav-links">
+            <div class="nav-dropdown">
+                <span class="dropdown-trigger nav-link">Tools</span>
+                <div class="dropdown-menu">
+                    <a href="sentinel.html" class="dropdown-item">Sentinel</a>
+                    <a href="reports.html" class="dropdown-item">FinVault</a>
+                    <a href="osiris.html" class="dropdown-item">Osiris</a>
+                </div>
+            </div>
+            <a href="about.html" class="nav-link">About us</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="error-section">
+            <p class="error-code">404</p>
+            <p class="error-label">Signal Lost</p>
+            <p class="error-msg">The page you are looking for does not exist or has been moved. Return to base and try again.</p>
+            <a href="index.html" class="error-home-btn">Return to Home</a>
+        </section>
+    </main>
+
+    <script src="components/mobile-nav/mobile-nav.js" defer></script>
+</body>
+
+</html>

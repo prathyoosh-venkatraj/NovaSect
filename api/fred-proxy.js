@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${series_id}&api_key=${apiKey}&file_type=json&sort_order=desc&limit=1`;
+        const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${encodeURIComponent(series_id)}&api_key=${apiKey}&file_type=json&sort_order=desc&limit=1`;
         const response = await fetch(fredUrl);
         
         if (response.status === 403 || response.status === 401) {

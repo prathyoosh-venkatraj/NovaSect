@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=compact&apikey=${apiKey}`;
+        const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${encodeURIComponent(symbol)}&outputsize=compact&apikey=${apiKey}`;
         const response = await fetch(url);
         
         if (!response.ok) {
