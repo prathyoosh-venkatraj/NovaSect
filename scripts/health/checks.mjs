@@ -437,10 +437,24 @@ export async function checkPdfRender(siteUrl) {
 
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'novasect-pdf-'));
     let browser;
+    // Capture page console + request failures so we can diagnose silent
+    // PDF degradation (autotable not loading, snapshot empty, etc).
+    const consoleMessages = [];
+    const failedRequests = [];
     try {
         browser = await chromium.launch({ headless: true });
         const context = await browser.newContext({ acceptDownloads: true });
         const page = await context.newPage();
+
+        page.on('console', msg => {
+            const type = msg.type();
+            if (type === 'error' || type === 'warning') {
+                consoleMessages.push('[' + type + '] ' + msg.text().slice(0, 200));
+            }
+        });
+        page.on('requestfailed', req => {
+            failedRequests.push(req.url() + ' ← ' + (req.failure() && req.failure().errorText));
+        });
 
         const briefUrl = siteUrl + '/brief.html?ticker=XOM';
         const t0 = Date.now();
@@ -474,6 +488,20 @@ export async function checkPdfRender(siteUrl) {
                 'Either #fv-ratios stayed empty or #fv-price stayed `—`. Live data fetches may be slow / failing in CI.');
         }
 
+        // Snapshot a few key DOM signals right before clicking — so a
+        // failure tells us EXACTLY what state the page was in.
+        const preClickState = await page.evaluate(() => ({
+            ratiosRows: document.querySelectorAll('#fv-ratios .brief-ratio-row').length,
+            ratiosFirstValue: (document.querySelector('#fv-ratios .brief-ratio-value') || {}).textContent || null,
+            price: (document.getElementById('fv-price') || {}).textContent || null,
+            trailingPE: (document.getElementById('fv-tpe') || {}).textContent || null,
+            evEbitda: (document.getElementById('fv-ev') || {}).textContent || null,
+            snTotalYield: (document.getElementById('sn-total-yield') || {}).textContent || null,
+            os6mEv: (document.getElementById('os-6m-ev') || {}).textContent || null,
+            jspdfLoaded: typeof window.jspdf !== 'undefined' && typeof window.jspdf.jsPDF !== 'undefined',
+            autoTableLoaded: !!(window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable)
+        }));
+
         await page.locator('.dl-btn').click();
         await page.waitForSelector('.dl-menu.open button[data-fmt="pdf"]', { timeout: 5_000 });
 
@@ -484,6 +512,12 @@ export async function checkPdfRender(siteUrl) {
         const filePath = path.join(tmp, dl.suggestedFilename() || 'brief.pdf');
         await dl.saveAs(filePath);
 
+        // Post-download: check whether autoTable arrived after the lazy
+        // load triggered by the PDF click. If it didn't, that's the bug.
+        const postClickState = await page.evaluate(() => ({
+            autoTableLoaded: !!(window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable)
+        }));
+
         const stat = await fs.stat(filePath);
         const head = await fs.readFile(filePath, { encoding: null });
         const sig = head.slice(0, 4).toString('ascii');
@@ -493,9 +527,33 @@ export async function checkPdfRender(siteUrl) {
             return fail('PDF download has wrong signature: "' + sig + '"',
                 'Expected `%PDF` magic bytes. File: ' + filePath + ' (' + stat.size + ' B)');
         }
-        if (stat.size < 50_000) {
-            return fail('PDF download too small (' + stat.size + ' B < 50 KB)',
-                'Even after hydration. Either the downloads module is producing a partial render, or the brief layout changed.');
+        // Threshold dropped from 50 KB to 20 KB after empirically observing
+        // ~9 KB outputs even with hydration confirmed. A full brief PDF
+        // for XOM (cover + ~6 tables, jsPDF compress:true) is realistically
+        // 25-50 KB; 20 KB is a generous floor that still catches the
+        // genuinely-empty case (8-9 KB = body builder skipped most sections).
+        if (stat.size < 20_000) {
+            const diag = [
+                'Pre-click DOM state:',
+                '  ratios rows:    ' + preClickState.ratiosRows,
+                '  ratios[0]:      ' + preClickState.ratiosFirstValue,
+                '  price:          ' + preClickState.price,
+                '  trailingPE:     ' + preClickState.trailingPE,
+                '  ev/ebitda:      ' + preClickState.evEbitda,
+                '  sn total yield: ' + preClickState.snTotalYield,
+                '  os 6m EV:       ' + preClickState.os6mEv,
+                '  jsPDF loaded:   ' + preClickState.jspdfLoaded,
+                '  autotable lib:  ' + preClickState.autoTableLoaded + ' (pre-click)',
+                '  autotable lib:  ' + postClickState.autoTableLoaded + ' (post-click)',
+                '',
+                'Browser console:',
+                consoleMessages.length ? consoleMessages.slice(0, 6).join('\n') : '  (no warnings/errors)',
+                '',
+                'Failed network requests:',
+                failedRequests.length ? failedRequests.slice(0, 4).join('\n') : '  (none)'
+            ].join('\n');
+            return fail('PDF download too small (' + stat.size + ' B < 20 KB)',
+                '```\n' + diag + '\n```');
         }
         return ok('PDF render OK · ' + Math.round(stat.size / 1024) + ' KB · ' + ms + ' ms');
     } catch (e) {
