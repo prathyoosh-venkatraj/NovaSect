@@ -72,13 +72,20 @@ function extractPercentilePaths(pathsMatrix, steps, paths, initialPrice) {
     };
 }
 
-// Engine A: Ornstein-Uhlenbeck
+// Engine A: Ornstein-Uhlenbeck (mean-reverting GBM form)
 // longTermMean is the calibrated reversion target (1y arithmetic mean of
 // adjClose, supplied via physicsParams.longTermMean). Falls back to the old
 // initialPrice * exp(drift) formula if the calibrated value is unavailable.
 // intradaySteps (default 1) collapses dt below the daily floor — when > 1,
 // each output step represents 1/(intradaySteps) of a trading day. Sigma is
 // expected to be annualised regardless; the dt rescaling handles the math.
+//
+// IMPORTANT — diffusion is PROPORTIONAL (shock scales with current S):
+//   dS = θ(μ − S)dt + σ·S·dW
+// Sigma is stored as a dimensionless return vol (~0.22-0.40), so the shock
+// must scale with S to give the correct annualised return volatility.
+// Earlier versions applied an unscaled shock, producing variance ~100× too
+// small at typical equity prices and collapsing the percentile cone.
 function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMean, antithetic, intradaySteps) {
     const dt = 1 / (252 * (intradaySteps || 1)); // sub-daily when intradaySteps > 1
     const reversionTarget = (typeof longTermMean === 'number' && longTermMean > 0)
@@ -101,9 +108,10 @@ function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMea
             pathsMatrix[idx2] = S2;
             for (let i = 1; i < steps; i++) {
                 const z = randomNormal();
-                const shock = sigSqrtDt * z;
-                S1 += theta * (reversionTarget - S1) * dt + shock;
-                S2 += theta * (reversionTarget - S2) * dt - shock;
+                // Proportional shock — twins use the same Brownian increment
+                // but the magnitude scales with each twin's own current price.
+                S1 += theta * (reversionTarget - S1) * dt + sigSqrtDt * S1 * z;
+                S2 += theta * (reversionTarget - S2) * dt - sigSqrtDt * S2 * z;
                 pathsMatrix[idx1 + i] = Math.max(0, S1);
                 pathsMatrix[idx2 + i] = Math.max(0, S2);
             }
@@ -115,8 +123,7 @@ function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMea
             let S = initialPrice;
             pathsMatrix[lastIdx] = S;
             for (let i = 1; i < steps; i++) {
-                const shock = sigSqrtDt * randomNormal();
-                S += theta * (reversionTarget - S) * dt + shock;
+                S += theta * (reversionTarget - S) * dt + sigSqrtDt * S * randomNormal();
                 pathsMatrix[lastIdx + i] = Math.max(0, S);
             }
         }
@@ -125,7 +132,7 @@ function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMea
             let S = initialPrice;
             pathsMatrix[p * steps] = S; // t=0
             for (let i = 1; i < steps; i++) {
-                const shock = isZeroVol ? 0 : (sigSqrtDt * randomNormal());
+                const shock = isZeroVol ? 0 : (sigSqrtDt * S * randomNormal());
                 const dS = theta * (reversionTarget - S) * dt + shock;
                 S += dS;
                 pathsMatrix[p * steps + i] = Math.max(0, S); // Price cannot be negative
