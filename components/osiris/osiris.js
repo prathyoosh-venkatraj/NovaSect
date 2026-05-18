@@ -575,27 +575,56 @@ class OsirisOrchestrator {
                 physicsParams.longTermMean = liveLongTermMean;
             }
 
-            // ── Phase C: intraday-σ swap for short horizons ──────────────
-            // 1-Week (≤ 7 day) horizons benefit from 5-min realised vol +
-            // half-day dt. Longer horizons keep the daily σ they had before
-            // since intraday-vs-daily diverges most at short tenor. Advanced
-            // mode is excluded (user-controlled σ via slider).
+            // ── Phase C/D: short-horizon σ swap + sub-daily dt ───────────
+            // Per-horizon dispatch — daily steps unless horizon is short
+            // enough that intraday resolution adds value:
+            //   final_steps  intradaySteps  resolution
+            //   = 1          78             5-min  (1-Day mode, Phase D)
+            //   2-7          2              half-day (1-Week mode, Phase C)
+            //   >= 8         1              daily (unchanged)
+            // Advanced mode excluded (user-controlled σ via slider).
             let intradaySteps = 1;
             let volSource = 'DAILY-RV';
+            let catalystApplied = false;
+
             if (!isAdvancedOpen && final_steps <= 7) {
                 const intradaySigma = await osirisIngestion.getIntradayVolatility(tickerSymbol);
                 if (typeof intradaySigma === 'number' && intradaySigma > 0) {
-                    // Apply the same regime multiplier the caller had to be
-                    // consistent with the daily-σ path.
                     const volRegRegime = document.getElementById('osiris-volatility-regime');
                     const volRegimeMult = volRegRegime ? parseFloat(volRegRegime.value) : 1.0;
                     final_sigma = intradaySigma * volRegimeMult;
-                    intradaySteps = 2; // half-day resolution for 1-Week sims
+                    intradaySteps = final_steps === 1 ? 78 : 2; // 5-min for 1-Day, half-day for 1-Week
                     volSource = 'INTRADAY-RV';
                     document.getElementById('val-volatility').innerText = final_sigma.toFixed(2);
                     console.log(`[OSIRIS] Using intraday σ (${(intradaySigma * 100).toFixed(2)}% ann) for ${tickerSymbol} · ${final_steps}d horizon · ${intradaySteps} steps/day`);
                 } else {
                     console.log(`[OSIRIS] Intraday σ unavailable for ${tickerSymbol}; using daily σ`);
+                }
+            }
+
+            // ── Phase D: earnings catalyst overlay ───────────────────────
+            // If the next earnings date falls within the simulation horizon,
+            // multiply σ by EARNINGS_VOL_MULTIPLIER. Reflects the historical
+            // ~2-3× intraday vol spike on earnings days. Only applies on
+            // short horizons (≤ 21 trading days ≈ 30 calendar days) — over
+            // longer horizons the event-day contribution averages out.
+            const EARNINGS_VOL_MULTIPLIER = 2.5;
+            if (!isAdvancedOpen && final_steps <= 21) {
+                try {
+                    const earningsDate = await osirisIngestion.getNextEarningsDate(tickerSymbol);
+                    if (earningsDate) {
+                        const today = new Date();
+                        const target = new Date(earningsDate + 'T00:00:00Z');
+                        const horizonEnd = new Date(today.getTime() + (final_steps * 1.4) * 86400 * 1000); // 1.4 calendar days per trading day
+                        if (target >= today && target <= horizonEnd) {
+                            final_sigma = final_sigma * EARNINGS_VOL_MULTIPLIER;
+                            catalystApplied = true;
+                            document.getElementById('val-volatility').innerText = final_sigma.toFixed(2);
+                            console.log(`[OSIRIS] Earnings catalyst active for ${tickerSymbol} · earnings ${earningsDate} within horizon · σ × ${EARNINGS_VOL_MULTIPLIER}`);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[OSIRIS] Earnings catalyst lookup failed:', e.message);
                 }
             }
 
@@ -606,7 +635,8 @@ class OsirisOrchestrator {
                 const info = osirisIngestion.getLastFetchInfo();
                 const histTag = (info.history.source || 'unknown').toUpperCase();
                 const macroTag = (info.macro.source || 'unknown').toUpperCase();
-                metadataReadout.innerText = `${baseText}  ·  DATA[HIST: ${histTag} ${info.history.date || '—'} · MACRO: ${macroTag} ${info.macro.date || '—'} · VOL: ${volSource}]`;
+                const catalystTag = catalystApplied ? ' · CATALYST: EARNINGS×' + EARNINGS_VOL_MULTIPLIER : '';
+                metadataReadout.innerText = `${baseText}  ·  DATA[HIST: ${histTag} ${info.history.date || '—'} · MACRO: ${macroTag} ${info.macro.date || '—'} · VOL: ${volSource}${catalystTag}]`;
             }
 
             const initialPrice = history.length > 0 ? history[history.length - 1].adjClose : 100.0;

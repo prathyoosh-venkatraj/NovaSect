@@ -55,6 +55,44 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'E400: Missing symbol' });
     }
 
+    // ── earnings mode: next scheduled earnings date (free via calendarEvents) ──
+    // Used by Phase D's catalyst overlay — if a sim horizon spans the
+    // next earnings date, σ is multiplied by ~2.5x to reflect the
+    // historically observed event-day vol spike.
+    if (mode === 'earnings') {
+        try {
+            const { cookie, crumb } = await getYahooAuth();
+            const summaryUrl = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}` +
+                `?modules=calendarEvents&crumb=${encodeURIComponent(crumb)}`;
+            const response = await fetch(summaryUrl, {
+                headers: { 'User-Agent': UA, 'Cookie': cookie }
+            });
+            if (!response.ok) {
+                return res.status(response.status).json({ error: `E${response.status}: YAHOO_API_REJECTED` });
+            }
+            const data = await response.json();
+            const earningsArr = data.quoteSummary?.result?.[0]?.calendarEvents?.earnings?.earningsDate || [];
+            // Yahoo returns a one- or two-element array of unix-second timestamps.
+            // First element = next confirmed date (or estimated window start).
+            const nextTs = earningsArr.length > 0 ? unwrap(earningsArr[0]) : null;
+            const earningsDate = (typeof nextTs === 'number' && nextTs > 0)
+                ? new Date(nextTs * 1000).toISOString().split('T')[0]
+                : null;
+            // 12h cache — earnings dates don't move intraday but can be
+            // confirmed/revised over the course of a day.
+            res.setHeader('Cache-Control', 's-maxage=43200, stale-while-revalidate=43200');
+            return res.status(200).json({
+                symbol: symbol,
+                mode: 'earnings',
+                earningsDate: earningsDate,
+                source: 'Yahoo Finance Live'
+            });
+        } catch (error) {
+            console.error('Yahoo earnings proxy error:', error);
+            return res.status(502).json({ error: 'E502: NETWORK_HANDSHAKE_FAILED' });
+        }
+    }
+
     // ── quote-summary mode: analyst targets + valuation key-stats ──────
     // Returns financialData (analyst targets), defaultKeyStatistics
     // (priceToBook, enterpriseToEbitda, enterpriseToRevenue), and

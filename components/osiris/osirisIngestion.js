@@ -293,6 +293,29 @@ export const osirisIngestion = {
         }
     },
 
+    // ── Earnings catalyst (Phase D) ────────────────────────────────────
+    // Returns the next confirmed/estimated earnings date as a YYYY-MM-DD
+    // string (in UTC) or null when Yahoo doesn't have one. Cached per
+    // session (proxy already 12h-edge-caches the upstream).
+    _earningsDateCache: new Map(),
+    async getNextEarningsDate(ticker) {
+        const cached = this._earningsDateCache.get(ticker);
+        if (cached && Date.now() - cached.ts < CACHE_EXPIRY_MS) return cached.value;
+        try {
+            const url = `/api/yahoo-proxy?symbol=${encodeURIComponent(ticker)}&mode=earnings`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('proxy ' + response.status);
+            const payload = await response.json();
+            const date = (typeof payload.earningsDate === 'string') ? payload.earningsDate : null;
+            this._earningsDateCache.set(ticker, { value: date, ts: Date.now() });
+            return date;
+        } catch (e) {
+            console.log(`[OSIRIS] Next earnings date unavailable for ${ticker} (${e.message})`);
+            this._earningsDateCache.set(ticker, { value: null, ts: Date.now() });
+            return null;
+        }
+    },
+
     async _fetchIntradayBars(ticker) {
         const url = `/api/yahoo-proxy?symbol=${encodeURIComponent(ticker)}&mode=history&interval=5m&range=30d`;
         const response = await fetch(url);
