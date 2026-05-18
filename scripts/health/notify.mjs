@@ -1,50 +1,133 @@
 /**
- * Discord notification helper for NovaSect health checks.
+ * Discord notification helper — digest mode.
  *
- * Posts to the channel webhook URL supplied via DISCORD_WEBHOOK_URL.
- * Adds two hygiene rules so the channel stays useful:
+ * The orchestrator (run-all.mjs) calls postDigest(results, siteUrl)
+ * once at the end of a cron run with the array of per-check results.
+ * We post a single embed containing:
  *
- *   1. Dedup window — the same failing title for the same check is
- *      suppressed for 6 hours. Prevents a single broken endpoint
- *      from spamming every workflow run.
+ *   - A title showing N/total passing
+ *   - A coloured sidebar (green all-pass · red any HIGH · amber MEDIUM-only)
+ *   - A monospace table showing every check + status + severity + reason
+ *   - When any check failed, a second "Failure details" block with the
+ *     long evidence (truncated to fit Discord's 1024-char per-field limit)
  *
- *   2. Recovery posts — when a previously-failing check passes
- *      again, a single green "Recovered" message is posted so the
- *      channel reader knows the alarm closed.
- *
- * State (last status + title + timestamp per check) lives in
- * .health/state.json. The workflow persists this between runs via
- * actions/cache so the dedup window survives across schedules.
+ * Persistent failures intentionally re-appear in every digest — the
+ * channel is meant to reflect current system state at each 2-hour
+ * heartbeat, not deltas only.
  */
-import fs from 'fs/promises';
-import path from 'path';
 
-const STATE_PATH = '.health/state.json';
-const DEDUP_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-// Discord embed colour ints — same value Discord uses internally
-// (decimal of the hex RGB).
 const COLORS = {
-    HIGH:      0xE74C3C, // red
-    MEDIUM:    0xF1C40F, // amber
-    LOW:       0x5DADE2, // blue
-    RECOVERED: 0x57F287  // green
+    ALL_PASS:    0x57F287, // green
+    HIGH_FAIL:   0xE74C3C, // red
+    MEDIUM_FAIL: 0xF1C40F, // amber
+    LOW_FAIL:    0x5DADE2  // blue (no checks use LOW currently)
 };
 
-async function loadState() {
-    try {
-        const raw = await fs.readFile(STATE_PATH, 'utf8');
-        return JSON.parse(raw);
-    } catch {
-        return {};
-    }
-}
-async function saveState(state) {
-    await fs.mkdir(path.dirname(STATE_PATH), { recursive: true });
-    await fs.writeFile(STATE_PATH, JSON.stringify(state, null, 2) + '\n');
+function pickColor(results) {
+    const fails = results.filter(r => r.severity !== 'pass');
+    if (fails.length === 0) return COLORS.ALL_PASS;
+    if (fails.some(r => r.severity === 'HIGH')) return COLORS.HIGH_FAIL;
+    if (fails.some(r => r.severity === 'MEDIUM')) return COLORS.MEDIUM_FAIL;
+    return COLORS.LOW_FAIL;
 }
 
-async function postEmbed(webhook, payload) {
+function pad(s, n) {
+    s = String(s);
+    if (s.length >= n) return s.slice(0, n);
+    return s + ' '.repeat(n - s.length);
+}
+
+function buildTable(results) {
+    // Column widths chosen so the longest realistic check name + a
+    // ~40-char reason still fit on a Discord desktop code-block line.
+    // Mobile users horizontal-scroll — width isn't truncated.
+    const W_CHECK  = 18;
+    const W_STATUS = 8;
+    const W_SEV    = 7;
+    const W_REASON = 40;
+
+    const rule = '─'.repeat(W_CHECK + W_STATUS + W_SEV + W_REASON + 6);
+    const header = pad('Check', W_CHECK) + '  '
+                 + pad('Status', W_STATUS) + '  '
+                 + pad('Sev', W_SEV) + '  '
+                 + 'Reason';
+    const rows = [header, rule];
+    for (const r of results) {
+        const isPass = r.severity === 'pass';
+        const status = isPass ? '✓ PASS' : '✗ FAIL';
+        const sev = isPass ? '—' : r.severity;
+        const reason = (r.title || '').slice(0, W_REASON);
+        rows.push(
+            pad(r.check, W_CHECK) + '  '
+            + pad(status, W_STATUS) + '  '
+            + pad(sev, W_SEV) + '  '
+            + reason
+        );
+    }
+    return rows.join('\n');
+}
+
+function buildDetails(results) {
+    // Compact evidence for failing checks; fits in a single 1024-char
+    // Discord field. Truncate aggressively if multiple failures all
+    // have long diagnostic blocks.
+    const fails = results.filter(r => r.severity !== 'pass' && r.evidence);
+    if (fails.length === 0) return null;
+
+    const MAX_CHARS = 950; // leave headroom under 1024
+    const blocks = [];
+    let used = 0;
+    for (const r of fails) {
+        const header = '── ' + r.check + ' ──\n';
+        const remaining = MAX_CHARS - used - header.length - 4;
+        if (remaining <= 50) {
+            blocks.push('…' + (fails.length - blocks.length) + ' more failure(s) truncated');
+            break;
+        }
+        // Strip nested triple-backticks — many check evidence blocks
+        // already wrap their diagnostics in ``` for the per-alert path
+        // that no longer exists, and those would break Discord's outer
+        // code block when we re-wrap here.
+        const cleanEv = r.evidence.replace(/```/g, '');
+        const ev = cleanEv.length > remaining ? cleanEv.slice(0, remaining) + '\n…' : cleanEv;
+        const block = header + ev;
+        blocks.push(block);
+        used += block.length + 2;
+    }
+    return blocks.join('\n\n');
+}
+
+export async function postDigest(results, siteUrl) {
+    const webhook = process.env.DISCORD_WEBHOOK_URL;
+    const passCount = results.filter(r => r.severity === 'pass').length;
+    const total = results.length;
+    const tableText = buildTable(results);
+    const detailsText = buildDetails(results);
+
+    if (!webhook) {
+        console.log('[health] DISCORD_WEBHOOK_URL not set — digest dry-run:');
+        console.log(tableText);
+        if (detailsText) console.log('\n' + detailsText);
+        return;
+    }
+
+    const fields = [
+        { name: 'Checks', value: '```\n' + tableText + '\n```' }
+    ];
+    if (detailsText) {
+        fields.push({ name: 'Failure details', value: '```\n' + detailsText + '\n```' });
+    }
+
+    const payload = {
+        username: 'NovaSect Health',
+        embeds: [{
+            title: 'Health digest · ' + passCount + '/' + total + ' passing',
+            color: pickColor(results),
+            fields,
+            footer: { text: 'novasect-health · ' + (siteUrl || '') + ' · ' + new Date().toISOString() }
+        }]
+    };
+
     try {
         const res = await fetch(webhook, {
             method: 'POST',
@@ -58,76 +141,4 @@ async function postEmbed(webhook, payload) {
     } catch (e) {
         console.warn('[health] Discord POST threw:', e.message);
     }
-}
-
-function alertEmbed({ check, severity, title, description, evidence }) {
-    const fields = [
-        { name: 'Check',    value: '`' + check + '`', inline: true },
-        { name: 'Severity', value: severity,          inline: true }
-    ];
-    if (evidence) {
-        fields.push({ name: 'Evidence', value: evidence.length > 1000 ? evidence.slice(0, 1000) + '…' : evidence });
-    }
-    return {
-        username: 'NovaSect Health',
-        embeds: [{
-            title,
-            description: description || undefined,
-            color: COLORS[severity] || COLORS.LOW,
-            fields,
-            footer: { text: 'novasect-health · ' + new Date().toISOString() }
-        }]
-    };
-}
-
-function recoveryEmbed(check, prevTitle) {
-    return {
-        username: 'NovaSect Health',
-        embeds: [{
-            title: 'Recovered: ' + prevTitle,
-            description: '`' + check + '` is healthy again.',
-            color: COLORS.RECOVERED,
-            footer: { text: 'novasect-health · ' + new Date().toISOString() }
-        }]
-    };
-}
-
-/**
- * @param {{check:string, severity:'pass'|'HIGH'|'MEDIUM'|'LOW', title:string, description?:string, evidence?:string}} input
- */
-export async function notify(input) {
-    const webhook = process.env.DISCORD_WEBHOOK_URL;
-    if (!webhook) {
-        console.warn('[health] DISCORD_WEBHOOK_URL not set — dry run for', input.check, input.severity, '·', input.title);
-        return;
-    }
-
-    const state = await loadState();
-    const last = state[input.check];
-    const now = Date.now();
-    const isPass = input.severity === 'pass';
-
-    if (isPass) {
-        // Was previously failing → close the loop with a recovery post.
-        if (last && last.status === 'fail') {
-            await postEmbed(webhook, recoveryEmbed(input.check, last.title));
-        }
-        state[input.check] = { status: 'ok', ts: now };
-        await saveState(state);
-        return;
-    }
-
-    // FAIL path. Suppress identical failure within dedup window.
-    if (last && last.status === 'fail' && last.title === input.title
-        && (now - last.ts) < DEDUP_WINDOW_MS) {
-        // Refresh the timestamp so a persistent failure doesn't suddenly
-        // re-alert at hour-6+ε of the same incident.
-        state[input.check].ts = now;
-        await saveState(state);
-        return;
-    }
-
-    await postEmbed(webhook, alertEmbed(input));
-    state[input.check] = { status: 'fail', title: input.title, ts: now };
-    await saveState(state);
 }

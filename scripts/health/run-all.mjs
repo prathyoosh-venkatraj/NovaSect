@@ -12,7 +12,7 @@
  * still hits all endpoints and logs to stdout, but skips the Discord
  * POST. Useful for local testing.
  */
-import { notify } from './notify.mjs';
+import { postDigest } from './notify.mjs';
 import {
     checkYahoo, checkFinnhub, checkUniverse, checkPublicAssets,
     checkFred, checkStaleAnchors, checkUniverseDrift, checkFinnhubAuthz,
@@ -81,9 +81,9 @@ const CHECKS = [
     { name: 'pdf-render',           fn: () => checkPdfRender(SITE_URL) }
 ];
 
-let anyFailed = false;
 console.log('[health] starting · site=' + SITE_URL + ' · ' + new Date().toISOString());
 
+const results = [];
 for (const { name, fn } of CHECKS) {
     let result;
     try {
@@ -91,18 +91,15 @@ for (const { name, fn } of CHECKS) {
     } catch (e) {
         result = { severity: 'HIGH', title: 'Check threw uncaught error', evidence: e.stack || e.message };
     }
-
     console.log('  [' + name + '] ' + result.severity + ' · ' + result.title);
-
-    await notify({
-        check: name,
-        severity: result.severity,
-        title: result.title,
-        evidence: result.evidence
-    });
-
-    if (result.severity !== 'pass') anyFailed = true;
+    results.push({ check: name, ...result });
 }
 
+// One digest per run — replaces the per-check alerts. The digest
+// itself reflects current state (persistent fails appear in every
+// digest; recoveries are visible by a row flipping back to ✓ PASS).
+await postDigest(results, SITE_URL);
+
+const anyFailed = results.some(r => r.severity !== 'pass');
 console.log('[health] done · status=' + (anyFailed ? 'fail' : 'ok'));
 process.exit(anyFailed ? 1 : 0);
