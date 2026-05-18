@@ -499,7 +499,9 @@ class OsirisOrchestrator {
         let final_sigma, final_physics_param, final_steps, final_jumpMu;
 
         if (isAdvancedOpen) {
-            // Use raw slider values directly if advanced section is open
+            // Use raw slider values directly if advanced section is open.
+            // Advanced users get exact slider control — no intraday-σ swap
+            // and no sub-daily dt; that's a "let me be precise" mode.
             final_sigma = parseFloat(document.getElementById('slider-volatility').value);
             final_physics_param = parseFloat(document.getElementById('slider-physics-param').value);
             final_steps = parseInt(document.getElementById('slider-horizon').value, 10);
@@ -573,6 +575,30 @@ class OsirisOrchestrator {
                 physicsParams.longTermMean = liveLongTermMean;
             }
 
+            // ── Phase C: intraday-σ swap for short horizons ──────────────
+            // 1-Week (≤ 7 day) horizons benefit from 5-min realised vol +
+            // half-day dt. Longer horizons keep the daily σ they had before
+            // since intraday-vs-daily diverges most at short tenor. Advanced
+            // mode is excluded (user-controlled σ via slider).
+            let intradaySteps = 1;
+            let volSource = 'DAILY-RV';
+            if (!isAdvancedOpen && final_steps <= 7) {
+                const intradaySigma = await osirisIngestion.getIntradayVolatility(tickerSymbol);
+                if (typeof intradaySigma === 'number' && intradaySigma > 0) {
+                    // Apply the same regime multiplier the caller had to be
+                    // consistent with the daily-σ path.
+                    const volRegRegime = document.getElementById('osiris-volatility-regime');
+                    const volRegimeMult = volRegRegime ? parseFloat(volRegRegime.value) : 1.0;
+                    final_sigma = intradaySigma * volRegimeMult;
+                    intradaySteps = 2; // half-day resolution for 1-Week sims
+                    volSource = 'INTRADAY-RV';
+                    document.getElementById('val-volatility').innerText = final_sigma.toFixed(2);
+                    console.log(`[OSIRIS] Using intraday σ (${(intradaySigma * 100).toFixed(2)}% ann) for ${tickerSymbol} · ${final_steps}d horizon · ${intradaySteps} steps/day`);
+                } else {
+                    console.log(`[OSIRIS] Intraday σ unavailable for ${tickerSymbol}; using daily σ`);
+                }
+            }
+
             // Surface data-source status (LIVE / CACHED / FALLBACK) next to the basis label
             const metadataReadout = document.getElementById('osiris-metadata-readout');
             if (metadataReadout) {
@@ -580,7 +606,7 @@ class OsirisOrchestrator {
                 const info = osirisIngestion.getLastFetchInfo();
                 const histTag = (info.history.source || 'unknown').toUpperCase();
                 const macroTag = (info.macro.source || 'unknown').toUpperCase();
-                metadataReadout.innerText = `${baseText}  ·  DATA[HIST: ${histTag} ${info.history.date || '—'} · MACRO: ${macroTag} ${info.macro.date || '—'}]`;
+                metadataReadout.innerText = `${baseText}  ·  DATA[HIST: ${histTag} ${info.history.date || '—'} · MACRO: ${macroTag} ${info.macro.date || '—'} · VOL: ${volSource}]`;
             }
 
             const initialPrice = history.length > 0 ? history[history.length - 1].adjClose : 100.0;
@@ -656,15 +682,22 @@ class OsirisOrchestrator {
                 this.activeWorker = null;
             };
 
+            // Total path length = horizon (in days) × steps-per-day. When
+            // intradaySteps > 1 we get a finer-grained percentile cone for
+            // short horizons (e.g. 5-day × 2 = 10-step path for 1-Week sims).
+            // intradaySteps defaults to 1 in the worker, so passing it
+            // explicitly here is for clarity; existing default-1 callers
+            // still work unchanged.
             this.activeWorker.postMessage({
                 initialPrice: initialPrice,
                 drift: drift,
                 volatility: volatility,
-                steps: final_steps,
+                steps: final_steps * intradaySteps,
                 paths: runPaths,
                 physicsType: physicsType,
                 physicsParams: physicsParams,
-                antithetic: useAntithetic
+                antithetic: useAntithetic,
+                intradaySteps: intradaySteps
             });
 
         } catch (error) {

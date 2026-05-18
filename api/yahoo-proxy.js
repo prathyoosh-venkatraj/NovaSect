@@ -42,8 +42,14 @@ function unwrap(obj) {
     return (obj && typeof obj === 'object' && 'raw' in obj) ? obj.raw : null;
 }
 
+// Yahoo's chart endpoint accepts these interval values. Intraday bars
+// don't include adjusted close (Yahoo only computes adjclose for daily),
+// so when interval !== '1d' we serialize a different shape (ts + close)
+// for the client to detect and group by calendar date itself.
+const ALLOWED_INTERVALS = new Set(['1d', '5m', '15m', '30m', '1h']);
+
 export default async function handler(req, res) {
-    const { symbol, mode, range } = req.query;
+    const { symbol, mode, range, interval } = req.query;
 
     if (!symbol) {
         return res.status(400).json({ error: 'E400: Missing symbol' });
@@ -162,13 +168,35 @@ export default async function handler(req, res) {
     }
 
     const isHistoryMode = mode === 'history';
-    const fetchRange = isHistoryMode ? (range || '1y') : '1mo';
+
+    // Validate the requested interval. Default to '1d' (backward-compat).
+    // Anything off the allowlist returns 400 — we don't silently coerce
+    // because the client's downstream parsing depends on the format
+    // matching the interval class (daily vs intraday).
+    const requestedInterval = interval || '1d';
+    if (!ALLOWED_INTERVALS.has(requestedInterval)) {
+        return res.status(400).json({
+            error: 'E400: UNSUPPORTED_INTERVAL',
+            allowed: Array.from(ALLOWED_INTERVALS)
+        });
+    }
+    const isIntraday = requestedInterval !== '1d';
+
+    // Pick a sensible default range per interval if the caller didn't.
+    // Yahoo enforces these maximums and rejects (or returns empty) if
+    // an intraday range is too wide.
+    const defaultRangeByInterval = {
+        '1d': '1y', '5m': '30d', '15m': '30d', '30m': '30d', '1h': '60d'
+    };
+    const fetchRange = isHistoryMode
+        ? (range || defaultRangeByInterval[requestedInterval])
+        : '1mo';
 
     try {
-        // In history mode, also request dividend events so the client can
-        // compute trailing-12-month dividend yield without an extra round-trip.
-        const eventsParam = isHistoryMode ? '&events=div' : '';
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${fetchRange}${eventsParam}`;
+        // Dividend events only meaningful for daily; intraday endpoint
+        // doesn't return useful div data so we omit it there.
+        const eventsParam = (isHistoryMode && !isIntraday) ? '&events=div' : '';
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${requestedInterval}&range=${fetchRange}${eventsParam}`;
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -189,6 +217,34 @@ export default async function handler(req, res) {
         const timestamps = result.timestamp || [];
         const closes = result.indicators.quote[0].close;
         const adjcloseArr = result.indicators?.adjclose?.[0]?.adjclose || closes;
+
+        // ── Intraday history: timestamp + close per bar ────────────────
+        // Yahoo doesn't compute adjusted close for sub-daily intervals,
+        // so we serialize a different shape (ts, close) for the client
+        // to detect and group by calendar date itself for RV math.
+        if (isHistoryMode && isIntraday) {
+            const series = [];
+            for (let i = 0; i < timestamps.length; i++) {
+                const c = closes[i];
+                if (c == null) continue; // skip null bars (halts mid-session)
+                series.push({ ts: timestamps[i], close: c });
+            }
+            if (series.length < 2) {
+                return res.status(400).json({ error: 'E400: INSUFFICIENT_DATA' });
+            }
+            // 6h edge cache — intraday bars accumulate ~78/day for 5m;
+            // yesterday's bars never change so a long cache is safe,
+            // 6h is the upper bound for "include today's recent action."
+            res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=21600');
+            return res.status(200).json({
+                symbol: symbol,
+                mode: 'history',
+                interval: requestedInterval,
+                range: fetchRange,
+                series: series,
+                source: 'Yahoo Finance Live (intraday)'
+            });
+        }
 
         // ── History mode: full daily series for Osiris ─────────────────────
         if (isHistoryMode) {

@@ -76,8 +76,11 @@ function extractPercentilePaths(pathsMatrix, steps, paths, initialPrice) {
 // longTermMean is the calibrated reversion target (1y arithmetic mean of
 // adjClose, supplied via physicsParams.longTermMean). Falls back to the old
 // initialPrice * exp(drift) formula if the calibrated value is unavailable.
-function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMean, antithetic) {
-    const dt = 1 / 252; // one trading day per step — calendar-time scaling
+// intradaySteps (default 1) collapses dt below the daily floor — when > 1,
+// each output step represents 1/(intradaySteps) of a trading day. Sigma is
+// expected to be annualised regardless; the dt rescaling handles the math.
+function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMean, antithetic, intradaySteps) {
+    const dt = 1 / (252 * (intradaySteps || 1)); // sub-daily when intradaySteps > 1
     const reversionTarget = (typeof longTermMean === 'number' && longTermMean > 0)
         ? longTermMean
         : initialPrice * Math.exp(drift);
@@ -137,8 +140,8 @@ function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMea
 // jumpMu is the log-jump mean (Phase 4): a positive value introduces upward
 // skew representing contract-driven flow asymmetry. Defaults to 0 (symmetric)
 // when not supplied for backward compatibility with non-industrial callers.
-function simulateGBMJump(initialPrice, mu, sigma, steps, paths, lambda, jumpMu, antithetic) {
-    const dt = 1 / 252; // one trading day per step
+function simulateGBMJump(initialPrice, mu, sigma, steps, paths, lambda, jumpMu, antithetic, intradaySteps) {
+    const dt = 1 / (252 * (intradaySteps || 1)); // sub-daily when intradaySteps > 1
     const pathsMatrix = new Float32Array(paths * steps);
     const isZeroVol = (sigma <= 1e-8);
     const chunkSize = Math.max(1, Math.floor(paths / PROGRESS_TICKS));
@@ -213,9 +216,10 @@ function simulateGBMJump(initialPrice, mu, sigma, steps, paths, lambda, jumpMu, 
 }
 
 self.onmessage = function(e) {
-    const { initialPrice, drift, volatility, steps, paths, physicsType, physicsParams, antithetic } = e.data;
+    const { initialPrice, drift, volatility, steps, paths, physicsType, physicsParams, antithetic, intradaySteps } = e.data;
 
     let result;
+    const intradayStepsResolved = Math.max(1, intradaySteps || 1);
 
     try {
         if (physicsType === 'Ornstein-Uhlenbeck') {
@@ -223,11 +227,11 @@ self.onmessage = function(e) {
             const longTermMean = (typeof physicsParams?.longTermMean === 'number')
                 ? physicsParams.longTermMean
                 : null;
-            result = simulateOU(initialPrice, drift, volatility, steps, paths, theta, longTermMean, !!antithetic);
+            result = simulateOU(initialPrice, drift, volatility, steps, paths, theta, longTermMean, !!antithetic, intradayStepsResolved);
         } else if (physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
             const lambda = physicsParams?.jumpFrequencyLambda || 4;
             const jumpMu = (typeof physicsParams?.jumpMu === 'number') ? physicsParams.jumpMu : 0;
-            result = simulateGBMJump(initialPrice, drift, volatility, steps, paths, lambda, jumpMu, !!antithetic);
+            result = simulateGBMJump(initialPrice, drift, volatility, steps, paths, lambda, jumpMu, !!antithetic, intradayStepsResolved);
         } else {
             self.postMessage({ error: 'Unknown physicsType: ' + physicsType });
             return;
