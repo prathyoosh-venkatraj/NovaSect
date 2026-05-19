@@ -215,6 +215,20 @@
             </div>
         </div>
 
+        <!-- Sector Spread Heatmap -->
+        <div class="mb-10">
+            <button onclick="toggleHeatmap()" class="flex items-center gap-2 mb-4 px-1 group" id="heatmap-toggle-btn">
+                <h2 class="text-xl font-black tracking-tighter text-white/60 uppercase italic group-hover:text-white transition-colors">SPREAD HEATMAP</h2>
+                <span class="text-[10px] font-mono text-gray-600 group-hover:text-gray-400 transition-colors" id="heatmap-toggle-label">▶ EXPAND</span>
+            </button>
+            <div id="heatmap-container" class="hidden">
+                <div id="heatmap-grid" class="flex flex-wrap gap-1.5">
+                    <!-- Populated by buildHeatmap() -->
+                </div>
+                <p class="text-[9px] font-mono text-gray-700 mt-3 uppercase tracking-widest">Live spread · sorted high → low · refreshes with each batch cycle</p>
+            </div>
+        </div>
+
         <!-- Sector Beta: Industrials -->
         <div class="mb-12">
             <div class="flex justify-between items-end mb-4 px-1">
@@ -296,7 +310,15 @@
                             <span class="text-gray-400 text-xs uppercase tracking-widest font-bold">Synthetic Normalization Differential</span>
                             <span id="modal-norm-diff" class="text-xl font-mono text-neon-green">-- bps</span>
                         </div>
-                        
+                        <div class="flex justify-between items-end border-b border-gray-800 pb-2">
+                            <span class="text-gray-400 text-xs uppercase tracking-widest font-bold">Net Leverage</span>
+                            <span id="modal-net-leverage" class="text-xl font-mono text-white">—</span>
+                        </div>
+                        <div class="flex justify-between items-end border-b border-gray-800 pb-2">
+                            <span class="text-gray-400 text-xs uppercase tracking-widest font-bold">Interest Coverage</span>
+                            <span id="modal-int-coverage" class="text-xl font-mono text-white">—</span>
+                        </div>
+
                         <!-- Sentinel Brief -->
                         <div class="mt-8 border-t border-white/10 pt-6">
                             <h4 class="text-xs text-neon-green font-mono uppercase tracking-widest mb-3 glow-text">> Sentinel Brief</h4>
