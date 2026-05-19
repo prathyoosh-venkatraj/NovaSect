@@ -217,10 +217,12 @@
 
         <!-- Sector Spread Heatmap -->
         <div class="mb-10">
-            <button onclick="toggleHeatmap()" class="flex items-center gap-2 mb-4 px-1 group" id="heatmap-toggle-btn">
-                <h2 class="text-xl font-black tracking-tighter text-white/60 uppercase italic group-hover:text-white transition-colors">SPREAD HEATMAP</h2>
-                <span class="text-[10px] font-mono text-gray-600 group-hover:text-gray-400 transition-colors" id="heatmap-toggle-label">▶ EXPAND</span>
-            </button>
+            <div class="flex justify-between items-end mb-4 px-1">
+                <button onclick="toggleHeatmap()" class="flex items-center gap-3 group" id="heatmap-toggle-btn">
+                    <h2 class="text-xl font-black tracking-tighter text-white uppercase italic group-hover:text-neon-green transition-colors">SPREAD HEATMAP</h2>
+                    <span class="text-[10px] font-mono text-neon-green/60 border border-neon-green/30 px-2 py-0.5 rounded group-hover:border-neon-green/70 group-hover:text-neon-green transition-all" id="heatmap-toggle-label">▶ EXPAND</span>
+                </button>
+            </div>
             <div id="heatmap-container" class="hidden">
                 <div id="heatmap-grid" class="flex flex-wrap gap-1.5">
                     <!-- Populated by buildHeatmap() -->
