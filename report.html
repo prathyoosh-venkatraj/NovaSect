@@ -1063,6 +1063,10 @@
                             <span class="mc-value" id="mc-current-price">—</span>
                         </div>
                         <div class="mc-card">
+                            <span class="mc-label">Market Cap</span>
+                            <span class="mc-value" id="mc-market-cap">—</span>
+                        </div>
+                        <div class="mc-card">
                             <span class="mc-label">52-Week Range</span>
                             <span class="mc-value" id="mc-52w-range">—</span>
                         </div>
@@ -2004,7 +2008,15 @@
             }
         }
 
-        async function loadMarketContext(ticker) {
+        function fmtMarketCap(priceDollars, sharesMillion) {
+            if (typeof priceDollars !== 'number' || typeof sharesMillion !== 'number') return null;
+            const mc = priceDollars * sharesMillion; // result is in millions of the share currency
+            if (mc >= 1_000_000) return '$' + (mc / 1_000_000).toFixed(2) + 'T';
+            if (mc >= 1_000)     return '$' + (mc / 1_000).toFixed(1) + 'bn';
+            return '$' + mc.toFixed(0) + 'm';
+        }
+
+        async function loadMarketContext(ticker, sharesOutstanding) {
             const yahooSym = toYahooSymbol(ticker);
             const footer = document.getElementById('mc-footer');
             if (!yahooSym) return;
@@ -2016,6 +2028,11 @@
 
                 if (typeof metrics.currentPrice === 'number') {
                     document.getElementById('mc-current-price').textContent = '$' + metrics.currentPrice.toFixed(2);
+                    const mcEl = document.getElementById('mc-market-cap');
+                    if (mcEl) {
+                        const formatted = fmtMarketCap(metrics.currentPrice, sharesOutstanding);
+                        mcEl.textContent = formatted || '—';
+                    }
                 }
 
                 if (Array.isArray(history) && history.length > 0) {
@@ -2460,7 +2477,7 @@
                     // from cached / Finnhub data. Failures don't block the
                     // rest of the page render.
                     if (data.ticker) {
-                        loadMarketContext(data.ticker);
+                        loadMarketContext(data.ticker, data.fundamentals?.sharesOutstanding);
                         loadForwardEstimates(data.ticker);
                         loadNewsFeed(data.ticker);
                         loadPeerComparison(data.ticker, PEERS[company.toLowerCase()] || []);
