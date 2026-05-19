@@ -985,6 +985,114 @@
                 padding: 0.5rem 0;
             }
         }
+
+        /* ── Debt Maturity Callout ───────────────────────────────────── */
+        .debt-maturity-callout {
+            background: rgba(1, 10, 1, 0.9);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 10px;
+            padding: 1.3rem 1.5rem;
+            box-shadow: 0 0 18px rgba(57, 255, 20, 0.1) inset;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .debt-maturity-callout h2 {
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0 0 1rem 0;
+            font-size: 1.05rem;
+            text-shadow: 0 0 5px var(--accent-green);
+        }
+        .debt-maturity-row {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .dm-year {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--accent-green);
+            text-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+            line-height: 1;
+            font-family: var(--font-display, 'Montserrat', sans-serif);
+        }
+        .dm-amount {
+            color: var(--accent-green);
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-shadow: 0 0 6px rgba(57, 255, 20, 0.3);
+        }
+        #dm-label {
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 0.78rem;
+            margin-top: 0.25rem;
+            letter-spacing: 0.5px;
+        }
+        .dm-footer {
+            margin-top: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ── Dividend History ───────────────────────────────────────── */
+        .dividend-history-section {
+            background: rgba(1, 10, 1, 0.9);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            border-radius: 10px;
+            padding: 1.3rem 1.5rem;
+            box-shadow: 0 0 18px rgba(57, 255, 20, 0.1) inset;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .dividend-history-section h2 {
+            color: var(--accent-green);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin: 0 0 1rem 0;
+            font-size: 1.05rem;
+            text-shadow: 0 0 5px var(--accent-green);
+        }
+        .div-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: var(--accent-green);
+            font-size: 0.83rem;
+        }
+        .div-table th, .div-table td {
+            text-align: left;
+            padding: 0.42rem 0.4rem;
+            border-bottom: 1px solid rgba(57, 255, 20, 0.16);
+        }
+        .div-table tr:last-child td { border-bottom: none; }
+        .div-table th {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.75;
+        }
+        .div-loading {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 1rem;
+        }
+        .div-pos { color: #39FF14; }
+        .div-neg { color: #FF6464; }
+        .div-footer {
+            margin-top: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            min-height: 0.7rem;
+        }
     </style>
 </head>
 <body>
@@ -1029,6 +1137,7 @@
                 <div class="company-header">
                     <h1 id="company-name" class="company-title">Company Name</h1>
                     <p id="company-industry" class="company-industry">Industry Name</p>
+                    <span id="sentinel-header-badge" style="display:none;"></span>
                     <div class="cross-tool-links" id="cross-tool-links">
                         <a id="open-in-sentinel" class="cross-tool-btn" href="#" rel="noopener">▶ Open in Sentinel</a>
                         <a id="open-in-osiris" class="cross-tool-btn" href="#" rel="noopener">▶ Open in Osiris</a>
@@ -1065,6 +1174,10 @@
                         <div class="mc-card">
                             <span class="mc-label">Market Cap</span>
                             <span class="mc-value" id="mc-market-cap">—</span>
+                        </div>
+                        <div class="mc-card">
+                            <span class="mc-label">Next Earnings</span>
+                            <span class="mc-value" id="mc-next-earnings" style="font-size:0.85rem; line-height:1.25;">—</span>
                         </div>
                         <div class="mc-card">
                             <span class="mc-label">52-Week Range</span>
@@ -1170,6 +1283,25 @@
                     <div class="fh-footer" id="fh-footer"></div>
                 </div>
 
+                <!-- Dividend History — Finnhub /stock/dividend, last 4 years -->
+                <div class="dividend-history-section" id="dividend-history-section" style="display:none;">
+                    <h2>DIVIDEND HISTORY</h2>
+                    <table class="div-table">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Annual Total</th>
+                                <th>YoY Change</th>
+                                <th>Payments</th>
+                            </tr>
+                        </thead>
+                        <tbody id="div-tbody">
+                            <tr><td colspan="4" class="div-loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="div-footer" id="div-footer"></div>
+                </div>
+
                 <div class="stats-table-container">
                     <h2>FINANCIAL RATIOS</h2>
                     <table class="stats-table">
@@ -1231,6 +1363,19 @@
                             <span class="multiple-value" id="val-pb">--</span>
                         </div>
                     </div>
+                </div>
+
+                <!-- Debt Maturity Callout — next upcoming maturity from companyData -->
+                <div class="debt-maturity-callout" id="debt-maturity-section" style="display:none;">
+                    <h2>NEXT DEBT MATURITY</h2>
+                    <div class="debt-maturity-row">
+                        <span class="dm-year" id="dm-year">—</span>
+                        <div class="dm-meta">
+                            <div class="dm-amount" id="dm-amount"></div>
+                            <div id="dm-label"></div>
+                        </div>
+                    </div>
+                    <div class="dm-footer">Source: Public filings · Verify against latest 10-K / Annual Report before citing</div>
                 </div>
             </div>
             <!-- ─── end data-column ─── -->
@@ -1735,6 +1880,12 @@
             el.innerHTML =
                 '<span style="color:' + tier.color + ';font-weight:700;">' + spread + ' bps</span>' +
                 '<span style="display:block;margin-top:2px;font-size:0.65em;letter-spacing:1.5px;color:rgba(255,255,255,0.55);">' + tier.tier + '</span>';
+
+            const badge = document.getElementById('sentinel-header-badge');
+            if (badge) {
+                badge.style.cssText = 'display:inline-block; margin-top:0.5rem; padding:0.2rem 0.7rem; font-family:"JetBrains Mono",monospace; font-size:0.68rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; border:1px solid ' + tier.color + '; color:' + tier.color + '; border-radius:3px; background:rgba(0,0,0,0.5);';
+                badge.textContent = 'CREDIT: ' + tier.tier + ' · ' + spread + ' bps';
+            }
         }
 
         // ── Cross-tool deep links ────────────────────────────────────
@@ -1947,6 +2098,114 @@
             }
         }
 
+        // ── Next Earnings Date ───────────────────────────────────────
+        // Calls Finnhub /stock/earnings, filters for dates >= today,
+        // formats as "25 Jul 2026" with pre/after-market sub-line.
+        async function loadEarningsDate(ticker) {
+            const yahooSym = toYahooSymbol(ticker);
+            const el = document.getElementById('mc-next-earnings');
+            if (!el || !yahooSym) return;
+            try {
+                const res = await fetch('/api/finnhub-proxy?endpoint=stock/earnings&symbol=' + encodeURIComponent(yahooSym));
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!Array.isArray(data) || data.length === 0) return;
+
+                const today = new Date().toISOString().split('T')[0];
+                const future = data
+                    .filter(e => e.date && e.date >= today)
+                    .sort((a, b) => a.date < b.date ? -1 : 1);
+                if (future.length === 0) return;
+
+                const next = future[0];
+                const dt = new Date(next.date + 'T12:00:00Z');
+                const dateStr = dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                const hourMap = { 'bmo': 'Pre-market', 'amc': 'After close', 'dmh': 'During market hours' };
+                const timing = next.hour ? (hourMap[next.hour] || null) : null;
+
+                el.innerHTML = escapeHtml(dateStr) +
+                    (timing ? '<span style="display:block;font-size:0.72em;color:rgba(255,255,255,0.5);margin-top:2px;letter-spacing:0.5px;">' + escapeHtml(timing) + '</span>' : '');
+            } catch (err) {
+                // Silent failure — leave '—' placeholder
+            }
+        }
+
+        // ── Dividend History ─────────────────────────────────────────
+        // Fetches Finnhub /stock/dividend, groups by year, shows last 4
+        // years with annual total, YoY change, and payment count.
+        async function loadDividendHistory(ticker) {
+            const yahooSym = toYahooSymbol(ticker);
+            const section = document.getElementById('dividend-history-section');
+            const tbody = document.getElementById('div-tbody');
+            const footer = document.getElementById('div-footer');
+            if (!section || !tbody || !yahooSym) return;
+            try {
+                const res = await fetch('/api/finnhub-proxy?endpoint=stock/dividend&symbol=' + encodeURIComponent(yahooSym));
+                if (!res.ok) { section.style.display = 'none'; return; }
+                const payload = await res.json();
+                const items = Array.isArray(payload.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+                if (items.length === 0) { section.style.display = 'none'; return; }
+
+                // Group by year
+                const byYear = {};
+                for (const item of items) {
+                    const rawDate = item.date || item.exDividendDate || item.payDate;
+                    if (!rawDate || typeof item.amount !== 'number') continue;
+                    const yr = new Date(rawDate).getFullYear();
+                    if (!isFinite(yr)) continue;
+                    if (!byYear[yr]) byYear[yr] = { total: 0, count: 0 };
+                    byYear[yr].total += item.amount;
+                    byYear[yr].count += 1;
+                }
+
+                const years = Object.keys(byYear).map(Number).sort((a, b) => b - a).slice(0, 4);
+                if (years.length === 0) { section.style.display = 'none'; return; }
+
+                tbody.innerHTML = years.map((yr, i) => {
+                    const cur = byYear[yr].total;
+                    const prevYr = years[i + 1];
+                    let yoyHtml = '<span style="color:rgba(255,255,255,0.4);">—</span>';
+                    if (prevYr !== undefined) {
+                        const prev = byYear[prevYr].total;
+                        if (prev > 0) {
+                            const chg = ((cur - prev) / prev) * 100;
+                            const sign = chg >= 0 ? '+' : '';
+                            const cls = chg >= 0 ? 'div-pos' : 'div-neg';
+                            yoyHtml = '<span class="' + cls + '">' + sign + chg.toFixed(1) + '%</span>';
+                        }
+                    }
+                    return '<tr>' +
+                        '<td>' + yr + '</td>' +
+                        '<td>$' + cur.toFixed(4) + '</td>' +
+                        '<td>' + yoyHtml + '</td>' +
+                        '<td>' + byYear[yr].count + '</td>' +
+                        '</tr>';
+                }).join('');
+
+                if (footer) footer.textContent = '> Finnhub · ' + yahooSym + ' · Unadjusted historical dividends';
+                section.style.display = '';
+            } catch (err) {
+                section.style.display = 'none';
+            }
+        }
+
+        // ── Debt Maturity Callout ────────────────────────────────────
+        // Reads companyData[key].debtMaturity and populates the callout.
+        function loadDebtMaturity(companyKey, dataObj) {
+            const section = document.getElementById('debt-maturity-section');
+            if (!section) return;
+            const dm = dataObj[companyKey]?.debtMaturity;
+            if (!dm) { section.style.display = 'none'; return; }
+            const yearEl = document.getElementById('dm-year');
+            const amountEl = document.getElementById('dm-amount');
+            const labelEl = document.getElementById('dm-label');
+            if (yearEl) yearEl.textContent = String(dm.year);
+            if (amountEl) amountEl.textContent = escapeHtml(dm.amount);
+            if (labelEl) labelEl.textContent = escapeHtml(dm.label);
+            section.style.display = '';
+        }
+
         // ── Peer Snapshot ────────────────────────────────────────────
         // Fetches same 5 metrics for focal + 2 peers in parallel from
         // osirisIngestion.getTickerMetrics(). All values share the same
@@ -1981,22 +2240,49 @@
             ];
 
             try {
-                const metricsArr = await Promise.all(
-                    allSyms.map(sym =>
-                        osirisIngestion.getTickerMetrics(sym).catch(err => {
-                            console.warn('[FinVault] peer metric failed for ' + sym + ':', err);
-                            return null;
-                        })
+                const [metricsArr, mcResults] = await Promise.all([
+                    Promise.all(
+                        allSyms.map(sym =>
+                            osirisIngestion.getTickerMetrics(sym).catch(err => {
+                                console.warn('[FinVault] peer metric failed for ' + sym + ':', err);
+                                return null;
+                            })
+                        )
+                    ),
+                    Promise.allSettled(
+                        allSyms.map(sym =>
+                            fetch('/api/finnhub-proxy?endpoint=stock/metric&symbol=' + encodeURIComponent(sym) + '&metric=all')
+                                .then(r => r.ok ? r.json() : null)
+                                .then(d => d?.metric?.marketCapitalization ?? null)
+                                .catch(() => null)
+                        )
                     )
-                );
+                ]);
 
-                tbody.innerHTML = rows.map(row => {
+                const marketCaps = mcResults.map(r => r.status === 'fulfilled' ? r.value : null);
+
+                const mainRows = rows.map(row => {
                     const cells = metricsArr.map((m, idx) => {
                         const cls = idx === 0 ? ' class="peer-col-focal"' : '';
                         return '<td' + cls + '>' + row.fmt(m) + '</td>';
                     }).join('');
                     return '<tr><td class="peer-metric-col">' + row.label + '</td>' + cells + '</tr>';
                 }).join('');
+
+                const mcRow = '<tr><td class="peer-metric-col">Market Cap</td>' +
+                    metricsArr.map((m, idx) => {
+                        const cls = idx === 0 ? ' class="peer-col-focal"' : '';
+                        const mc = marketCaps[idx];
+                        let val = '—';
+                        if (mc !== null && mc !== undefined) {
+                            if (mc >= 1000000) val = '$' + (mc / 1000000).toFixed(2) + 'T';
+                            else if (mc >= 1000) val = '$' + (mc / 1000).toFixed(1) + 'bn';
+                            else val = '$' + mc.toFixed(0) + 'm';
+                        }
+                        return '<td' + cls + '>' + val + '</td>';
+                    }).join('') + '</tr>';
+
+                tbody.innerHTML = mainRows + mcRow;
 
                 const footer = document.getElementById('peer-footer');
                 if (footer) {
@@ -2156,6 +2442,7 @@
                         industry: 'Integrated Oil & Gas',
                         pdf: 'assets/reports/chevron.pdf',
                         ticker: 'NYSE:CVX',
+                        debtMaturity: { year: 2026, amount: '$1.25bn', label: 'Senior Unsecured Notes' },
                         fundamentals: {
                             trailingEPS: 6.63,
                             forwardEPS: 7.75,
@@ -2175,6 +2462,7 @@
                         industry: 'Integrated Oil & Gas',
                         pdf: 'assets/reports/exxonmobil.pdf',
                         ticker: 'NYSE:XOM',
+                        debtMaturity: { year: 2026, amount: '$2.5bn', label: 'Senior Unsecured Notes' },
                         fundamentals: {
                             trailingEPS: 6.70,
                             forwardEPS: 9.01,
@@ -2194,6 +2482,7 @@
                         industry: 'Integrated Utilities & Renewable Energy',
                         pdf: 'assets/reports/iberdrola.pdf',
                         ticker: 'BME:IBE',
+                        debtMaturity: { year: 2026, amount: '€1.5bn', label: 'Senior Green Bond' },
                         fundamentals: {
                             trailingEPS: 0.925,
                             forwardEPS: 1.05,
@@ -2213,6 +2502,7 @@
                         industry: 'Aerospace & Defense',
                         pdf: 'assets/reports/lockheedmartin.pdf',
                         ticker: 'NYSE:LMT',
+                        debtMaturity: { year: 2026, amount: '$600m', label: 'Senior Unsecured Notes' },
                         fundamentals: {
                             trailingEPS: 21.49,
                             forwardEPS: 29.93,
@@ -2232,6 +2522,7 @@
                         industry: 'Aerospace & Defense',
                         pdf: 'assets/reports/northropgrumman.pdf',
                         ticker: 'NYSE:NOC',
+                        debtMaturity: { year: 2028, amount: '$500m', label: 'Senior Unsecured Notes' },
                         fundamentals: {
                             trailingEPS: 29.08,
                             forwardEPS: 27.65,
@@ -2251,6 +2542,7 @@
                         industry: 'Aerospace & Defense',
                         pdf: 'assets/reports/rtx.pdf',
                         ticker: 'NYSE:RTX',
+                        debtMaturity: { year: 2026, amount: '$1.0bn', label: 'Senior Unsecured Notes' },
                         fundamentals: {
                             trailingEPS: 4.96,
                             forwardEPS: 6.81,
@@ -2270,6 +2562,7 @@
                         industry: 'Aerospace & Defense',
                         pdf: 'assets/reports/l3harris.pdf',
                         ticker: 'NYSE:LHX',
+                        debtMaturity: { year: 2026, amount: '$500m', label: 'Senior Unsecured Notes' },
                         fundamentals: {
                             trailingEPS: 8.53,
                             forwardEPS: 11.71,
@@ -2289,6 +2582,7 @@
                         industry: 'Aerospace & Defense',
                         pdf: 'assets/reports/generaldynamics.pdf',
                         ticker: 'NYSE:GD',
+                        debtMaturity: { year: 2026, amount: '$500m', label: 'Senior Unsecured Notes' },
                         fundamentals: {
                             trailingEPS: 15.45,
                             forwardEPS: 16.15,
@@ -2308,6 +2602,7 @@
                         industry: 'Aerospace & Defense',
                         pdf: 'assets/reports/rheinmetall.pdf',
                         ticker: 'XETR:RHM',
+                        debtMaturity: { year: 2027, amount: '€750m', label: 'Senior Unsecured Notes' },
                         fundamentals: {
                             trailingEPS: 36.09,
                             forwardEPS: 53.42,
@@ -2482,7 +2777,10 @@
                         loadNewsFeed(data.ticker);
                         loadPeerComparison(data.ticker, PEERS[company.toLowerCase()] || []);
                         loadFundamentals(data.ticker);
+                        loadEarningsDate(data.ticker);
+                        loadDividendHistory(data.ticker);
                     }
+                    loadDebtMaturity(company.toLowerCase(), companyData);
                     // Cross-tool badge: Sentinel's static rating anchor +
                     // deep-link buttons that hand the canonical ticker
                     // off to Sentinel / Osiris.

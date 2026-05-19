@@ -23,7 +23,8 @@ const ALLOWED_ENDPOINTS = new Set([
     'stock/earnings',
     'stock/insider-transactions',
     'stock/financials-reported',
-    'stock/metric'                  // flat fundamentals (revenue, margins, etc.)
+    'stock/metric',                 // flat fundamentals (revenue, margins, etc.)
+    'stock/dividend'                // historical dividend payments
 ]);
 
 // Cache TTL (seconds) per endpoint. News refreshes faster than profile data.
@@ -35,7 +36,8 @@ const CACHE_TTL = {
     'stock/earnings':             21600,   // 6h
     'stock/insider-transactions':  3600,   // 1h    — Form 4 filings
     'stock/financials-reported':  86400,   // 24h   — quarterly reports
-    'stock/metric':               21600    // 6h    — TTM metrics, slow movers
+    'stock/metric':               21600,   // 6h    — TTM metrics, slow movers
+    'stock/dividend':             86400    // 24h   — dividends change quarterly at most
 };
 
 // Look up the Finnhub key from any of several common naming conventions.
