@@ -32,7 +32,7 @@
           "0.68",
           "0.16",
           "0.406",
-          "69.4x",
+          "17.2x",
           "7.4x",
           "7.3x",
           "3.0x",
@@ -300,13 +300,13 @@
         "fundamentals": null
       },
       "sentinel": {
-        "type": "HY",
-        "rating": "HY",
-        "baseSpread": 360,
+        "type": "IG",
+        "rating": "BBB",
+        "baseSpread": 180,
         "marketBeta": 1.3,
         "sectorBeta": 1.6,
         "baseRateType": "UST",
-        "lastVerified": "2025-01-01"
+        "lastVerified": "2026-05"
       },
       "osiris": {
         "cohort": "energy_and_utilities",
@@ -315,7 +315,7 @@
         "jumpFrequencyLambda": null,
         "jumpMu": null,
         "baselineVolatility": 0.26,
-        "creditRating": "HY",
+        "creditRating": "BBB",
         "ratingLastVerified": "2026-05"
       }
     },
@@ -704,7 +704,7 @@
           "1.23",
           "0.31",
           "0.14",
-          "17.1x",
+          "43.1x",
           "4.71x",
           "19.5x",
           "14.81x",
@@ -715,7 +715,7 @@
           "17.7%"
         ],
         "fundamentals": {
-          "trailingEPS": 36.09,
+          "trailingEPS": 19.80,
           "forwardEPS": 53.42,
           "fcfPerShare": 51.2,
           "dividendAmount": 11.5,
@@ -724,7 +724,7 @@
           "ebitdaTTM": 2000,
           "revenueTTM": 10000,
           "bookValuePerShare": 90,
-          "fundamentalsLastVerified": "2025-01-01"
+          "fundamentalsLastVerified": "2026-05"
         }
       },
       "sentinel": {

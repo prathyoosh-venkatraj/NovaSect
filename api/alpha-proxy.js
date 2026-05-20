@@ -41,7 +41,7 @@ export default async function handler(req, res) {
         }
 
         if (!data['Time Series (Daily)']) {
-            return res.status(404).json({ error: 'E404: NO_DATA_FOUND', raw: data });
+            return res.status(404).json({ error: 'E404: NO_DATA_FOUND' });
         }
 
         const timeSeries = data['Time Series (Daily)'];

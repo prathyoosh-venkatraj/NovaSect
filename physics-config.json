@@ -73,7 +73,7 @@
         { "symbol": "DAL",     "name": "Delta Air Lines",     "jumpFrequencyLambda": 7, "jumpMu": 0.008, "baselineVolatility": 0.32, "creditRating": "HY",  "ratingLastVerified": "2026-05" },
         { "symbol": "DE",      "name": "Deere & Co",          "jumpFrequencyLambda": 6, "jumpMu": 0.010, "baselineVolatility": 0.25, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "DHL.DE",  "name": "DHL Group",           "jumpFrequencyLambda": 6, "jumpMu": 0.008, "baselineVolatility": 0.28, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "EMBJ3.SA","name": "Embraer",             "jumpFrequencyLambda": 5, "jumpMu": 0.012, "baselineVolatility": 0.32, "creditRating": "HY",  "ratingLastVerified": "2026-05" },
+        { "symbol": "EMBR3.SA","name": "Embraer",             "jumpFrequencyLambda": 5, "jumpMu": 0.012, "baselineVolatility": 0.32, "creditRating": "HY",  "ratingLastVerified": "2026-05" },
         { "symbol": "EMR",     "name": "Emerson Electric",    "jumpFrequencyLambda": 5, "jumpMu": 0.010, "baselineVolatility": 0.24, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "ETN",     "name": "Eaton Corp",          "jumpFrequencyLambda": 5, "jumpMu": 0.010, "baselineVolatility": 0.24, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "GD",      "name": "General Dynamics",    "jumpFrequencyLambda": 4, "jumpMu": 0.015, "baselineVolatility": 0.22, "creditRating": "A",   "ratingLastVerified": "2026-05" },
