@@ -88,38 +88,18 @@ body {
     margin-top: 0;
     /* Position below the center mural */
     color: rgba(255, 255, 255, 0.9);
-    text-shadow:
-        0 0 3px rgba(255, 255, 255, 0.5),
-        0 0 8px rgba(57, 255, 20, 0.8),
-        0 0 15px rgba(57, 255, 20, 0.5),
-        0 0 30px rgba(57, 255, 20, 0.3);
+    filter: drop-shadow(0 0 8px rgba(57, 255, 20, 0.8)) drop-shadow(0 0 20px rgba(57, 255, 20, 0.4));
     animation: neon-flicker 3.5s infinite alternate;
 }
 
 @keyframes neon-flicker {
-
-    0%,
-    18%,
-    22%,
-    25%,
-    53%,
-    57%,
-    100% {
-        text-shadow:
-            0 0 3px rgba(255, 255, 255, 0.5),
-            0 0 8px rgba(57, 255, 20, 0.8),
-            0 0 15px rgba(57, 255, 20, 0.5),
-            0 0 30px rgba(57, 255, 20, 0.3);
-        color: rgba(255, 255, 255, 0.9);
+    0%, 18%, 22%, 25%, 53%, 57%, 100% {
         opacity: 1;
+        filter: drop-shadow(0 0 8px rgba(57, 255, 20, 0.8)) drop-shadow(0 0 20px rgba(57, 255, 20, 0.4));
     }
-
-    20%,
-    24%,
-    55% {
-        text-shadow: none;
-        color: rgba(57, 255, 20, 0.2);
+    20%, 24%, 55% {
         opacity: 0.4;
+        filter: drop-shadow(0 0 0px transparent);
     }
 }
 
@@ -132,11 +112,7 @@ body {
     letter-spacing: 4px;
     margin-bottom: 4rem;
     color: rgba(255, 255, 255, 0.9);
-    text-shadow:
-        0 0 3px rgba(255, 255, 255, 0.5),
-        0 0 8px rgba(57, 255, 20, 0.8),
-        0 0 15px rgba(57, 255, 20, 0.5),
-        0 0 30px rgba(57, 255, 20, 0.3);
+    filter: drop-shadow(0 0 8px rgba(57, 255, 20, 0.8)) drop-shadow(0 0 20px rgba(57, 255, 20, 0.4));
     text-align: center;
     position: relative;
     z-index: 2;
@@ -260,24 +236,21 @@ body {
 
 .floating-dollar {
     position: absolute;
-    bottom: -150px;
+    bottom: -20%;
     width: 120px;
     height: 60px;
     color: var(--accent-green);
     filter: drop-shadow(0 0 5px var(--accent-green));
     animation: floatUp var(--duration) var(--delay) linear infinite;
-    will-change: transform, bottom;
+    will-change: transform;
 }
 
 @keyframes floatUp {
     0% {
-        bottom: -20%;
-        transform: scale(var(--scale)) rotate3d(var(--rot-x), var(--rot-y), 0.5, 0deg);
+        transform: translateY(0) scale(var(--scale)) rotate3d(var(--rot-x), var(--rot-y), 0.5, 0deg);
     }
-
     100% {
-        bottom: 120%;
-        transform: scale(var(--scale)) rotate3d(var(--rot-x), var(--rot-y), 0.5, 720deg);
+        transform: translateY(-140vh) scale(var(--scale)) rotate3d(var(--rot-x), var(--rot-y), 0.5, 720deg);
     }
 }
 
@@ -1091,10 +1064,6 @@ body {
     filter: none; /* Removed drop-shadow as requested */
 }
 
-@keyframes meshFloating {
-    0%, 100% { transform: translateY(0) rotateY(-10deg); }
-    50% { transform: translateY(-5px) rotateY(-5deg); } /* Minimal subtle drift instead of floating */
-}
 
 .matrix-bits-container {
     position: absolute;
@@ -1360,6 +1329,26 @@ body.contagion-alert::before {
     color: var(--accent-green) !important;
 }
 
+.aurum-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 14px;
+    border: 1px solid #F5C518;
+    border-radius: 3px;
+    color: #F5C518;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+}
+.aurum-nav-btn:hover {
+    background: #F5C518;
+    color: #000;
+    text-decoration: none;
+}
+
 /* Dropdown Logic */
 .nav-dropdown {
     position: relative;
@@ -1527,14 +1516,6 @@ body.contagion-alert::before {
     color: var(--accent-green);
 }
 
-/* Mobile: keep OSIRIS visually unchanged from current mobile look */
-@media (max-width: 768px) {
-    .osiris-paths-canvas,
-    .osiris-histogram,
-    .osiris-sim-readout {
-        display: none;
-    }
-}
 
 /* ===== SENTINEL Promo Section (index page only) ===== */
 

@@ -142,3 +142,9 @@ vite.config.ts.timestamp-*
 # Health-check dedup state — written at runtime by scripts/health/.
 # Persisted across runs via actions/cache, not git.
 .health/
+
+# SEC EDGAR 10-K fetch output — local research only, not deployed.
+scripts/sec-output/
+
+# Generated report drafts — reviewed by expert before publishing.
+scripts/reports-staging/
