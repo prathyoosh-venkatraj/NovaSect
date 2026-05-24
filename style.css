@@ -747,6 +747,10 @@ body {
         padding: 1.5rem 1.5rem;
     }
 
+    .aurum-nav-btn {
+        display: none;
+    }
+
     .nav-links {
         gap: 1.5rem;
     }
