@@ -277,29 +277,37 @@ Source risks from Item 1A of the 10-K. Use sector-appropriate titles:
 
 ## Section 9 — Valuation — Multiples
 
-**INCLUDE ONLY if sector = DEFENCE or INDUSTRIALS. Omit entirely for ENERGY and UTILITIES.**
+**INCLUDE IN ALL reports regardless of sector.**
 
 ```
-| Multiple             | Sector Median | [Company] FY [YEAR] (Est.) |
-|----------------------|--------------|---------------------------|
-| Trailing P/E (GAAP)  | 20–22x       | ~XXx                      |
-| Forward P/E          | 18–20x       | ~XXx                      |
-| EV/EBITDA            | 12–14x       | ~XXx                      |
-| Price / Free Cash Flow | 18–22x    | ~XXx                      |
+| Multiple               | Sector Median | [Company] FY [YEAR] (Est.) |
+|------------------------|--------------|---------------------------|
+| Trailing P/E (GAAP)    | XX–XXx       | ~XXx                      |
+| Forward P/E            | XX–XXx       | ~XXx                      |
+| EV/EBITDA              | XX–XXx       | ~XXx                      |
+| Price / Free Cash Flow | XX–XXx       | ~XXx                      |
 ```
 
-Mark forward estimates clearly with "(Est.)". Follow with 1 paragraph contextualising the valuation premium or discount vs. peers and the implied expectations embedded in the stock.
+Mark forward estimates clearly with "(Est.)". If P/FCF is negative or not meaningful (common for utilities with heavy capex programmes or E&P companies in down-cycle years), write "N/M" and note the reason in the inference paragraph. Follow the table with 1 paragraph contextualising the valuation premium or discount vs. peers and the implied expectations embedded in the stock. For ENERGY reports, explicitly note in the inference that trailing P/E reflects commodity-cycle conditions and should be interpreted alongside EV/EBITDA and P/CF metrics for a complete picture.
 
 Sector median ranges to use:
-- Defence primes: P/E 20–24x, EV/EBITDA 14–18x, P/FCF 22–28x
-- Diversified industrials: P/E 18–22x, EV/EBITDA 12–16x, P/FCF 18–24x
-- Aerospace/transport: P/E 16–22x, EV/EBITDA 10–14x, P/FCF 16–22x
+
+- **Defence primes:** P/E 20–24x, EV/EBITDA 14–18x, P/FCF 22–28x
+- **Diversified industrials:** P/E 18–22x, EV/EBITDA 12–16x, P/FCF 18–24x
+- **Aerospace / transport:** P/E 16–22x, EV/EBITDA 10–14x, P/FCF 16–22x
+- **Energy integrated (XOM, CVX, SHEL, TTE, BP):** P/E 12–18x, EV/EBITDA 5–8x, P/FCF 10–16x
+- **Energy E&P (COP, EOG, OXY):** P/E 10–16x, EV/EBITDA 4–7x, P/FCF 10–18x (note: N/M in loss years)
+- **Energy midstream (WMB, KMI):** P/E 14–20x, EV/EBITDA 8–12x, P/FCF 12–18x
+- **Energy oilfield services (SLB, HAL, BKR):** P/E 12–18x, EV/EBITDA 8–12x, P/FCF 12–18x
+- **Energy refining (MPC, VLO, PSX):** P/E 8–14x, EV/EBITDA 4–8x, P/FCF 6–12x
+- **Utilities regulated electric (NEE, DUK, SO, AEP, EXC):** P/E 16–22x, EV/EBITDA 10–15x, P/FCF N/M (negative FCF typical during infrastructure build-out cycles — note as such)
+- **Utilities water (AWK):** P/E 22–28x, EV/EBITDA 14–18x, P/FCF N/M
 
 ---
 
 ## Section 10 — Appendix: Ratio Formulae and Key Assumptions
 
-**INCLUDE ONLY if sector = DEFENCE or INDUSTRIALS. Omit for ENERGY and UTILITIES.**
+**INCLUDE IN ALL reports regardless of sector.**
 
 Four subsections (A through D). Each ratio shows the algebraic formula plus a numerical example computed from this company's actual FY figures:
 

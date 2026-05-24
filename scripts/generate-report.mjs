@@ -2,8 +2,11 @@
  * generate-report.mjs
  *
  * FinVault automated report generation pipeline.
- * Fetches SEC EDGAR 10-K text + XBRL 2-year financials, calls Claude API,
- * and writes a fully formatted .docx draft to scripts/reports-staging/.
+ *
+ * Filing type routing:
+ *   10-K  — US companies: SEC EDGAR 10-K text + US-GAAP XBRL (default)
+ *   20-F  — US-listed foreign issuers: SEC EDGAR 20-F text + IFRS XBRL
+ *   PDF   — Non-SEC filers: direct PDF download from company IR page + Claude extraction
  *
  * Usage:
  *   node scripts/generate-report.mjs <TICKER>
@@ -21,6 +24,9 @@ import {
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+const _require = createRequire(import.meta.url);
 
 // ─── Paths ────────────────────────────────────────────────────────────────────
 
@@ -49,6 +55,16 @@ const COL = {
 };
 
 // ─── Company Registry ─────────────────────────────────────────────────────────
+//
+// filingType:
+//   '10-K'  (default) — US company, SEC EDGAR 10-K + US-GAAP XBRL
+//   '20-F'            — US-listed foreign issuer, SEC EDGAR 20-F + IFRS XBRL
+//   'PDF'             — Non-SEC filer, direct IR PDF + Claude extraction
+//
+// pdfUrl (PDF companies only):
+//   Set to the direct download link for the latest consolidated annual report PDF.
+//   Update this URL each year after the company publishes its new report.
+//   The IR page where the PDF can be found is noted in the comment beside each entry.
 
 const REGISTRY = {
   XOM:  { name: 'ExxonMobil Corporation',              exchange: 'NYSE',   sector: 'energy',      industry: 'Integrated Oil & Gas',              peers: ['CVX', 'COP', 'BP', 'SHEL', 'TTE'] },
@@ -91,6 +107,48 @@ const REGISTRY = {
   CAT:  { name: 'Caterpillar Inc.',                     exchange: 'NYSE',   sector: 'industrials', industry: 'Heavy Equipment & Machinery',        peers: ['DE', 'CNH', 'VOLV-B.ST', 'KOMATSU', 'AGCO'] },
   DE:   { name: 'Deere & Company',                      exchange: 'NYSE',   sector: 'industrials', industry: 'Agricultural & Construction Equip',  peers: ['CAT', 'CNH', 'AGCO', 'CLAAS', 'KUBOTA'] },
   BA:   { name: 'Boeing Company',                       exchange: 'NYSE',   sector: 'industrials', industry: 'Aerospace Manufacturing',            peers: ['RTX', 'GD', 'LMT', 'NOC', 'AIR.PA'] },
+
+  // ── 20-F filers: US-listed foreign issuers (SEC EDGAR, IFRS XBRL) ────────────
+  SHEL: { name: 'Shell PLC',          exchange: 'NYSE',  sector: 'energy',      industry: 'Integrated Oil & Gas',    filingType: '20-F', peers: ['XOM', 'CVX', 'BP', 'TTE', 'EQNR'] },
+  TTE:  { name: 'TotalEnergies SE',   exchange: 'NYSE',  sector: 'energy',      industry: 'Integrated Oil & Gas',    filingType: '20-F', peers: ['XOM', 'CVX', 'BP', 'SHEL', 'EQNR'] },
+  BP:   { name: 'BP p.l.c.',          exchange: 'NYSE',  sector: 'energy',      industry: 'Integrated Oil & Gas',    filingType: '20-F', peers: ['XOM', 'CVX', 'SHEL', 'TTE', 'EQNR'] },
+  EQNR: { name: 'Equinor ASA',        exchange: 'NYSE',  sector: 'energy',      industry: 'Exploration & Production',filingType: '20-F', peers: ['XOM', 'CVX', 'BP', 'SHEL', 'TTE'] },
+
+  // ── PDF filers: non-SEC companies (direct IR PDF download) ───────────────────
+  // pdfUrl: set to the direct PDF link for the current year's consolidated annual report.
+  // Update this URL each year after the company publishes its new report.
+  // IR pages are listed in comments to help locate the new PDF annually.
+  'IBE.MC':  { name: 'Iberdrola S.A.',    exchange: 'BME',  sector: 'utilities',   industry: 'Electric Utilities',      filingType: 'PDF', reportCurrency: 'EUR',
+    pdfUrl: null, // IR: https://www.iberdrola.com/investors/financial-information/annual-report
+    peers: ['ENEL.MI', 'ENGI.PA', 'NEE', 'DUK', 'EDP.LS'] },
+
+  'ENEL.MI': { name: 'Enel SpA',          exchange: 'MIL',  sector: 'utilities',   industry: 'Electric Utilities',      filingType: 'PDF', reportCurrency: 'EUR',
+    pdfUrl: null, // IR: https://www.enel.com/investors/sustainability/sustainability-reports
+    peers: ['IBE.MC', 'ENGI.PA', 'NEE', 'DUK', 'EDP.LS'] },
+
+  'ENGI.PA': { name: 'Engie S.A.',         exchange: 'EPA',  sector: 'utilities',   industry: 'Multi-Utilities',         filingType: 'PDF', reportCurrency: 'EUR',
+    pdfUrl: null, // IR: https://www.engie.com/investors/financial-results-publications
+    peers: ['IBE.MC', 'ENEL.MI', 'DUK', 'NEE', 'SRE'] },
+
+  'AIR.PA':  { name: 'Airbus SE',          exchange: 'EPA',  sector: 'industrials', industry: 'Aerospace Manufacturing', filingType: 'PDF', reportCurrency: 'EUR',
+    pdfUrl: null, // IR: https://www.airbus.com/en/investor-relations/publications-and-events/annual-reports
+    peers: ['BA', 'RTX', 'GE', 'LMT', 'RHM.DE'] },
+
+  'LDO.MI':  { name: 'Leonardo SpA',       exchange: 'MIL',  sector: 'defence',     industry: 'Aerospace & Defence',     filingType: 'PDF', reportCurrency: 'EUR',
+    pdfUrl: null, // IR: https://www.leonardocompany.com/en/investors/financial-reports
+    peers: ['RTX', 'LMT', 'NOC', 'AIR.PA', 'RHM.DE'] },
+
+  'RHM.DE':  { name: 'Rheinmetall AG',     exchange: 'XETR', sector: 'defence',     industry: 'Aerospace & Defence',     filingType: 'PDF', reportCurrency: 'EUR',
+    pdfUrl: null, // IR: https://www.rheinmetall.com/en/company/press/publications/annual-reports
+    peers: ['LMT', 'NOC', 'LDO.MI', 'AIR.PA', 'BA'] },
+
+  'DHL.DE':  { name: 'DHL Group',          exchange: 'XETR', sector: 'industrials', industry: 'Air Freight & Logistics', filingType: 'PDF', reportCurrency: 'EUR',
+    pdfUrl: null, // IR: https://www.dhl.com/global-en/home/investors/reporting.html
+    peers: ['UPS', 'FDX', 'XPO', 'GXO', 'CHRW'] },
+
+  'EMBR3.SA':{ name: 'Embraer S.A.',       exchange: 'B3',   sector: 'industrials', industry: 'Aerospace Manufacturing', filingType: 'PDF', reportCurrency: 'BRL',
+    pdfUrl: null, // IR: https://ri.embraer.com.br/en/reports-and-presentations
+    peers: ['BA', 'RTX', 'GE', 'AIR.PA', 'LMT'] },
 };
 
 // ─── XBRL Concept Lists ───────────────────────────────────────────────────────
@@ -115,6 +173,29 @@ const CONCEPTS = {
   ocf:                ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'],
   capex:              ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsForCapitalImprovements'],
   dividendsPaid:      ['PaymentsOfDividends', 'PaymentsOfDividendsCommonStock', 'PaymentsOfOrdinaryDividends'],
+};
+
+// IFRS taxonomy concepts for 20-F filers (ifrs-full namespace on SEC EDGAR)
+const IFRS_CONCEPTS = {
+  revenue:            ['Revenue', 'RevenueFromContractsWithCustomers', 'RevenueFromRenderingOfServices', 'RevenueFromSaleOfGoods'],
+  operatingIncome:    ['ProfitLossFromOperatingActivities', 'OperatingProfit', 'ProfitLossBeforeFinancingCostsAndIncomeTax'],
+  da:                 ['DepreciationAmortisationAndImpairmentLossReversalOfImpairmentLossRecognisedInProfitOrLoss', 'DepreciationAndAmortisationExpense', 'DepreciationDepletionAndAmortisationExpense'],
+  interestExpense:    ['FinanceCosts', 'InterestExpenseOnBorrowings', 'FinanceExpenses', 'BorrowingCosts'],
+  netIncome:          ['ProfitLoss', 'ProfitLossAttributableToOwnersOfParent', 'ProfitLossFromContinuingOperations'],
+  epsDiluted:         ['DilutedEarningsLossPerShare', 'BasicEarningsLossPerShare'],
+  longTermDebt:       ['NoncurrentPortionOfLongtermBorrowings', 'NoncurrentBorrowings', 'LongtermBorrowings'],
+  shortTermDebt:      ['CurrentPortionOfLongtermBorrowings', 'CurrentBorrowings', 'ShorttermBorrowings'],
+  cash:               ['CashAndCashEquivalents', 'CashAndCashEquivalentsAndBankOverdrafts'],
+  sharesOut:          ['NumberOfSharesOutstanding', 'NumberOfSharesIssuedAndFullyPaid'],
+  equity:             ['Equity', 'EquityAttributableToOwnersOfParent'],
+  totalAssets:        ['Assets'],
+  totalLiabilities:   ['Liabilities'],
+  currentAssets:      ['CurrentAssets'],
+  currentLiabilities: ['CurrentLiabilities'],
+  inventory:          ['Inventories', 'Inventory'],
+  ocf:                ['CashFlowsFromUsedInOperatingActivities', 'NetCashFlowsFromOperatingActivities'],
+  capex:              ['PurchaseOfPropertyPlantAndEquipment', 'AcquisitionOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities', 'PaymentsForPropertyPlantAndEquipment'],
+  dividendsPaid:      ['DividendsPaid', 'DividendsPaidToEquityHoldersOfParentEntity', 'DividendsPaidClassifiedAsFinancingActivities'],
 };
 
 // ─── Fetch Helpers ────────────────────────────────────────────────────────────
@@ -173,22 +254,44 @@ async function getCIK(ticker) {
   return cik;
 }
 
-async function getLatest10K(cik) {
+// Unified filing lookup — handles both 10-K and 20-F
+async function getLatestFiling(cik, filingType = '10-K') {
   const data = await fetchJSON(`${BASE_DATA}/submissions/CIK${cik}.json`);
   await sleep(RATE_MS);
   const { form, accessionNumber, primaryDocument, filingDate, reportDate } = data.filings.recent;
+  const targets = filingType === '20-F' ? ['20-F', '20-F/A'] : ['10-K', '10-K/A'];
   for (let i = 0; i < form.length; i++) {
-    if (form[i] === '10-K') {
+    if (targets.includes(form[i])) {
       return {
         accession:      accessionNumber[i],
         accessionClean: accessionNumber[i].replace(/-/g, ''),
         primaryDoc:     primaryDocument[i],
         filingDate:     filingDate[i],
         reportDate:     reportDate[i],
+        formType:       form[i],
       };
     }
   }
-  throw new Error(`No 10-K found for CIK ${cik}`);
+  throw new Error(`No ${filingType} found for CIK ${cik}`);
+}
+
+// Validates that the CIK belongs to the consolidated parent entity, not a subsidiary.
+// The ticker-based CIK lookup already selects the listed parent, but this adds a name
+// cross-check as a safety net against edge cases (dual-listed holding structures, etc.).
+async function validateParentEntity(cik, expectedName) {
+  const data = await fetchJSON(`${BASE_DATA}/submissions/CIK${cik}.json`);
+  await sleep(RATE_MS);
+  const filedName = (data.name || '').toLowerCase();
+  const words = expectedName.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3);
+  const matched = words.filter(w => filedName.includes(w));
+  if (matched.length === 0) {
+    throw new Error(
+      `Entity mismatch: SEC registered name "${data.name}" shares no keywords with expected "${expectedName}". ` +
+      `This may be a subsidiary filing. Verify the CIK at https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cik}`
+    );
+  }
+  console.log(`  [validate] SEC entity: "${data.name}" — matched "${expectedName}" on [${matched.join(', ')}]`);
+  return data.name;
 }
 
 async function extract10KItems(cik, filing) {
@@ -211,37 +314,78 @@ async function extract10KItems(cik, filing) {
   return { item1, item1a, item7 };
 }
 
+// Extract narrative sections from a 20-F filing.
+// Item mapping vs 10-K: Item 4 = Business, Item 3D = Risk Factors, Item 5 = MD&A
+async function extract20FItems(cik, filing) {
+  const url = `${BASE_WWW}/Archives/edgar/data/${parseInt(cik)}/${filing.accessionClean}/${filing.primaryDoc}`;
+  console.log(`  [20-F] ${url}`);
+  let html;
+  try {
+    html = await fetchText(url);
+    await sleep(RATE_MS);
+  } catch (e) {
+    console.warn(`  [20-F] Download failed: ${e.message}`);
+    return { item1: null, item1a: null, item7: null };
+  }
+  const text = stripHtml(html);
+  // Item 4: Information on the Company (≈ 10-K Item 1)
+  const item1  = extractItem(text,
+    'ITEM\\s+4[A-Z]?\\.?\\s+(?:INFORMATION\\s+ON\\s+THE\\s+COMPANY|THE\\s+COMPANY|BUSINESS)',
+    'ITEM\\s+(?:4[A-Z]|5)[\\.\\s]');
+  // Item 3: Key Information / Risk Factors (≈ 10-K Item 1A)
+  const item1a = extractItem(text,
+    'ITEM\\s+3[A-Z]?\\.?\\s+(?:KEY\\s+INFORMATION|RISK\\s+FACTORS)',
+    'ITEM\\s+(?:3[B-Z]|4)[\\.\\s]');
+  // Item 5: Operating and Financial Review (≈ 10-K Item 7)
+  const item7  = extractItem(text,
+    'ITEM\\s+5[A-Z]?\\.?\\s+(?:OPERATING\\s+AND\\s+FINANCIAL|DIRECTORS|FINANCIAL\\s+REVIEW|MANAGEMENT)',
+    'ITEM\\s+(?:5[A-Z]|6)[\\.\\s]');
+  const kc = (v) => v ? `${(v.length / 1000).toFixed(0)}k chars` : 'NOT FOUND';
+  console.log(`  [20-F] Item 4 (Business): ${kc(item1)} | Item 3 (Risk): ${kc(item1a)} | Item 5 (MD&A): ${kc(item7)}`);
+  return { item1, item1a, item7 };
+}
+
 // ─── XBRL 2-Year ──────────────────────────────────────────────────────────────
 
-function extractTop2(facts, name) {
-  for (const ns of ['us-gaap', 'dei']) {
-    const c = facts[ns]?.[name];
+// ns: namespace to search — null defaults to ['us-gaap','dei'] for 10-K,
+//     'ifrs-full' for 20-F filers
+function extractTop2(facts, name, ns = null) {
+  const namespaces = ns ? [ns, 'dei'] : ['us-gaap', 'dei'];
+  for (const namespace of namespaces) {
+    const c = facts[namespace]?.[name];
     if (!c) continue;
-    for (const unit of ['USD', 'shares', 'USD/shares', 'pure']) {
+    // IFRS filers report in native currency (EUR, GBP, NOK, etc.) — accept any currency unit
+    const units = Object.keys(c.units || {});
+    for (const unit of ['USD', 'EUR', 'GBP', 'NOK', 'BRL', 'shares', 'USD/shares', 'EUR/shares', 'pure', ...units]) {
       const entries = c.units?.[unit];
       if (!entries?.length) continue;
-      const annual = entries.filter(e => e.form === '10-K' && e.end).sort((a, b) => b.end.localeCompare(a.end));
+      const annualForms = ['10-K', '10-K/A', '20-F', '20-F/A'];
+      const annual = entries
+        .filter(e => annualForms.includes(e.form) && e.end)
+        .sort((a, b) => b.end.localeCompare(a.end));
       if (annual.length) return annual.slice(0, 2).map(e => ({ value: e.val, end: e.end }));
     }
   }
   return [];
 }
 
-function pickBest2(facts, list) {
+function pickBest2(facts, list, ns = null) {
   let best = [];
   for (const name of list) {
-    const cands = extractTop2(facts, name);
+    const cands = extractTop2(facts, name, ns);
     if (cands.length && (best.length === 0 || cands[0].end > best[0].end)) best = cands;
   }
   return best;
 }
 
-async function fetchXBRL2(cik) {
+async function fetchXBRL2(cik, filingType = '10-K') {
   const data = await fetchJSON(`${BASE_DATA}/api/xbrl/companyfacts/CIK${cik}.json`);
   await sleep(RATE_MS);
   const facts = data.facts ?? {};
+  const concepts = filingType === '20-F' ? IFRS_CONCEPTS : CONCEPTS;
+  const ns       = filingType === '20-F' ? 'ifrs-full'   : null;
   const out = {};
-  for (const [k, list] of Object.entries(CONCEPTS)) out[k] = pickBest2(facts, list);
+  for (const [k, list] of Object.entries(concepts)) out[k] = pickBest2(facts, list, ns);
   return out;
 }
 
@@ -627,6 +771,151 @@ function markdownToDocx(md, company, ticker, reportDate) {
   });
 }
 
+// ─── PDF Pipeline ────────────────────────────────────────────────────────────
+
+async function fetchPdfBuffer(url) {
+  console.log(`  [PDF] Fetching: ${url}`);
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; FinVault/1.0; +https://novasect.space)',
+      'Accept': 'application/pdf,*/*',
+    },
+    redirect: 'follow',
+  });
+  if (!res.ok) throw new Error(`PDF fetch failed: HTTP ${res.status} — ${url}`);
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('pdf') && !url.toLowerCase().includes('.pdf')) {
+    console.warn(`  [PDF] Warning: content-type "${ct}" — verify this URL returns a PDF`);
+  }
+  return Buffer.from(await res.arrayBuffer());
+}
+
+async function parsePdfText(buffer) {
+  // pdf-parse is CJS — use createRequire for ESM compatibility
+  const pdfParse = _require('pdf-parse');
+  const result = await pdfParse(buffer, { max: 0 }); // max: 0 = all pages
+  console.log(`  [PDF] Parsed ${result.numpages} pages, ${Math.round(result.text.length / 1000)}k chars`);
+  return result.text;
+}
+
+// Uses Claude to extract structured financials + narrative from raw PDF text.
+// Returns { xbrl, narrative, currency } where xbrl matches the shape fetchXBRL2 produces.
+async function extractFinancialsFromPDF(pdfText, company, ticker, model) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
+  const client = new Anthropic({ apiKey });
+
+  // Focus on the financial statements section — first 120k chars covers most annual reports
+  const text = pdfText.length > 120_000 ? pdfText.slice(0, 120_000) : pdfText;
+
+  const system = `You are a financial data extraction specialist. Your task is to extract structured financial data from an annual report and return it as valid JSON. Rules:
+1. Extract CONSOLIDATED (group-level) figures only. Never extract parent-company-only or subsidiary-only statements. If you cannot find consolidated statements, set "isConsolidated": false.
+2. Return monetary values exactly as they appear in the document (do not convert currencies or change scale).
+3. Return fiscal year end dates as YYYY-MM-DD strings.
+4. Return exactly two years of data where available — current year first, prior year second.
+5. If a line item cannot be found, return an empty array [].
+6. Your entire response must be valid JSON with no surrounding text.`;
+
+  const user = `Extract financial data for ${company.name} (${ticker}) from this annual report text. The report currency is ${company.reportCurrency || 'unknown'}.
+
+Return this exact JSON structure:
+{
+  "isConsolidated": true,
+  "reportCurrency": "EUR",
+  "denomination": "millions",
+  "financials": {
+    "revenue":            [{"value": 0, "end": "YYYY-MM-DD"}],
+    "operatingIncome":    [],
+    "da":                 [],
+    "interestExpense":    [],
+    "netIncome":          [],
+    "epsDiluted":         [],
+    "longTermDebt":       [],
+    "shortTermDebt":      [],
+    "cash":               [],
+    "sharesOut":          [],
+    "equity":             [],
+    "totalAssets":        [],
+    "totalLiabilities":   [],
+    "currentAssets":      [],
+    "currentLiabilities": [],
+    "inventory":          [],
+    "ocf":                [],
+    "capex":              [],
+    "dividendsPaid":      []
+  },
+  "narrative": {
+    "businessDescription": "",
+    "riskFactors": "",
+    "mdaText": ""
+  }
+}
+
+Notes:
+- denomination: "millions", "billions", or "thousands" — whichever matches the report's stated scale
+- For netIncome: use profit attributable to equity holders of the parent (not including minorities) if stated separately; otherwise total group profit
+- For operatingIncome: use operating profit / EBIT
+- For da: use depreciation & amortisation / D&A charge
+- For interestExpense: use finance costs or interest expense (absolute positive value)
+- For capex: absolute positive value of capital expenditure outflows
+- For dividendsPaid: absolute positive value of dividends paid to shareholders
+- For sharesOut: weighted average diluted shares if available, otherwise shares outstanding — in millions
+- For epsDiluted: literal per-share value as shown (e.g. 4.67), NOT scaled
+- narrative fields: extract verbatim from the report, max 8000 chars each; empty string if not found
+- isConsolidated: true only if statements are clearly labelled as consolidated / group accounts
+
+Annual report text:
+${text}`;
+
+  console.log(`  [PDF→Claude] Extracting financials (${Math.round(text.length / 1000)}k chars)...`);
+  const msg = await client.messages.create({
+    model,
+    max_tokens: 4096,
+    system,
+    messages: [{ role: 'user', content: user }],
+  });
+
+  const raw = msg.content[0].text.trim();
+  let parsed;
+  try {
+    // Strip markdown code fences if present
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+    parsed = JSON.parse(cleaned);
+  } catch (e) {
+    throw new Error(`PDF extraction: Claude returned non-JSON response. Raw (first 300 chars): ${raw.slice(0, 300)}`);
+  }
+
+  if (!parsed.isConsolidated) {
+    throw new Error(
+      `PDF extraction: Document for ${ticker} does not appear to contain consolidated group financials. ` +
+      `Verify the pdfUrl points to the full Group Annual Report, not a parent-company-only or subsidiary filing.`
+    );
+  }
+
+  // Normalise monetary values to raw base units (same as XBRL pipeline)
+  // epsDiluted is already per-share; sharesOut is in millions → convert to raw count
+  const denom = (parsed.denomination || 'millions').toLowerCase();
+  const toRaw = denom === 'billions' ? 1e9 : denom === 'thousands' ? 1e3 : 1e6;
+  const PER_SHARE = new Set(['epsDiluted']);
+  const SHARE_COUNT = new Set(['sharesOut']); // Claude returns in millions
+
+  const xbrl = {};
+  for (const [k, arr] of Object.entries(parsed.financials || {})) {
+    xbrl[k] = (arr || [])
+      .filter(e => e != null && e.value != null && e.end)
+      .map(e => {
+        let v = e.value;
+        if (PER_SHARE.has(k))   v = v;            // already per-share, no scaling
+        else if (SHARE_COUNT.has(k)) v = v * 1e6; // millions → raw count
+        else                    v = v * toRaw;    // monetary: scale to raw base unit
+        return { value: v, end: e.end };
+      });
+  }
+
+  console.log(`  [PDF→Claude] Extraction complete. Currency: ${parsed.reportCurrency}, Denomination: ${denom}`);
+  return { xbrl, narrative: parsed.narrative || {}, currency: parsed.reportCurrency || company.reportCurrency };
+}
+
 // ─── Claude API ───────────────────────────────────────────────────────────────
 
 async function callClaude(systemPrompt, userMessage, model) {
@@ -679,39 +968,105 @@ async function main() {
 
   if (!existsSync(STAGING)) mkdirSync(STAGING, { recursive: true });
 
+  const filingType = company.filingType || '10-K';
+  const currency   = company.reportCurrency || 'USD';
+
   console.log(`\n${'─'.repeat(62)}`);
   console.log(` FinVault Report Generator`);
   console.log(` Company : ${company.name} (${ticker})`);
   console.log(` Sector  : ${company.sector.toUpperCase()}`);
+  console.log(` Source  : ${filingType}${filingType === 'PDF' ? ` (${currency})` : ''}`);
   console.log(` Model   : ${model}`);
   console.log(`${'─'.repeat(62)}\n`);
 
-  // Step 1: CIK
-  process.stdout.write('[1/5] CIK lookup ... ');
-  const cik = await getCIK(ticker);
-  console.log(`CIK ${cik}`);
+  // ── Route by filing type ────────────────────────────────────────────────────
 
-  // Step 2: Latest 10-K
-  process.stdout.write('[2/5] Latest 10-K ... ');
-  const filing = await getLatest10K(cik);
-  console.log(`filed ${filing.filingDate} (period end ${filing.reportDate})`);
+  let items, xbrlData, fy0, fy1, filingDate, reportDate, dataSourceNote;
 
-  // Step 3: Extract 10-K items
-  console.log('[3/5] Extracting 10-K sections...');
-  const items = await extract10KItems(cik, filing);
+  if (filingType === '10-K' || filingType === '20-F') {
 
-  // Step 4: XBRL 2-year
-  process.stdout.write('[4/5] XBRL 2-year financials ... ');
-  const xbrl = await fetchXBRL2(cik);
-  const { markdown: tables, fy0, fy1 } = buildTables(xbrl);
-  console.log(`${fy0} vs ${fy1}`);
+    // ── EDGAR path (10-K or 20-F) ───────────────────────────────────────────
+    process.stdout.write(`[1/5] CIK lookup ... `);
+    const cik = await getCIK(ticker);
+    console.log(`CIK ${cik}`);
 
-  // Step 5: Build prompt & call Claude
+    if (filingType === '20-F') {
+      process.stdout.write(`[1b/5] Validating parent entity ... `);
+      await validateParentEntity(cik, company.name);
+    }
+
+    process.stdout.write(`[2/5] Latest ${filingType} ... `);
+    const filing = await getLatestFiling(cik, filingType);
+    filingDate = filing.filingDate;
+    reportDate = filing.reportDate;
+    console.log(`filed ${filingDate} (period end ${reportDate})`);
+
+    console.log(`[3/5] Extracting ${filingType} sections...`);
+    items = filingType === '20-F'
+      ? await extract20FItems(cik, filing)
+      : await extract10KItems(cik, filing);
+
+    process.stdout.write(`[4/5] XBRL 2-year financials (${filingType === '20-F' ? 'IFRS' : 'US-GAAP'}) ... `);
+    xbrlData = await fetchXBRL2(cik, filingType);
+    const built = buildTables(xbrlData);
+    fy0 = built.fy0; fy1 = built.fy1;
+    console.log(`${fy0} vs ${fy1}`);
+
+    dataSourceNote = filingType === '20-F'
+      ? `SEC EDGAR 20-F filing (IFRS, ${currency}). Filed ${filingDate}, period ending ${reportDate}.`
+      : `SEC EDGAR 10-K filing (US-GAAP). Filed ${filingDate}, period ending ${reportDate}.`;
+
+    // reuse built tables markdown
+    var tables = built.markdown;
+
+  } else if (filingType === 'PDF') {
+
+    // ── PDF path ─────────────────────────────────────────────────────────────
+    if (!company.pdfUrl) {
+      throw new Error(
+        `pdfUrl is not set for ${ticker}.\n` +
+        `Open generate-report.mjs, find the ${ticker} entry in REGISTRY, and set pdfUrl to the\n` +
+        `direct download link for the consolidated annual report PDF.\n` +
+        `IR page reference is noted in the comment beside the registry entry.`
+      );
+    }
+
+    console.log(`[1/4] Downloading PDF...`);
+    const pdfBuffer = await fetchPdfBuffer(company.pdfUrl);
+
+    console.log(`[2/4] Parsing PDF text...`);
+    const pdfText = await parsePdfText(pdfBuffer);
+
+    console.log(`[3/4] Extracting financials via Claude...`);
+    const extracted = await extractFinancialsFromPDF(pdfText, company, ticker, model);
+    xbrlData = extracted.xbrl;
+    items    = {
+      item1:  extracted.narrative?.businessDescription || null,
+      item1a: extracted.narrative?.riskFactors         || null,
+      item7:  extracted.narrative?.mdaText             || null,
+    };
+
+    const built = buildTables(xbrlData);
+    fy0 = built.fy0; fy1 = built.fy1;
+    var tables = built.markdown;
+    filingDate  = 'N/A (PDF source)';
+    reportDate  = fy0;
+    dataSourceNote = `Annual Report PDF sourced from company IR page (${currency}, consolidated group accounts). Figures extracted via Claude — verify against published report before publishing.`;
+    console.log(`[3/4] Done — ${fy0} vs ${fy1}`);
+
+  } else {
+    throw new Error(`Unknown filingType "${filingType}" for ${ticker}`);
+  }
+
+  // ── Build prompt & call Claude ──────────────────────────────────────────────
   const sysPrompt  = readFileSync(TEMPLATE, 'utf8');
-  const isDefInd   = ['defence', 'industrials'].includes(company.sector);
-  const sectorNote = isDefInd
-    ? 'INCLUDE Section 9 (Valuation — Multiples) and Section 10 (Appendix — Ratio Formulae).'
-    : 'DO NOT include Section 9 or Section 10.';
+  const sectorNote = 'INCLUDE Section 9 (Valuation — Multiples) and Section 10 (Appendix — Ratio Formulae) in all reports.';
+  const step       = filingType === 'PDF' ? '4/4' : '5/5';
+
+  const filingLabel = filingType === '10-K' ? '10-K' : filingType === '20-F' ? '20-F' : 'Annual Report (PDF)';
+  const dataLabel   = filingType === 'PDF'
+    ? 'EXTRACTED FROM ANNUAL REPORT PDF — verify figures before publishing'
+    : `SEC EDGAR XBRL — use these exact figures`;
 
   const userMsg = [
     '## COMPANY CONTEXT',
@@ -720,28 +1075,29 @@ async function main() {
     `- **Exchange:** ${company.exchange}`,
     `- **Sector:** ${company.sector.toUpperCase()}`,
     `- **Industry:** ${company.industry}`,
-    `- **Fiscal Year:** ${fy0} (10-K filed ${filing.filingDate}, period ending ${filing.reportDate})`,
+    `- **Fiscal Year:** ${fy0} (${filingLabel} filed ${filingDate}, period ending ${reportDate})`,
     `- **Prior Year:** ${fy1}`,
     `- **Peer Set:** ${company.peers.join(', ')}`,
+    `- **Report Currency:** ${currency}`,
+    `- **Data Source:** ${dataSourceNote}`,
     '',
-    '## PRE-VERIFIED FINANCIAL DATA (SEC EDGAR XBRL)',
-    'Use these exact figures in all tables. Do not recalculate or round differently.',
+    `## FINANCIAL DATA (${dataLabel})`,
     '',
     tables,
     '',
-    '## 10-K EXCERPTS',
+    `## ${filingType === 'PDF' ? 'ANNUAL REPORT' : filingLabel} EXCERPTS`,
     '',
     items.item1
-      ? `### Item 1 — Business\n\n${items.item1}`
-      : '### Item 1 — Business\n\n[Extraction unavailable — use company knowledge and peer context]',
+      ? `### Business Overview\n\n${items.item1}`
+      : '### Business Overview\n\n[Not extracted — use company knowledge and peer context]',
     '',
     items.item1a
-      ? `### Item 1A — Risk Factors\n\n${items.item1a}`
-      : '### Item 1A — Risk Factors\n\n[Extraction unavailable — use sector-appropriate risk factors]',
+      ? `### Risk Factors\n\n${items.item1a}`
+      : '### Risk Factors\n\n[Not extracted — use sector-appropriate risk factors]',
     '',
     items.item7
-      ? `### Item 7 — MD&A\n\n${items.item7}`
-      : '### Item 7 — MD&A\n\n[Extraction unavailable — derive narrative from XBRL data above]',
+      ? `### Operating & Financial Review (MD&A)\n\n${items.item7}`
+      : '### Operating & Financial Review (MD&A)\n\n[Not extracted — derive from financial data above]',
     '',
     '## GENERATION TASK',
     `Generate the **complete** FinVault Financial Statement Analysis Report for ${company.name} (${ticker}).`,
@@ -754,29 +1110,32 @@ async function main() {
     `- Section 7 (Sector-Specific Analysis) must contain written inference paragraphs, not just a data table.`,
     `- Section 8 (Risks) must have a complete explanation column — not one-line entries.`,
     `- Sector is **${company.sector.toUpperCase()}**. ${sectorNote}`,
-    `- Use the XBRL-verified figures for all numerical data. Draw qualitative content from the 10-K excerpts.`,
+    `- All monetary figures are denominated in ${currency}. Use the correct currency symbol throughout.`,
     `- Fiscal year labels: current = ${fy0}, prior = ${fy1}.`,
   ].join('\n');
 
-  console.log('[5/5] Generating report with Claude...');
+  console.log(`[${step}] Generating report with Claude...`);
   const draft = await callClaude(sysPrompt, userMsg, model);
 
-  // Save .docx
+  // ── Save output ─────────────────────────────────────────────────────────────
   const date     = new Date().toISOString().slice(0, 10);
-  const baseName = `${ticker}-${date}`;
+  const baseName = `${ticker.replace(/[^A-Za-z0-9]/g, '_')}-${date}`;
   const docxPath = join(STAGING, `${baseName}.docx`);
   const mdPath   = join(STAGING, `${baseName}.md`);
 
   const doc    = markdownToDocx(draft, company, ticker, fy0);
   const buffer = await Packer.toBuffer(doc);
   writeFileSync(docxPath, buffer);
-  writeFileSync(mdPath, draft, 'utf8');   // markdown kept as backup
+  writeFileSync(mdPath, draft, 'utf8');
 
   const words = draft.split(/\s+/).length;
   console.log(`\n${'─'.repeat(62)}`);
   console.log(` Draft saved  : ${docxPath}`);
   console.log(` Backup (md)  : ${mdPath}`);
   console.log(` Word count   : ~${words.toLocaleString()}`);
+  if (filingType === 'PDF') {
+    console.log(`\n [!] PDF source: verify all extracted figures against the published report before publishing.`);
+  }
   console.log(`\n Next step    : open the .docx, review narrative, publish.`);
   console.log(`${'─'.repeat(62)}\n`);
 }

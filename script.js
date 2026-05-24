@@ -232,29 +232,29 @@ function initSecondaryThreeJS(container) {
 
 function initCardTilt() {
     const cards = document.querySelectorAll('.holographic-card');
-    
+
     cards.forEach(card => {
         const bg = card.querySelector('.card-bg');
-        
+        let tiltRaf = null;
+
         card.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            // Get mouse position relative to card center
-            const x = e.clientX - rect.left - rect.width / 2;
-            const y = e.clientY - rect.top - rect.height / 2;
-            
-            // Calculate tilt
-            const tiltX = (y / rect.height) * -20; // max 20deg tilt
-            const tiltY = (x / rect.width) * 20;
-            
-            card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.05, 1.05, 1.05)`;
-            
-            // Parallax effect on background
-            const bgX = (x / rect.width) * -20;
-            const bgY = (y / rect.height) * -20;
-            bg.style.transform = `translate(${bgX}px, ${bgY}px) scale(1.1)`;
+            if (tiltRaf) return;
+            tiltRaf = requestAnimationFrame(() => {
+                tiltRaf = null;
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                const tiltX = (y / rect.height) * -20;
+                const tiltY = (x / rect.width) * 20;
+                card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.05, 1.05, 1.05)`;
+                const bgX = (x / rect.width) * -20;
+                const bgY = (y / rect.height) * -20;
+                bg.style.transform = `translate(${bgX}px, ${bgY}px) scale(1.1)`;
+            });
         });
-        
+
         card.addEventListener('mouseleave', () => {
+            if (tiltRaf) { cancelAnimationFrame(tiltRaf); tiltRaf = null; }
             card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
             bg.style.transform = `translate(0, 0) scale(1)`;
         });
@@ -335,18 +335,18 @@ PURPOSE: DETERMINING ASSET POTENTIAL AND FIRM PERFORMANCE/POSITION.`;
             
             let i = 0;
             const speed = 25;
-            
+
             function typeWriter() {
                 if (i < logText.length) {
                     i++;
-                    let currentText = logText.substring(0, i);
-                    finvaultLog.innerHTML = currentText.replace(/(SOURCE|ANALYSIS_PARAM|SECTOR_FOCUS|PURPOSE)/g, '<span class="term-highlight">$1</span>');
+                    finvaultLog.textContent = logText.substring(0, i);
                     setTimeout(typeWriter, speed);
                 } else {
+                    finvaultLog.innerHTML = logText.replace(/(SOURCE|ANALYSIS_PARAM|SECTOR_FOCUS|PURPOSE)/g, '<span class="term-highlight">$1</span>');
                     isTyping = false;
                 }
             }
-            
+
             typeWriter();
         });
     }
@@ -372,18 +372,18 @@ PURPOSE: REAL-TIME CREDIT SOLVENCY MONITORING / DYNAMIC STRESS-TESTING / FISCAL_
             
             let j = 0;
             const speed = 25;
-            
+
             function typeWriterSentinel() {
                 if (j < sentinelLogText.length) {
                     j++;
-                    let currentText = sentinelLogText.substring(0, j);
-                    sentinelLog.innerHTML = currentText.replace(/(SOURCE|ANALYSIS_PARAM|SECTOR_FOCUS|PURPOSE)/g, '<span class="term-highlight">$1</span>');
+                    sentinelLog.textContent = sentinelLogText.substring(0, j);
                     setTimeout(typeWriterSentinel, speed);
                 } else {
+                    sentinelLog.innerHTML = sentinelLogText.replace(/(SOURCE|ANALYSIS_PARAM|SECTOR_FOCUS|PURPOSE)/g, '<span class="term-highlight">$1</span>');
                     isSentinelTyping = false;
                 }
             }
-            
+
             typeWriterSentinel();
         });
     }
@@ -413,10 +413,10 @@ PURPOSE: STOCHASTIC PRICE PATH SIMULATION / VOLATILITY-BOUND FORECASTING / TICKE
             function typeWriterOsiris() {
                 if (k < osirisLogText.length) {
                     k++;
-                    let currentText = osirisLogText.substring(0, k);
-                    osirisLog.innerHTML = currentText.replace(/(SOURCE|ANALYSIS_PARAM|SECTOR_FOCUS|PURPOSE)/g, '<span class="term-highlight">$1</span>');
+                    osirisLog.textContent = osirisLogText.substring(0, k);
                     setTimeout(typeWriterOsiris, speed);
                 } else {
+                    osirisLog.innerHTML = osirisLogText.replace(/(SOURCE|ANALYSIS_PARAM|SECTOR_FOCUS|PURPOSE)/g, '<span class="term-highlight">$1</span>');
                     isOsirisTyping = false;
                 }
             }

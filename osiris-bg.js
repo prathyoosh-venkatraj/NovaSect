@@ -26,8 +26,6 @@
         histogram.appendChild(frag);
     }
 
-    if (isMobile()) return;
-
     // ---- Canvas setup ----
     const ctx = canvas.getContext('2d');
     let width = 0, height = 0, originX = 0, originY = 0, dpr = 1;
@@ -50,7 +48,7 @@
     window.addEventListener('resize', resize);
 
     // ---- Path simulation ----
-    const NUM_PATHS = 70;
+    const NUM_PATHS = isMobile() ? 25 : 70;
     const STEPS_PER_PATH = 180;
     const VOL_FACTOR = 0.045; // vertical volatility as fraction of height
 

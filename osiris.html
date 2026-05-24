@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -8,462 +8,10 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.min.css">
-    
-    <style>
-        .osiris-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .osiris-header {
-            text-align: center;
-            border-bottom: 1px solid var(--accent-green);
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-
-        .osiris-title {
-            font-size: 2.5em;
-            color: var(--accent-green);
-            letter-spacing: 4px;
-            margin: 0;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
-        }
-
-        .osiris-subtitle {
-            font-family: monospace;
-            color: rgba(0, 255, 0, 0.7);
-            font-size: 0.9em;
-            letter-spacing: 2px;
-            margin-top: 10px;
-        }
-
-        .osiris-controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            align-items: center;
-            background: rgba(0, 255, 0, 0.05);
-            padding: 15px;
-            border: 1px solid rgba(0, 255, 0, 0.2);
-            border-radius: 4px;
-        }
-
-        .osiris-input {
-            background: rgba(0,0,0,0.8);
-            border: 1px solid var(--accent-green);
-            color: var(--accent-green);
-            padding: 10px 15px;
-            font-family: monospace;
-            font-size: 1.1em;
-            text-transform: uppercase;
-            width: 150px;
-            outline: none;
-        }
-
-        .osiris-input:focus {
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
-        }
-
-        .osiris-btn {
-            background: transparent;
-            color: var(--accent-green);
-            border: 1px solid var(--accent-green);
-            padding: 10px 20px;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: all 0.3s ease;
-        }
-
-        .osiris-btn:hover {
-            background: rgba(0, 255, 0, 0.1);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-        }
-
-        /* Primary CTA — the simulation trigger. Visually dominant so the user
-           knows where the action is, with a gentle pulse to draw the eye. */
-        .osiris-btn-primary {
-            background: rgba(0, 255, 0, 0.18);
-            border: 2px solid var(--accent-green);
-            color: var(--accent-green);
-            padding: 12px 28px;
-            font-size: 0.95em;
-            letter-spacing: 2.5px;
-            box-shadow: 0 0 14px rgba(0, 255, 0, 0.35),
-                        inset 0 0 10px rgba(0, 255, 0, 0.08);
-            animation: osiris-primary-pulse 2.4s ease-in-out infinite;
-            text-shadow: 0 0 6px rgba(0, 255, 0, 0.4);
-        }
-
-        .osiris-btn-primary:hover {
-            background: rgba(0, 255, 0, 0.28);
-            box-shadow: 0 0 24px rgba(0, 255, 0, 0.6),
-                        inset 0 0 14px rgba(0, 255, 0, 0.15);
-            animation-play-state: paused;
-        }
-
-        .osiris-btn-primary:active {
-            transform: translateY(1px);
-            background: rgba(0, 255, 0, 0.35);
-        }
-
-        @keyframes osiris-primary-pulse {
-            0%, 100% {
-                box-shadow: 0 0 14px rgba(0, 255, 0, 0.35),
-                            inset 0 0 10px rgba(0, 255, 0, 0.08);
-            }
-            50% {
-                box-shadow: 0 0 22px rgba(0, 255, 0, 0.55),
-                            inset 0 0 14px rgba(0, 255, 0, 0.14);
-            }
-        }
-
-        /* === Searchable ticker combobox === */
-        .osiris-combobox {
-            position: relative;
-            width: 100%;
-        }
-        .osiris-combobox-input-wrapper {
-            display: flex;
-            align-items: center;
-            background: rgba(0, 30, 0, 0.4);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            border-radius: 4px;
-            padding: 0 12px;
-            height: 40px;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-            cursor: text;
-        }
-        .osiris-combobox-input-wrapper:focus-within {
-            border-color: var(--accent-green);
-            box-shadow: 0 0 12px rgba(0, 255, 0, 0.25);
-        }
-        .osiris-combobox-icon {
-            color: rgba(0, 255, 0, 0.5);
-            font-size: 1em;
-            margin-right: 8px;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .osiris-combobox-input {
-            background: transparent;
-            border: none;
-            outline: none;
-            flex: 1;
-            color: var(--accent-green);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9em;
-            letter-spacing: 0.5px;
-        }
-        .osiris-combobox-input::placeholder {
-            color: rgba(0, 255, 0, 0.35);
-            letter-spacing: 1px;
-        }
-        .osiris-combobox-chevron {
-            color: rgba(0, 255, 0, 0.5);
-            margin-left: 8px;
-            font-size: 0.7em;
-            transition: transform 0.2s ease;
-        }
-        .osiris-combobox.is-open .osiris-combobox-chevron {
-            transform: rotate(180deg);
-        }
-        .osiris-combobox-panel {
-            position: absolute;
-            top: calc(100% + 6px);
-            left: 0;
-            right: 0;
-            background: rgba(0, 18, 0, 0.97);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            border-radius: 4px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5),
-                        0 0 20px rgba(0, 255, 0, 0.15);
-            z-index: 100;
-            overflow: hidden;
-        }
-        .osiris-combobox-chips {
-            display: flex;
-            gap: 6px;
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.15);
-        }
-        .osiris-chip {
-            background: transparent;
-            color: rgba(0, 255, 0, 0.6);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            padding: 4px 10px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.7em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            border-radius: 3px;
-            transition: all 0.2s ease;
-        }
-        .osiris-chip:hover {
-            background: rgba(0, 255, 0, 0.1);
-            color: var(--accent-green);
-        }
-        .osiris-chip.active {
-            background: rgba(0, 255, 0, 0.18);
-            color: var(--accent-green);
-            border-color: var(--accent-green);
-            box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
-        }
-        .osiris-combobox-list {
-            max-height: 340px;
-            overflow-y: auto;
-            list-style: none;
-            margin: 0;
-            padding: 4px 0;
-        }
-        .osiris-combobox-item {
-            display: grid;
-            grid-template-columns: 100px 1fr auto;
-            gap: 10px;
-            align-items: center;
-            padding: 8px 14px;
-            cursor: pointer;
-            transition: background 0.15s ease;
-            border-left: 2px solid transparent;
-        }
-        .osiris-combobox-item.is-active {
-            background: rgba(0, 255, 0, 0.1);
-            border-left-color: var(--accent-green);
-        }
-        .osiris-combobox-item-ticker {
-            color: var(--accent-green);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9em;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .osiris-combobox-item-name {
-            color: rgba(255, 255, 255, 0.78);
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.82em;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .osiris-combobox-item-cohort {
-            color: rgba(0, 255, 0, 0.5);
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.62em;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            white-space: nowrap;
-        }
-        .osiris-combobox-empty {
-            padding: 18px;
-            text-align: center;
-            color: rgba(0, 255, 0, 0.4);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85em;
-        }
-        .osiris-combobox-list::-webkit-scrollbar { width: 8px; }
-        .osiris-combobox-list::-webkit-scrollbar-track { background: rgba(0, 30, 0, 0.5); }
-        .osiris-combobox-list::-webkit-scrollbar-thumb {
-            background: rgba(0, 255, 0, 0.3);
-            border-radius: 4px;
-        }
-        .osiris-combobox-list::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 255, 0, 0.5);
-        }
-
-        .time-pill.active,
-        .hifi-pill.active,
-        #osiris-hifi-toggle.active {
-            background: rgba(0, 255, 0, 0.2);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
-            border-color: #0f0;
-        }
-
-        /* HI-FI controls are desktop-only — orchestrator stamps
-           data-device on <body> at init time. */
-        body[data-device='mobile'] .osiris-hifi { display: none !important; }
-
-        .canvas-wrapper {
-            position: relative;
-            width: 100%;
-            height: 500px;
-            border: 1px solid var(--accent-green);
-            background: #0a0a0a;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
-            overflow: hidden;
-        }
-
-        #osiris-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        .oracle-terminal {
-            background: rgba(0, 10, 0, 0.9);
-            border: 1px solid var(--accent-green);
-            padding: 20px;
-            min-height: 120px;
-            position: relative;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
-        }
-
-        .oracle-header {
-            position: absolute;
-            top: -10px;
-            left: 20px;
-            background: #000;
-            padding: 0 10px;
-            color: var(--accent-green);
-            font-family: monospace;
-            font-size: 0.8em;
-            letter-spacing: 2px;
-        }
-
-        #oracle-readout {
-            font-family: monospace;
-            color: var(--accent-green);
-            line-height: 1.6;
-            font-size: 1.05em;
-        }
-
-        /* === Ambient background layers ========================================
-           Two layers behind <main>, both pointer-events:none:
-             1. .osiris-bg-matrix   — falling-character animation (canvas)
-             2. .osiris-bg-vignette — radial darkening so the corners frame the
-                                      controls panel rather than competing.
-           Vertical falling chars deliberately avoid any horizontal-path motion
-           so they don't visually compete with the simulation graph itself. */
-        .osiris-bg-matrix,
-        .osiris-bg-vignette {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .osiris-bg-matrix {
-            opacity: 1;
-        }
-        .osiris-bg-vignette {
-            background: radial-gradient(ellipse 80% 60% at 50% 42%,
-                                        transparent 0%,
-                                        rgba(0, 0, 0, 0.35) 95%);
-        }
-        main {
-            position: relative;
-            z-index: 1;
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .osiris-bg-matrix { display: none; }
-        }
-
-        /* === Mobile layout (≤768px) ============================================
-           Several wrappers use inline `style="..."` (highest specificity), so
-           overriding them from CSS requires !important. Scoped strictly to the
-           viewport breakpoint — desktop behaviour is unchanged. */
-        @media (max-width: 768px) {
-            /* Skip the matrix-rain canvas on mobile (battery + clutter). The
-               vignette stays — it costs nothing and the dark edges still help
-               focus the controls. */
-            .osiris-bg-matrix { display: none; }
-            .osiris-container {
-                padding: 24px 12px;
-                gap: 16px;
-            }
-            .osiris-title {
-                font-size: 1.8em;
-                letter-spacing: 2px;
-            }
-            .osiris-subtitle {
-                font-size: 0.7em;
-                letter-spacing: 1px;
-            }
-            .osiris-header {
-                padding-bottom: 14px;
-                margin-bottom: 14px;
-            }
-            .osiris-controls-wrapper {
-                padding: 14px !important;
-            }
-            /* Top row: stack the combobox above the INITIATE button instead of
-               side-by-side. On narrow screens they overlap otherwise. */
-            .osiris-controls {
-                flex-direction: column !important;
-                align-items: stretch !important;
-                gap: 12px !important;
-                margin-bottom: 14px !important;
-            }
-            #osiris-trigger-btn {
-                width: 100%;
-                padding: 12px 16px !important;
-                font-size: 0.82em !important;
-                letter-spacing: 1.5px !important;
-                height: auto !important;
-            }
-            /* Phase 2 dropdowns — collapse the 2-column grid to a stack. */
-            .osiris-phase2 {
-                grid-template-columns: 1fr !important;
-                gap: 14px !important;
-            }
-            /* Time-horizon pills row — two pills per line on narrow screens
-               (4 pills × wide labels = overflow); custom-days input takes a
-               full row of its own. */
-            .time-pill {
-                padding: 6px 10px !important;
-                font-size: 0.75em !important;
-                flex: 1 1 calc(50% - 10px) !important;
-                min-width: 0;
-            }
-            #osiris-custom-days {
-                flex: 1 1 100% !important;
-                width: 100% !important;
-                max-width: none !important;
-            }
-            /* Advanced Greek sliders — collapse 3-col to stacked. */
-            .osiris-sliders {
-                grid-template-columns: 1fr !important;
-                gap: 16px !important;
-            }
-            /* Combobox: tighten result rows so ticker · name · cohort still
-               fit at 360-ish viewport widths without overlap. */
-            .osiris-combobox-item {
-                grid-template-columns: 78px 1fr auto;
-                gap: 8px;
-                padding: 8px 10px;
-            }
-            .osiris-combobox-item-name {
-                font-size: 0.78em;
-            }
-            .osiris-combobox-item-cohort {
-                font-size: 0.55em;
-                letter-spacing: 0.5px;
-            }
-            .osiris-combobox-chips {
-                flex-wrap: wrap;
-            }
-            .osiris-combobox-list {
-                max-height: 280px;
-            }
-            #osiris-metadata-readout {
-                font-size: 0.75em !important;
-                margin-bottom: 14px !important;
-                line-height: 1.5;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="osiris.min.css">
 </head>
 
 <body>
@@ -495,7 +43,7 @@
 
             <div class="osiris-controls-wrapper" style="background: #0d1a0d; border: 1px solid rgba(57, 255, 20, 0.3); padding: 20px; border-radius: 4px; box-shadow: 0 0 24px rgba(57, 255, 20, 0.12);">
                 <div class="osiris-controls" style="display: flex; gap: 20px; align-items: flex-end; margin-bottom: 20px; border: none; padding: 0; background: transparent;">
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 5px; width: 100%;">
                         <label for="osiris-combobox-input" style="color: var(--accent-green); font-family: monospace; font-size: 0.9em;">TARGET TICKER:</label>
 
                         <div id="osiris-ticker-combobox" class="osiris-combobox">
@@ -586,7 +134,7 @@
                                 <option value="DAL">DAL - Delta Air Lines</option>
                                 <option value="DE">DE - Deere &amp; Co</option>
                                 <option value="DHL.DE">DHL.DE - DHL Group</option>
-                                <option value="EMBJ3.SA">EMBJ3.SA - Embraer</option>
+                                <option value="EMBR3.SA">EMBR3.SA - Embraer</option>
                                 <option value="EMR">EMR - Emerson Electric</option>
                                 <option value="ETN">ETN - Eaton Corp</option>
                                 <option value="GD">GD - General Dynamics</option>
@@ -613,7 +161,6 @@
                             </optgroup>
                         </select>
                     </div>
-                    <button id="osiris-trigger-btn" class="osiris-btn osiris-btn-primary" style="height: 44px;">▶ INITIATE SIMULATION</button>
                 </div>
 
                 <div id="osiris-metadata-readout" style="font-family: monospace; color: rgba(0, 200, 255, 0.8); font-size: 0.85em; margin-bottom: 20px; letter-spacing: 1px;">
@@ -704,6 +251,8 @@
                         </div>
                     </details>
                 </div>
+
+                <button id="osiris-trigger-btn" class="osiris-btn osiris-btn-primary" style="margin-top: 24px; width: 100%; padding: 14px; font-size: 1em; letter-spacing: 3px;">▶ INITIATE SIMULATION</button>
             </div>
 
             <div class="canvas-wrapper">
@@ -749,6 +298,8 @@
             const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789{}<>/*+-';
             let cssW = 0, cssH = 0;
             let columns = [];
+            let rafId = null;
+            let isVisible = false;
 
             function setup() {
                 const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -761,8 +312,6 @@
                 ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
                 ctx.font = FONT_SIZE + 'px monospace';
                 ctx.textBaseline = 'top';
-                // Start the canvas opaque-black so the trailing-fade
-                // technique works immediately on the first frame.
                 ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, cssW, cssH);
 
@@ -770,12 +319,8 @@
                 columns = [];
                 for (let i = 0; i < cols; i++) {
                     columns.push({
-                        // Start each column at a random vertical offset so
-                        // they don't all begin in sync at the top.
                         y: Math.floor(Math.random() * (cssH / FONT_SIZE)),
                         next: 0,
-                        // Per-column cadence so the rain feels organic, not
-                        // a uniform marching band.
                         cadence: 80 + Math.random() * 180
                     });
                 }
@@ -784,8 +329,7 @@
             window.addEventListener('resize', setup);
 
             function frame(now) {
-                // Trailing fade — overlay slight black each frame so existing
-                // characters fade out smoothly behind the falling head.
+                if (!isVisible) { rafId = null; return; }
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
                 ctx.fillRect(0, 0, cssW, cssH);
                 ctx.fillStyle = 'rgba(120, 230, 120, 0.85)';
@@ -796,17 +340,21 @@
                     const ch = CHARS[Math.floor(Math.random() * CHARS.length)];
                     ctx.fillText(ch, i * COL_WIDTH, c.y * FONT_SIZE);
                     c.y += 1;
-                    // Once past the bottom, occasionally reset to the top so
-                    // columns stagger naturally over time.
                     if (c.y * FONT_SIZE > cssH && Math.random() > 0.975) {
                         c.y = 0;
                         c.cadence = 80 + Math.random() * 180;
                     }
                     c.next = now + c.cadence;
                 }
-                requestAnimationFrame(frame);
+                rafId = requestAnimationFrame(frame);
             }
-            requestAnimationFrame(frame);
+
+            // Pause the RAF loop when the canvas is scrolled out of view
+            const observer = new IntersectionObserver(entries => {
+                isVisible = entries[0].isIntersecting;
+                if (isVisible && !rafId) rafId = requestAnimationFrame(frame);
+            }, { threshold: 0.01 });
+            observer.observe(canvas);
         })();
     </script>
 

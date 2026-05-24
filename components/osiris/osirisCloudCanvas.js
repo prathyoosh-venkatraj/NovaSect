@@ -8,13 +8,14 @@ export class OsirisCloudCanvas {
         this.canvas = canvasElement;
         this.ctx = this.canvas.getContext('2d', { alpha: false }); // Optimize for opaque background
         
-        // Define NovaSect Monochromatic Palette
+        // Define NovaSect Palette
         this.colors = {
             background: '#0a0a0a',
-            p05_95_stroke: 'rgba(0, 255, 0, 0.2)',
+            p05_stroke: 'rgba(255, 68, 68, 0.55)',    // red  — downside / stress floor
+            p95_stroke: 'rgba(0, 255, 136, 0.55)',    // teal — upside ceiling
             p25_75_fill: 'rgba(0, 255, 0, 0.1)',
             p25_75_stroke: 'rgba(0, 255, 0, 0.4)',
-            p50_stroke: '#00ff00',
+            p50_stroke: '#00ff00',                     // neon green — median
             gridLines: 'rgba(0, 255, 0, 0.1)',
             axisText: 'rgba(0, 255, 0, 0.6)',
             text: '#00ff00',
@@ -256,7 +257,7 @@ export class OsirisCloudCanvas {
             this._drawFilledBand(percentiles.p55, percentiles.p45, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.15)');
         }
 
-        // P05 & P95 outer boundary strokes (dashed)
+        // P05 & P95 outer boundary strokes (dashed, distinct colours)
         const path05 = new Path2D();
         const path95 = new Path2D();
         for (let i = 0; i <= maxSteps; i++) {
@@ -265,14 +266,15 @@ export class OsirisCloudCanvas {
             if (i === 0) { path05.moveTo(pt05.x, pt05.y); path95.moveTo(pt95.x, pt95.y); }
             else { path05.lineTo(pt05.x, pt05.y); path95.lineTo(pt95.x, pt95.y); }
         }
-        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
         this.ctx.lineWidth = 1;
         this.ctx.setLineDash([5, 5]);
-        this.ctx.stroke(path05);
+        this.ctx.strokeStyle = this.colors.p95_stroke;
         this.ctx.stroke(path95);
+        this.ctx.strokeStyle = this.colors.p05_stroke;
+        this.ctx.stroke(path05);
         this.ctx.setLineDash([]);
 
-        // P50 Median (bold glow)
+        // P50 Median (bold glow — neon green)
         const path50 = new Path2D();
         for (let i = 0; i <= maxSteps; i++) {
             const pt50 = this._mapPoint(i, percentiles.p50[i], maxSteps, minValue, maxValue);
@@ -315,23 +317,23 @@ export class OsirisCloudCanvas {
     _drawTerminalBadges(percentiles, maxSteps, minValue, maxValue) {
         this.ctx.font = '10px monospace';
         this.ctx.textAlign = 'left';
-        
+
         const badges = [
-            { val: percentiles.p95[maxSteps], label: 'P95' },
-            { val: percentiles.p50[maxSteps], label: 'P50' },
-            { val: percentiles.p05[maxSteps], label: 'P05' }
+            { val: percentiles.p95[maxSteps], label: 'P95', color: this.colors.p95_stroke },
+            { val: percentiles.p50[maxSteps], label: 'P50', color: this.colors.p50_stroke },
+            { val: percentiles.p05[maxSteps], label: 'P05', color: this.colors.p05_stroke }
         ];
 
         badges.forEach(b => {
             const pt = this._mapPoint(maxSteps, b.val, maxSteps, minValue, maxValue);
             this.ctx.fillStyle = 'rgba(0,0,0,0.8)';
-            this.ctx.strokeStyle = this.colors.text;
+            this.ctx.strokeStyle = b.color;
             this.ctx.lineWidth = 1;
             const badgeW = 45;
             const badgeH = 16;
             this.ctx.fillRect(pt.x + 5, pt.y - 8, badgeW, badgeH);
             this.ctx.strokeRect(pt.x + 5, pt.y - 8, badgeW, badgeH);
-            this.ctx.fillStyle = this.colors.text;
+            this.ctx.fillStyle = b.color;
             this.ctx.fillText(b.val.toFixed(2), pt.x + 10, pt.y + 4);
         });
     }
@@ -370,7 +372,7 @@ export class OsirisCloudCanvas {
             this._drawFilledBand(percentiles.p55, percentiles.p45, maxSteps, minValue, maxValue, 'rgba(0, 255, 0, 0.15)');
         }
 
-        // ── 3. Outer Boundary Strokes (P05 & P95 dashed) ──────────────
+        // ── 3. Outer Boundary Strokes (P05 red · P95 teal, dashed) ───
         const path05 = new Path2D();
         const path95 = new Path2D();
         for (let i = 0; i <= maxSteps; i++) {
@@ -379,11 +381,12 @@ export class OsirisCloudCanvas {
             if (i === 0) { path05.moveTo(pt05.x, pt05.y); path95.moveTo(pt95.x, pt95.y); }
             else { path05.lineTo(pt05.x, pt05.y); path95.lineTo(pt95.x, pt95.y); }
         }
-        this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
         this.ctx.lineWidth = 1;
         this.ctx.setLineDash([5, 5]);
-        this.ctx.stroke(path05);
+        this.ctx.strokeStyle = this.colors.p95_stroke;
         this.ctx.stroke(path95);
+        this.ctx.strokeStyle = this.colors.p05_stroke;
+        this.ctx.stroke(path05);
         this.ctx.setLineDash([]);
 
         // ── 4. P50 Median (bold glow) ──────────────────────────────────
@@ -467,13 +470,13 @@ export class OsirisCloudCanvas {
         this.ctx.stroke();
         this.ctx.setLineDash([]);
 
-        // Percentile readout labels
+        // Percentile readout labels — match line colours on the chart
         const levels = [
-            { key: 'p95', label: 'P95', color: 'rgba(0, 255, 0, 0.5)' },
-            { key: 'p75', label: 'P75', color: 'rgba(0, 255, 0, 0.4)' },
-            { key: 'p50', label: 'P50', color: '#00ff00' },
-            { key: 'p25', label: 'P25', color: 'rgba(0, 255, 0, 0.4)' },
-            { key: 'p05', label: 'P05', color: 'rgba(0, 255, 0, 0.5)' }
+            { key: 'p95', label: 'P95', color: this.colors.p95_stroke },
+            { key: 'p75', label: 'P75', color: 'rgba(0, 255, 136, 0.5)' },
+            { key: 'p50', label: 'P50', color: this.colors.p50_stroke },
+            { key: 'p25', label: 'P25', color: 'rgba(255, 68, 68, 0.5)' },
+            { key: 'p05', label: 'P05', color: this.colors.p05_stroke }
         ];
 
         this.ctx.font = '9px monospace';

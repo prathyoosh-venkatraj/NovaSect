@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Company Report - NovaSect</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         /* Mobile Switcher */
         .mobile-pdf-container {
@@ -1401,13 +1400,21 @@
         </div>
     </section>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="script.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script defer src="script.min.js"></script>
     <script type="module">
         // FinVault report.html script — converted to a module so it can pull
         // live ticker metrics from osirisIngestion (shared IndexedDB cache,
         // no extra API calls beyond what Osiris already does on a 24h TTL).
         import { osirisIngestion } from './components/osiris/osirisIngestion.js';
+
+        function loadPdfJs(cb) {
+            if (window.pdfjsLib) { cb(); return; }
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+            s.onload = cb;
+            document.head.appendChild(s);
+        }
 
         // Company profile data — hand-curated description + approximate
         // revenue-segment mix per company. Values are starter content based
@@ -2475,7 +2482,7 @@
                             bookValuePerShare: 48,
                             fundamentalsLastVerified: '2026-05'
                         },
-                        stats: ['1.15', '0.76', '0.72', '0.68', '0.16', '0.406', '69.4x', '7.4x', '7.3x', '3.0x', '0.72', '12.6%', '8.7%', '6.4%', '10.7%']
+                        stats: ['1.15', '0.76', '0.72', '0.68', '0.16', '0.406', '17.2x', '7.4x', '7.3x', '3.0x', '0.72', '12.6%', '8.7%', '6.4%', '10.7%']
                     },
                     'iberdrola': {
                         name: 'Iberdrola',
@@ -2604,7 +2611,7 @@
                         ticker: 'XETR:RHM',
                         debtMaturity: { year: 2027, amount: '€750m', label: 'Senior Unsecured Notes' },
                         fundamentals: {
-                            trailingEPS: 36.09,
+                            trailingEPS: 19.80,
                             forwardEPS: 53.42,
                             fcfPerShare: 51.20,
                             dividendAmount: 11.50,
@@ -2613,11 +2620,9 @@
                             ebitdaTTM: 2000,
                             revenueTTM: 10000,
                             bookValuePerShare: 90,
-                            // trailingEPS 36.09 looks high vs FY24 reported
-                            // (~€15-18). Flagged as unverified for next refresh.
-                            fundamentalsLastVerified: '2025-01-01'
+                            fundamentalsLastVerified: '2026-05'
                         },
-                        stats: ['1.44', '0.89', '0.30', '1.23', '0.31', '0.14', '17.1x', '4.71x', '19.5x', '14.81x', '0.93x', '10.2%', '8.0%', '7.4%', '17.7%']
+                        stats: ['1.44', '0.89', '0.30', '1.23', '0.31', '0.14', '43.1x', '4.71x', '19.5x', '14.81x', '0.93x', '10.2%', '8.0%', '7.4%', '17.7%']
                     }
                 };
 
@@ -2709,7 +2714,7 @@
                     ['7011-t',      'Mitsubishi Heavy',     'TSE:7011',          'Industrials', '7011.T'],
                     ['6301-t',      'Komatsu',              'TSE:6301',          'Industrials', '6301.T'],
                     ['lt-ns',       'Larsen & Toubro',      'NSE:LT',            'Industrials', 'LT.NS'],
-                    ['embj3-sa',    'Embraer',              'BMFBOVESPA:EMBJ3',  'Industrials', 'EMBJ3.SA'],
+                    ['embr3-sa',    'Embraer',              'BMFBOVESPA:EMBR3',  'Industrials', 'EMBR3.SA'],
                     ['atco-a-st',   'Atlas Copco',          'OMXSTO:ATCO_A',     'Industrials', 'ATCO-A.ST'],
                     ['volv-b-st',   'Volvo Group',          'OMXSTO:VOLV_B',     'Industrials', 'VOLV-B.ST'],
                     ['hwm',         'Howmet Aerospace',     'NYSE:HWM',          'Industrials', null],
@@ -2797,36 +2802,37 @@
                         });
                     }
 
-                    // Mobile PDF Swipe Loader
+                    // Mobile PDF Swipe Loader — PDF.js is loaded on demand
                     if (window.innerWidth <= 1024 && data.pdf) {
-                        const pdfPagesContainer = document.getElementById('pdf-pages');
-                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-                        
-                        pdfjsLib.getDocument(data.pdf).promise.then(pdf => {
-                            // Render pages sequentially for better order
-                            async function renderPages() {
-                                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                                    const page = await pdf.getPage(pageNum);
-                                    const viewport = page.getViewport({ scale: 1.5 });
-                                    const wrapper = document.createElement('div');
-                                    wrapper.className = 'pdf-page-wrapper';
-                                    
-                                    const canvas = document.createElement('canvas');
-                                    canvas.className = 'pdf-page-canvas';
-                                    const context = canvas.getContext('2d');
-                                    canvas.height = viewport.height;
-                                    canvas.width = viewport.width;
-                                    
-                                    wrapper.appendChild(canvas);
-                                    pdfPagesContainer.appendChild(wrapper);
-                                    
-                                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                        loadPdfJs(() => {
+                            const pdfPagesContainer = document.getElementById('pdf-pages');
+                            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+                            pdfjsLib.getDocument(data.pdf).promise.then(pdf => {
+                                async function renderPages() {
+                                    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                                        const page = await pdf.getPage(pageNum);
+                                        const viewport = page.getViewport({ scale: 1.5 });
+                                        const wrapper = document.createElement('div');
+                                        wrapper.className = 'pdf-page-wrapper';
+
+                                        const canvas = document.createElement('canvas');
+                                        canvas.className = 'pdf-page-canvas';
+                                        const context = canvas.getContext('2d');
+                                        canvas.height = viewport.height;
+                                        canvas.width = viewport.width;
+
+                                        wrapper.appendChild(canvas);
+                                        pdfPagesContainer.appendChild(wrapper);
+
+                                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                                    }
                                 }
-                            }
-                            renderPages();
-                        }).catch(err => {
-                            console.error('PDF Load Error:', err);
-                            pdfPagesContainer.innerHTML = '<p style="color: white; padding: 2rem;">Unable to load preview. Please use a desktop for full report.</p>';
+                                renderPages();
+                            }).catch(err => {
+                                console.error('PDF Load Error:', err);
+                                pdfPagesContainer.innerHTML = '<p style="color: white; padding: 2rem;">Unable to load preview. Please use a desktop for full report.</p>';
+                            });
                         });
                     } else if (window.innerWidth <= 1024 && !data.pdf) {
                         // Skeleton report on mobile — show placeholder.
