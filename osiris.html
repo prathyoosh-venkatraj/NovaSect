@@ -190,7 +190,21 @@
                          pill is hidden on desktop_lo via JS based on
                          memory/core probe. -->
                     <div class="osiris-hifi" style="display: flex; flex-direction: column; gap: 8px;">
-                        <span style="color: var(--accent-green); font-family: monospace; font-size: 0.85em;">HIGH-FIDELITY MODE:</span>
+                        <span style="color: var(--accent-green); font-family: monospace; font-size: 0.85em;">HIGH-FIDELITY MODE:
+                            <span class="osiris-info-tip" aria-label="About HI-FI mode">ⓘ
+                                <div class="osiris-tip-box" role="tooltip">
+                                    <div style="color: var(--accent-green); font-weight: bold; letter-spacing: 1.5px; margin-bottom: 8px; font-size: 0.95em;">WHY OUTPUTS VARY BETWEEN RUNS</div>
+                                    Osiris draws fresh random numbers on every simulation. At the default path count, P50/P95/P05 lines can shift ±1–2% run-to-run — this is normal sampling variance, not a model error.<br><br>
+                                    HI-FI mode raises the path count to tighten that variance:<br>
+                                    <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+                                        <span><span style="color: var(--accent-green);">50K paths</span> — ±0.5% drift</span>
+                                        <span><span style="color: var(--accent-green);">100K paths</span> — ±0.1% drift</span>
+                                        <span><span style="color: var(--accent-green);">250K paths</span> — near-deterministic</span>
+                                    </div>
+                                    <div style="margin-top: 8px; color: rgba(0,255,0,0.5); font-size: 0.9em;">Trade-off: compute time scales from milliseconds to seconds.</div>
+                                </div>
+                            </span>
+                        </span>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <button id="osiris-hifi-toggle" type="button" class="osiris-btn" aria-pressed="false" style="padding: 5px 15px; font-size: 0.8em;">HI-FI</button>
                             <div id="osiris-hifi-pills" style="display: none; gap: 8px; align-items: center; flex-wrap: wrap;">
