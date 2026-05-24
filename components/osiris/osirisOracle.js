@@ -136,7 +136,7 @@ export class OsirisOracle {
         badgeRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:12px;';
 
         const badges = [
-            { label: 'Upside Ceiling', sub: 'Top 5%', value: p95, color: '#00ff88' },
+            { label: 'Upside Ceiling', sub: 'Top 5%', value: p95, color: '#0096ff' },
             { label: 'Expected Value', sub: 'Most Likely', value: p50, color: '#00ff00' },
             { label: 'Stress Floor', sub: 'Bottom 5%', value: p05, color: '#ff4444' }
         ];

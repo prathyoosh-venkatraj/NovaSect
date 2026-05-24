@@ -12,7 +12,7 @@ export class OsirisCloudCanvas {
         this.colors = {
             background: '#0a0a0a',
             p05_stroke: 'rgba(255, 68, 68, 0.55)',    // red  — downside / stress floor
-            p95_stroke: 'rgba(0, 255, 136, 0.55)',    // teal — upside ceiling
+            p95_stroke: 'rgba(0, 150, 255, 0.65)',    // blue — upside ceiling
             p25_75_fill: 'rgba(0, 255, 0, 0.1)',
             p25_75_stroke: 'rgba(0, 255, 0, 0.4)',
             p50_stroke: '#00ff00',                     // neon green — median
@@ -473,7 +473,7 @@ export class OsirisCloudCanvas {
         // Percentile readout labels — match line colours on the chart
         const levels = [
             { key: 'p95', label: 'P95', color: this.colors.p95_stroke },
-            { key: 'p75', label: 'P75', color: 'rgba(0, 255, 136, 0.5)' },
+            { key: 'p75', label: 'P75', color: 'rgba(0, 150, 255, 0.5)' },
             { key: 'p50', label: 'P50', color: this.colors.p50_stroke },
             { key: 'p25', label: 'P25', color: 'rgba(255, 68, 68, 0.5)' },
             { key: 'p05', label: 'P05', color: this.colors.p05_stroke }
