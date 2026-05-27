@@ -603,6 +603,43 @@ async function runAutoCalibration() {
     }
 }
 
+// --- Live Fundamentals (Finnhub stock/metric) ---
+// Tickers with exchange suffixes (e.g. .MC, .MI, .DE, .PA, .L) are EU-listed;
+// Finnhub free tier does not cover them so we skip rather than waste a call.
+let _fundamentalsStagger = 0;
+
+async function loadFundamentals(company) {
+    if (company._fundamentalsLoaded) return;
+    if (company.netLeverage !== null && company.interestCoverage !== null) return;
+    if (company.ticker.includes('.')) return;
+    company._fundamentalsLoaded = true;
+    const myDelay = (_fundamentalsStagger++) * 2200;
+    if (myDelay > 0) await new Promise(r => setTimeout(r, myDelay));
+    try {
+        const r = await fetch(`/api/finnhub-proxy?endpoint=stock%2Fmetric&symbol=${encodeURIComponent(company.ticker)}&metric=all`);
+        if (!r.ok) return;
+        const data = await r.json();
+        const m = data?.metric;
+        if (!m) return;
+        if (company.interestCoverage === null) {
+            const ic = m['netInterestCoverageAnnual'] ?? m['interestCoverageAnnual'];
+            if (typeof ic === 'number' && isFinite(ic)) company.interestCoverage = ic;
+        }
+        if (company.netLeverage === null) {
+            const nd = m['netDebtAnnual'], eb = m['ebitdaAnnual'];
+            if (typeof nd === 'number' && typeof eb === 'number' && eb > 0) {
+                company.netLeverage = nd / eb;
+            }
+        }
+        const card = document.getElementById(`card-${company.ticker}`);
+        if (!card) return;
+        const nlEl = card.querySelector('.net-leverage-val');
+        const icEl = card.querySelector('.int-coverage-val');
+        if (nlEl) nlEl.textContent = company.netLeverage !== null ? company.netLeverage.toFixed(1) + 'x' : '—';
+        if (icEl) icEl.textContent = company.interestCoverage !== null ? company.interestCoverage.toFixed(1) + 'x' : '—';
+    } catch (_) {}
+}
+
 // --- 30-Day G-Spread History (Vercel KV) ---
 
 function tryPostDailySpread(company, spread) {
@@ -918,6 +955,7 @@ async function updateCardData(ticker) {
 
     tryPostDailySpread(company, spread);
     loadSparkline(company);
+    loadFundamentals(company);
 
     const lastCalibrated = card.querySelector('.last-calibrated');
     const marketPulse = card.querySelector('.market-pulse-badge');
