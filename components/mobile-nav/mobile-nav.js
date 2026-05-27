@@ -77,10 +77,11 @@
 }
 
 @media (max-width: 768px) {
-    /* Show the hamburger; hide the desktop Tools dropdown + About us. */
+    /* Show the hamburger; hide all desktop nav items including Aurum button. */
     .mobile-hamburger { display: inline-flex; align-items: center; justify-content: center; }
     .nav-links > .nav-dropdown,
-    .nav-links > a.nav-link {
+    .nav-links > a.nav-link,
+    .nav-links > .aurum-nav-btn {
         display: none !important;
     }
 }
@@ -119,7 +120,9 @@
             '<a href="reports.html" role="menuitem">FinVault</a>',
             '<a href="osiris.html" role="menuitem">Osiris</a>',
             '<div class="mobile-menu-divider"></div>',
-            '<a href="about.html" role="menuitem">About us</a>'
+            '<a href="about.html" role="menuitem">About us</a>',
+            '<div class="mobile-menu-divider"></div>',
+            '<a href="https://aurum.novasect.space" role="menuitem" target="_blank" rel="noopener noreferrer">Aurum ↗</a>'
         ].join('');
 
         wrap.appendChild(btn);
