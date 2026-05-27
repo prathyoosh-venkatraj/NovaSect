@@ -12,6 +12,39 @@
         rel="stylesheet">
     <link rel="stylesheet" href="style.min.css">
     <link rel="stylesheet" href="osiris.min.css">
+    <style>
+        .osiris-cross-link {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.68rem;
+            color: rgba(57,255,20,0.6); text-decoration: none;
+            letter-spacing: 1.5px; border: 1px solid rgba(57,255,20,0.25);
+            padding: 3px 10px; border-radius: 2px; margin-left: 8px;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .osiris-cross-link:hover {
+            color: #39FF14; border-color: rgba(57,255,20,0.7);
+            background: rgba(57,255,20,0.07);
+        }
+        .osiris-backtest-badge {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.72rem;
+            letter-spacing: 1px; color: rgba(57,255,20,0.75);
+            border: 1px solid rgba(57,255,20,0.18);
+            padding: 11px 16px; border-radius: 3px;
+            background: rgba(57,255,20,0.025);
+            margin: 14px auto 0; max-width: 720px;
+        }
+        .osiris-backtest-badge-header {
+            color: rgba(57,255,20,0.45); font-size: 0.6rem; letter-spacing: 2.5px;
+            margin-bottom: 7px; border-bottom: 1px solid rgba(57,255,20,0.1);
+            padding-bottom: 5px;
+        }
+        .osiris-backtest-badge-metrics {
+            display: flex; gap: 22px; flex-wrap: wrap;
+        }
+        .osiris-backtest-badge-metrics span { white-space: nowrap; }
+        .osiris-backtest-val { color: #39FF14; }
+        .osiris-backtest-val.warn { color: #FFD700; }
+    </style>
   <!-- Umami Analytics: replace value with your NovaSect Website ID from umami.is -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="134ef845-3a61-49b4-b2f2-1a954fc62467"></script>
   <!-- Sentry Error Tracking -->
@@ -69,6 +102,7 @@
                                     <button type="button" class="osiris-chip active" data-cohort="all">All</button>
                                     <button type="button" class="osiris-chip" data-cohort="energy_and_utilities">Energy / Util</button>
                                     <button type="button" class="osiris-chip" data-cohort="industrials_and_defense">Industrials</button>
+                                    <button type="button" class="osiris-chip" data-cohort="consumer_staples">Staples</button>
                                 </div>
                                 <ul id="osiris-combobox-list" class="osiris-combobox-list" role="listbox"></ul>
                             </div>
@@ -163,12 +197,42 @@
                                 <option value="VOLV-B.ST">VOLV-B.ST - Volvo Group</option>
                                 <option value="VOW3.DE">VOW3.DE - Volkswagen</option>
                             </optgroup>
+                            <optgroup label="CONSUMER STAPLES // OU MEAN-REVERSION">
+                                <option value="PG">PG - Procter &amp; Gamble</option>
+                                <option value="KO">KO - Coca-Cola</option>
+                                <option value="PEP">PEP - PepsiCo</option>
+                                <option value="NESN.SW">NESN.SW - Nestlé</option>
+                                <option value="ULVR.L">ULVR.L - Unilever</option>
+                                <option value="WMT">WMT - Walmart</option>
+                                <option value="COST">COST - Costco Wholesale</option>
+                                <option value="PM">PM - Philip Morris</option>
+                                <option value="MO">MO - Altria Group</option>
+                                <option value="BATS.L">BATS.L - BAT</option>
+                                <option value="DGE.L">DGE.L - Diageo</option>
+                                <option value="BUD">BUD - AB InBev</option>
+                                <option value="OR.PA">OR.PA - L'Oréal</option>
+                                <option value="BN.PA">BN.PA - Danone</option>
+                                <option value="HEIA.AS">HEIA.AS - Heineken</option>
+                                <option value="CL">CL - Colgate-Palmolive</option>
+                                <option value="KMB">KMB - Kimberly-Clark</option>
+                                <option value="GIS">GIS - General Mills</option>
+                                <option value="MDLZ">MDLZ - Mondelez Intl</option>
+                                <option value="KHC">KHC - Kraft Heinz</option>
+                                <option value="HINDUNILVR.NS">HINDUNILVR.NS - Hindustan Unilever</option>
+                                <option value="RKT.L">RKT.L - Reckitt</option>
+                                <option value="HEN3.DE">HEN3.DE - Henkel AG</option>
+                                <option value="HSY">HSY - Hershey Co</option>
+                                <option value="CPB">CPB - Campbell Soup</option>
+                            </optgroup>
                         </select>
                     </div>
                 </div>
 
-                <div id="osiris-metadata-readout" style="font-family: monospace; color: rgba(0, 200, 255, 0.8); font-size: 0.85em; margin-bottom: 20px; letter-spacing: 1px;">
+                <div id="osiris-metadata-readout" style="font-family: monospace; color: rgba(0, 200, 255, 0.8); font-size: 0.85em; margin-bottom: 8px; letter-spacing: 1px;">
                     TETHERED HUB: BRENT CRUDE BASIS
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <a id="osiris-finvault-link" class="osiris-cross-link" href="#" style="display:none;">▶ VIEW FINVAULT REPORT</a>
                 </div>
 
                 <!-- UX Abstraction Refactor -->
@@ -281,6 +345,15 @@
                 <div class="oracle-header">OSIRIS INFERENCE</div>
                 <div id="oracle-readout">
                     > SYSTEM STANDBY. AWAITING SIMULATION PARAMETERS... <span class="blinking-cursor">_</span>
+                </div>
+            </div>
+
+            <div id="osiris-backtest-badge" class="osiris-backtest-badge" style="display:none;">
+                <div class="osiris-backtest-badge-header">HISTORICAL BACKTEST — 1-DAY FORWARD</div>
+                <div class="osiris-backtest-badge-metrics">
+                    <span>DIR ACCURACY <span id="bt-dir" class="osiris-backtest-val">—</span></span>
+                    <span>CI90 COVERAGE <span id="bt-ci90" class="osiris-backtest-val">—</span></span>
+                    <span>SAMPLE <span id="bt-n" style="color:rgba(57,255,20,0.55);">—</span></span>
                 </div>
             </div>
 

@@ -603,6 +603,54 @@ async function runAutoCalibration() {
     }
 }
 
+// --- 30-Day G-Spread History (Vercel KV) ---
+
+function tryPostDailySpread(company, spread) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (company._spreadPostedDate === today) return;
+    company._spreadPostedDate = today;
+    fetch(`/api/sentinel-history?ticker=${encodeURIComponent(company.ticker)}&spread=${Math.round(spread)}`, {
+        method: 'POST'
+    }).catch(() => {});
+}
+
+function buildSparklineSvg(history) {
+    if (!history || history.length < 2) return '';
+    const values = history.map(p => p.spread);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const W = 100, H = 16;
+    const pts = values.map((v, i) => {
+        const x = (i / (values.length - 1)) * W;
+        const y = H - ((v - min) / range) * H;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    const colour = values[values.length - 1] > values[0] ? '#FFD700' : '#39FF14';
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:16px;display:block"><polyline points="${pts}" fill="none" stroke="${colour}" stroke-width="1.5" stroke-opacity="0.75" stroke-linejoin="round"/></svg>`;
+}
+
+async function loadSparkline(company) {
+    if (company._sparklineLoaded) return;
+    company._sparklineLoaded = true;
+    try {
+        const r = await fetch(`/api/sentinel-history?ticker=${encodeURIComponent(company.ticker)}`);
+        if (!r.ok) return;
+        const history = await r.json();
+        if (!Array.isArray(history) || history.length < 2) return;
+        const card = document.getElementById(`card-${company.ticker}`);
+        if (!card) return;
+        const svgEl = card.querySelector('.sparkline-svg');
+        const labelEl = card.querySelector('.sparkline-label');
+        if (svgEl) svgEl.innerHTML = buildSparklineSvg(history);
+        if (labelEl) {
+            const delta = history[history.length - 1].spread - history[0].spread;
+            labelEl.textContent = (delta >= 0 ? '+' : '') + delta + ' bps';
+            labelEl.style.color = delta > 0 ? '#FFD700' : '#39FF14';
+        }
+    } catch (_) {}
+}
+
 /**
  * Initialization
  */
@@ -810,6 +858,15 @@ function createCard(company) {
             </div>
         </div>
 
+        <!-- 30-Day G-Spread Sparkline -->
+        <div class="mb-4">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-[8px] text-gray-600 uppercase tracking-widest">30D Trend</span>
+                <span class="text-[8px] font-mono text-gray-600 sparkline-label">—</span>
+            </div>
+            <div class="sparkline-svg" style="height:16px;"></div>
+        </div>
+
         <div class="mt-auto pt-4 border-t border-white/5 flex flex-col gap-2">
             <div class="flex justify-between items-center">
                 <span class="text-xs text-neon-green uppercase font-mono tracking-widest font-bold glow-text">Yield Stack</span>
@@ -858,6 +915,9 @@ async function updateCardData(ticker) {
     company._lastYield = parseFloat(yieldVal);
     company._lastRisk = getRiskLevel(spread);
     company._lastSpread = spread;
+
+    tryPostDailySpread(company, spread);
+    loadSparkline(company);
 
     const lastCalibrated = card.querySelector('.last-calibrated');
     const marketPulse = card.querySelector('.market-pulse-badge');

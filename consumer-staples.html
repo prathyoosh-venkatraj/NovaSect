@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Energy & Utilities - NovaSect</title>
+    <title>Consumer Staples - NovaSect</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.min.css">
     <style>
-        /* Sector dividers between company-grid groups. */
         .sector-header {
             width: 100%;
             max-width: 1200px;
@@ -29,8 +28,6 @@
             font-weight: 600;
             letter-spacing: 2px;
         }
-        /* Skeleton-report card: report page loads with live data + a
-           "report under construction" placeholder where the PDF would be. */
         .company-card.pending {
             border-style: dashed;
             border-color: rgba(57, 255, 20, 0.18);
@@ -95,7 +92,7 @@
         .sort-ind { margin-left:3px; opacity:0.45; font-size:0.75em; }
         .s-asc .sort-ind,.s-desc .sort-ind { opacity:1; color:var(--accent-green); }
     </style>
-  <!-- Umami Analytics: replace value with your NovaSect Website ID from umami.is -->
+  <!-- Umami Analytics -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="134ef845-3a61-49b4-b2f2-1a954fc62467"></script>
   <!-- Sentry Error Tracking -->
   <script src="https://js-de.sentry-cdn.com/58fb277a213713b5996ae9454eb2a6c4.min.js" crossorigin="anonymous"></script>
@@ -119,7 +116,7 @@
     <main>
         <div id="secondary-canvas-container" class="bg-canvas"></div>
         <section class="repository-section">
-            <h1 class="repo-title">Energy and Utilities</h1>
+            <h1 class="repo-title">Consumer Staples</h1>
             <div class="view-toggle">
                 <button class="view-btn active" id="grid-btn">&#9632; Grid</button>
                 <button class="view-btn" id="table-btn">&#9776; Screener</button>
@@ -148,61 +145,33 @@
             </div>
 
             <div id="grid-content">
-            <h2 class="sector-header">Energy <span class="sector-count">25</span></h2>
+            <h2 class="sector-header">Consumer Staples <span class="sector-count">25</span></h2>
             <div class="company-grid">
-                <a href="report.html?company=exxonmobil&from=energy.html" class="company-card">ExxonMobil</a>
-                <a href="report.html?company=chevron&from=energy.html" class="company-card">Chevron</a>
-                <a href="report.html?company=shel&from=energy.html" class="company-card pending">Shell PLC</a>
-                <a href="report.html?company=bp&from=energy.html" class="company-card pending">BP PLC</a>
-                <a href="report.html?company=tte&from=energy.html" class="company-card pending">TotalEnergies</a>
-                <a href="report.html?company=eqnr&from=energy.html" class="company-card pending">Equinor</a>
-                <a href="report.html?company=cop&from=energy.html" class="company-card pending">ConocoPhillips</a>
-                <a href="report.html?company=eog&from=energy.html" class="company-card pending">EOG Resources</a>
-                <a href="report.html?company=oxy&from=energy.html" class="company-card pending">Occidental</a>
-                <a href="report.html?company=dvn&from=energy.html" class="company-card pending">Devon Energy</a>
-                <a href="report.html?company=fang&from=energy.html" class="company-card pending">Diamondback Energy</a>
-                <a href="report.html?company=mpc&from=energy.html" class="company-card pending">Marathon Petroleum</a>
-                <a href="report.html?company=vlo&from=energy.html" class="company-card pending">Valero Energy</a>
-                <a href="report.html?company=psx&from=energy.html" class="company-card pending">Phillips 66</a>
-                <a href="report.html?company=slb&from=energy.html" class="company-card pending">SLB</a>
-                <a href="report.html?company=hal&from=energy.html" class="company-card pending">Halliburton</a>
-                <a href="report.html?company=bkr&from=energy.html" class="company-card pending">Baker Hughes</a>
-                <a href="report.html?company=wmb&from=energy.html" class="company-card pending">Williams Cos</a>
-                <a href="report.html?company=kmi&from=energy.html" class="company-card pending">Kinder Morgan</a>
-                <a href="report.html?company=eni-mi&from=energy.html" class="company-card pending">Eni SpA</a>
-                <a href="report.html?company=rep-mc&from=energy.html" class="company-card pending">Repsol</a>
-                <a href="report.html?company=pbr&from=energy.html" class="company-card pending">Petrobras</a>
-                <a href="report.html?company=2222-sr&from=energy.html" class="company-card pending">Saudi Aramco</a>
-                <a href="report.html?company=reliance-ns&from=energy.html" class="company-card pending">Reliance Industries</a>
-                <a href="report.html?company=wds-ax&from=energy.html" class="company-card pending">Woodside Energy</a>
-            </div>
-
-            <h2 class="sector-header">Utilities <span class="sector-count">24</span></h2>
-            <div class="company-grid">
-                <a href="report.html?company=iberdrola&from=energy.html" class="company-card">Iberdrola</a>
-                <a href="report.html?company=nee&from=energy.html" class="company-card pending">NextEra Energy</a>
-                <a href="report.html?company=duk&from=energy.html" class="company-card pending">Duke Energy</a>
-                <a href="report.html?company=so&from=energy.html" class="company-card pending">Southern Co</a>
-                <a href="report.html?company=d&from=energy.html" class="company-card pending">Dominion Energy</a>
-                <a href="report.html?company=aep&from=energy.html" class="company-card pending">American Electric</a>
-                <a href="report.html?company=exc&from=energy.html" class="company-card pending">Exelon Corp</a>
-                <a href="report.html?company=sre&from=energy.html" class="company-card pending">Sempra Energy</a>
-                <a href="report.html?company=xel&from=energy.html" class="company-card pending">Xcel Energy</a>
-                <a href="report.html?company=pcg&from=energy.html" class="company-card pending">PG&amp;E Corp</a>
-                <a href="report.html?company=peg&from=energy.html" class="company-card pending">Public Service</a>
-                <a href="report.html?company=wec&from=energy.html" class="company-card pending">WEC Energy</a>
-                <a href="report.html?company=awk&from=energy.html" class="company-card pending">American Water Works</a>
-                <a href="report.html?company=etr&from=energy.html" class="company-card pending">Entergy</a>
-                <a href="report.html?company=engi-pa&from=energy.html" class="company-card pending">Engie</a>
-                <a href="report.html?company=enel-mi&from=energy.html" class="company-card pending">Enel SpA</a>
-                <a href="report.html?company=ntgy-mc&from=energy.html" class="company-card pending">Naturgy</a>
-                <a href="report.html?company=sse-l&from=energy.html" class="company-card pending">SSE PLC</a>
-                <a href="report.html?company=ng-l&from=energy.html" class="company-card pending">National Grid</a>
-                <a href="report.html?company=eoan-de&from=energy.html" class="company-card pending">E.ON</a>
-                <a href="report.html?company=rwe-de&from=energy.html" class="company-card pending">RWE</a>
-                <a href="report.html?company=9501-t&from=energy.html" class="company-card pending">Tokyo Electric Power</a>
-                <a href="report.html?company=ntpc-ns&from=energy.html" class="company-card pending">NTPC</a>
-                <a href="report.html?company=org-ax&from=energy.html" class="company-card pending">Origin Energy</a>
+                <a href="report.html?company=pg&from=consumer-staples.html" class="company-card pending">Procter &amp; Gamble</a>
+                <a href="report.html?company=ko&from=consumer-staples.html" class="company-card pending">Coca-Cola</a>
+                <a href="report.html?company=pep&from=consumer-staples.html" class="company-card pending">PepsiCo</a>
+                <a href="report.html?company=nesn-sw&from=consumer-staples.html" class="company-card pending">Nestlé</a>
+                <a href="report.html?company=ulvr-l&from=consumer-staples.html" class="company-card pending">Unilever</a>
+                <a href="report.html?company=wmt&from=consumer-staples.html" class="company-card pending">Walmart</a>
+                <a href="report.html?company=cost&from=consumer-staples.html" class="company-card pending">Costco Wholesale</a>
+                <a href="report.html?company=pm&from=consumer-staples.html" class="company-card pending">Philip Morris</a>
+                <a href="report.html?company=mo&from=consumer-staples.html" class="company-card pending">Altria Group</a>
+                <a href="report.html?company=bats-l&from=consumer-staples.html" class="company-card pending">BAT</a>
+                <a href="report.html?company=dge-l&from=consumer-staples.html" class="company-card pending">Diageo</a>
+                <a href="report.html?company=bud&from=consumer-staples.html" class="company-card pending">AB InBev</a>
+                <a href="report.html?company=or-pa&from=consumer-staples.html" class="company-card pending">L'Oréal</a>
+                <a href="report.html?company=bn-pa&from=consumer-staples.html" class="company-card pending">Danone</a>
+                <a href="report.html?company=heia-as&from=consumer-staples.html" class="company-card pending">Heineken</a>
+                <a href="report.html?company=cl&from=consumer-staples.html" class="company-card pending">Colgate-Palmolive</a>
+                <a href="report.html?company=kmb&from=consumer-staples.html" class="company-card pending">Kimberly-Clark</a>
+                <a href="report.html?company=gis&from=consumer-staples.html" class="company-card pending">General Mills</a>
+                <a href="report.html?company=mdlz&from=consumer-staples.html" class="company-card pending">Mondelez Intl</a>
+                <a href="report.html?company=khc&from=consumer-staples.html" class="company-card pending">Kraft Heinz</a>
+                <a href="report.html?company=hindunilvr-ns&from=consumer-staples.html" class="company-card pending">Hindustan Unilever</a>
+                <a href="report.html?company=rkt-l&from=consumer-staples.html" class="company-card pending">Reckitt</a>
+                <a href="report.html?company=hen3-de&from=consumer-staples.html" class="company-card pending">Henkel AG</a>
+                <a href="report.html?company=hsy&from=consumer-staples.html" class="company-card pending">Hershey Co</a>
+                <a href="report.html?company=cpb&from=consumer-staples.html" class="company-card pending">Campbell Soup</a>
             </div>
             </div><!-- /grid-content -->
         </section>
@@ -220,10 +189,10 @@
     <script src="components/mobile-nav/mobile-nav.js" defer></script>
     <script>
     (function () {
-        var COHORT = 'energy_and_utilities';
-        var FROM_PAGE = 'energy.html';
+        var COHORT = 'consumer_staples';
+        var FROM_PAGE = 'consumer-staples.html';
         var PHYSICS_LABEL = 'OU';
-        var SLUG = { 'XOM': 'exxonmobil', 'CVX': 'chevron', 'IBE.MC': 'iberdrola' };
+        var SLUG = {};
 
         function toSlug(sym) { return SLUG[sym] || sym.toLowerCase().replace(/\./g, '-'); }
         function rClass(r) { return { 'AA': 'r-AA', 'A': 'r-A', 'BBB': 'r-BBB' }[r] || 'r-HY'; }

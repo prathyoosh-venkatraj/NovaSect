@@ -10,7 +10,9 @@
     "convert-images": "node scripts/convert-images.js",
     "build": "node scripts/build.js",
     "fetch-10k": "node scripts/fetch-sec-10k.mjs",
-    "generate-report": "node scripts/generate-report.mjs"
+    "generate-report": "node scripts/generate-report.mjs",
+    "screenshot": "node scripts/screenshot-preview.js",
+    "screenshot-osiris": "node scripts/screenshot-osiris.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.0",
@@ -19,6 +21,7 @@
   "devDependencies": {
     "esbuild": "^0.28.0",
     "pdf-parse": "^1.1.1",
+    "puppeteer-core": "^25.1.0",
     "sharp": "^0.34.5"
   }
 }

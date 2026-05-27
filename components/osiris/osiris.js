@@ -21,6 +21,17 @@ function detectDeviceClass() {
     return 'desktop_lo';
 }
 
+// Ticker → FinVault report slug. Default: lowercase + dots→dashes.
+// Overrides for companies whose report URLs use the full name instead.
+const FINVAULT_SLUG_OVERRIDES = {
+    'XOM': 'exxonmobil', 'CVX': 'chevron', 'IBE.MC': 'iberdrola',
+    'LMT': 'lockheedmartin', 'NOC': 'northropgrumman', 'GD': 'generaldynamics',
+    'LHX': 'l3harris', 'RHM.DE': 'rheinmetall', 'EMBR3.SA': 'embj3-sa'
+};
+function tickerToFinvaultSlug(ticker) {
+    return FINVAULT_SLUG_OVERRIDES[ticker] || ticker.toLowerCase().replace(/\./g, '-');
+}
+
 class OsirisOrchestrator {
     constructor() {
         this.activeWorker = null;
@@ -28,6 +39,7 @@ class OsirisOrchestrator {
         this.canvas = null;
         this.oracle = null;
         this.deviceClass = detectDeviceClass();
+        this._backtestSummary = null;
         // HI-FI session state — resets every page load. Not persisted.
         this.hifi = { enabled: false, paths: 50000 };
 
@@ -191,7 +203,9 @@ class OsirisOrchestrator {
             'ENERGY & UTILITIES // OU MEAN-REVERSION':
                 { key: 'energy_and_utilities', display: 'Energy/Util' },
             'INDUSTRIALS & DEFENSE // GBM + POISSON JUMPS':
-                { key: 'industrials_and_defense', display: 'Industrials' }
+                { key: 'industrials_and_defense', display: 'Industrials' },
+            'CONSUMER STAPLES // OU MEAN-REVERSION':
+                { key: 'consumer_staples', display: 'Staples' }
         };
 
         const items = [];
@@ -388,6 +402,7 @@ class OsirisOrchestrator {
 
         let physicsType = 'Ornstein-Uhlenbeck';
         let physicsParams = null;
+        let currentCohort = null;
 
         for (const cohortName in this.physicsConfig.cohorts) {
             const cohort = this.physicsConfig.cohorts[cohortName];
@@ -395,6 +410,7 @@ class OsirisOrchestrator {
             if (tickerData) {
                 physicsType = cohort.physics;
                 physicsParams = tickerData;
+                currentCohort = cohortName;
                 break;
             }
         }
@@ -413,15 +429,27 @@ class OsirisOrchestrator {
             sliderPhysics.step = 0.01;
             sliderPhysics.value = physicsParams.reversionSpeedTheta;
             labelPhysics.innerText = 'REVERSION SPEED (θ)';
-            metadataReadout.dataset.baseText = 'TETHERED HUB: BRENT CRUDE BASIS';
-            metadataReadout.innerText = metadataReadout.dataset.baseText;
-            
-            if (operationalShock) {
-                operationalShock.innerHTML = `
-                    <option value="1.0">Standard Regulatory Gravity</option>
-                    <option value="1.5">Tight Commodity Bounds</option>
-                    <option value="0.5">Structural Decoupling</option>
-                `;
+
+            if (currentCohort === 'consumer_staples') {
+                metadataReadout.dataset.baseText = 'TETHERED HUB: CONSUMER SPENDING INDEX';
+                metadataReadout.innerText = metadataReadout.dataset.baseText;
+                if (operationalShock) {
+                    operationalShock.innerHTML = `
+                        <option value="1.0">Normal Demand Cycle</option>
+                        <option value="1.5">Inflation Squeeze</option>
+                        <option value="0.7">Consumer Downtrading</option>
+                    `;
+                }
+            } else {
+                metadataReadout.dataset.baseText = 'TETHERED HUB: BRENT CRUDE BASIS';
+                metadataReadout.innerText = metadataReadout.dataset.baseText;
+                if (operationalShock) {
+                    operationalShock.innerHTML = `
+                        <option value="1.0">Standard Regulatory Gravity</option>
+                        <option value="1.5">Tight Commodity Bounds</option>
+                        <option value="0.5">Structural Decoupling</option>
+                    `;
+                }
             }
         } else {
             sliderPhysics.min = 1;
@@ -441,6 +469,44 @@ class OsirisOrchestrator {
             }
         }
         valPhysics.innerText = sliderPhysics.value;
+
+        // Cross-link: update "View in FinVault" anchor whenever ticker changes.
+        const finvaultLink = document.getElementById('osiris-finvault-link');
+        if (finvaultLink) {
+            finvaultLink.href = 'report.html?company=' + tickerToFinvaultSlug(tickerSymbol) + '&from=osiris.html';
+            finvaultLink.style.display = '';
+        }
+
+        // Backtest badge: load per-ticker metrics.
+        this.updateBacktestBadge(tickerSymbol);
+    }
+
+    async updateBacktestBadge(ticker) {
+        const badge = document.getElementById('osiris-backtest-badge');
+        if (!badge) return;
+        if (!this._backtestSummary) {
+            try {
+                const res = await fetch('/data/backtest-summary.json');
+                this._backtestSummary = res.ok ? await res.json() : null;
+            } catch (_) { this._backtestSummary = null; }
+        }
+        const data = this._backtestSummary?.by_ticker?.[ticker];
+        if (!data) { badge.style.display = 'none'; return; }
+        const dirEl  = document.getElementById('bt-dir');
+        const ci90El = document.getElementById('bt-ci90');
+        const nEl    = document.getElementById('bt-n');
+        if (dirEl)  {
+            const pct = data.directional_accuracy * 100;
+            dirEl.textContent = pct.toFixed(1) + '%';
+            dirEl.className = 'osiris-backtest-val' + (pct < 48 ? ' warn' : '');
+        }
+        if (ci90El) {
+            const pct = data.ci90_coverage * 100;
+            ci90El.textContent = pct.toFixed(1) + '%';
+            ci90El.className = 'osiris-backtest-val' + (pct < 85 ? ' warn' : '');
+        }
+        if (nEl) nEl.textContent = data.n + ' days';
+        badge.style.display = '';
     }
 
     async runSimulation(tickerSymbol) {

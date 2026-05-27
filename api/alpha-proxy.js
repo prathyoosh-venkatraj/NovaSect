@@ -1,13 +1,50 @@
 /**
  * Alpha Vantage Proxy - Vercel Serverless Function
  * Fetches ETF/Stock daily data and calculates 30-day annualized realized volatility.
+ *
+ * Security: IP rate limiting (10 req/min) + symbol format validation.
  */
+
+// In-process sliding-window rate limiter (persists across warm invocations).
+const rateLimitMap = new Map();
+
+function isRateLimited(ip) {
+    const WINDOW_MS = 60_000;
+    const MAX = 10;
+    const now = Date.now();
+    const entry = rateLimitMap.get(ip);
+    if (!entry || now - entry.windowStart > WINDOW_MS) {
+        rateLimitMap.set(ip, { count: 1, windowStart: now });
+        return false;
+    }
+    if (entry.count >= MAX) return true;
+    entry.count++;
+    return false;
+}
+
+function getClientIp(req) {
+    const xff = req.headers['x-forwarded-for'];
+    return xff ? xff.split(',')[0].trim() : (req.headers['x-real-ip'] || 'unknown');
+}
+
+// Tickers, ETFs, and indices (e.g. ^GSPC, BRK.B, RELIANCE.NS).
+const SYMBOL_RE = /^[A-Za-z0-9.\-\^]{1,20}$/;
+
 export default async function handler(req, res) {
     const { symbol } = req.query;
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
 
     if (!symbol) {
         return res.status(400).json({ error: 'E400: Missing symbol' });
+    }
+    if (!SYMBOL_RE.test(symbol)) {
+        return res.status(400).json({ error: 'E400: INVALID_SYMBOL_FORMAT' });
+    }
+
+    const ip = getClientIp(req);
+    if (isRateLimited(ip)) {
+        res.setHeader('Retry-After', '60');
+        return res.status(429).json({ error: 'E429: RATE_LIMIT_EXCEEDED' });
     }
 
     if (!apiKey) {

@@ -51,6 +51,49 @@
             border-color: rgba(57, 255, 20, 0.55);
             color: rgba(255, 255, 255, 0.9);
         }
+        /* View toggle */
+        .view-toggle { display:flex; gap:8px; margin-bottom:20px; }
+        .view-btn {
+            background:transparent; border:1px solid rgba(57,255,20,0.35);
+            color:rgba(57,255,20,0.55); font-family:'JetBrains Mono',monospace;
+            font-size:0.62rem; letter-spacing:2px; padding:6px 16px;
+            cursor:pointer; transition:all 0.15s; text-transform:uppercase;
+        }
+        .view-btn.active {
+            background:rgba(57,255,20,0.1); border-color:var(--accent-green);
+            color:var(--accent-green);
+        }
+        /* Screener table */
+        .screener-wrap { width:100%; max-width:1200px; overflow-x:auto; }
+        .screener-tbl { width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; }
+        .screener-tbl th {
+            padding:10px 14px; border-bottom:1px solid rgba(57,255,20,0.25);
+            font-size:0.62rem; letter-spacing:2px; color:rgba(57,255,20,0.65);
+            text-align:left; white-space:nowrap; user-select:none;
+        }
+        .screener-tbl th[data-col] { cursor:pointer; }
+        .screener-tbl th[data-col]:hover { color:var(--accent-green); }
+        .screener-tbl td {
+            padding:9px 14px; border-bottom:1px solid rgba(255,255,255,0.04);
+            font-size:0.74rem; color:rgba(255,255,255,0.75);
+        }
+        .screener-tbl tr:hover td { background:rgba(57,255,20,0.04); }
+        .rating-badge {
+            display:inline-block; padding:1px 6px; font-size:0.62rem;
+            font-weight:700; border-radius:2px;
+        }
+        .r-AA  { color:#39FF14; border:1px solid rgba(57,255,20,0.55); }
+        .r-A   { color:#a0ff70; border:1px solid rgba(160,255,112,0.45); }
+        .r-BBB { color:#FFD700; border:1px solid rgba(255,215,0,0.45); }
+        .r-HY  { color:#FF6B35; border:1px solid rgba(255,107,53,0.45); }
+        .sc-link {
+            color:rgba(57,255,20,0.6); text-decoration:none; font-size:0.62rem;
+            letter-spacing:1px; border:1px solid rgba(57,255,20,0.22);
+            padding:2px 8px; white-space:nowrap; transition:all 0.15s;
+        }
+        .sc-link:hover { color:var(--accent-green); border-color:var(--accent-green); background:rgba(57,255,20,0.07); }
+        .sort-ind { margin-left:3px; opacity:0.45; font-size:0.75em; }
+        .s-asc .sort-ind,.s-desc .sort-ind { opacity:1; color:var(--accent-green); }
     </style>
   <!-- Umami Analytics: replace value with your NovaSect Website ID from umami.is -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="134ef845-3a61-49b4-b2f2-1a954fc62467"></script>
@@ -77,6 +120,10 @@
         <div id="secondary-canvas-container" class="bg-canvas"></div>
         <section class="repository-section">
             <h1 class="repo-title">Industrials</h1>
+            <div class="view-toggle">
+                <button class="view-btn active" id="grid-btn">&#9632; Grid</button>
+                <button class="view-btn" id="table-btn">&#9776; Screener</button>
+            </div>
             <div class="search-container">
                 <input type="text" id="company-search" class="search-box" placeholder="Search Companies...">
                 <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -85,6 +132,22 @@
                 </svg>
             </div>
 
+            <!-- Screener table (hidden by default) -->
+            <div class="screener-wrap" id="screener-wrap" style="display:none;">
+                <table class="screener-tbl" id="screener-tbl">
+                    <thead><tr>
+                        <th data-col="symbol">Ticker <span class="sort-ind">↕</span></th>
+                        <th data-col="name">Company <span class="sort-ind">↕</span></th>
+                        <th data-col="creditRating">Rating <span class="sort-ind">↕</span></th>
+                        <th data-col="baselineVolatility">Base Vol <span class="sort-ind">↕</span></th>
+                        <th>Model</th>
+                        <th>Report</th>
+                    </tr></thead>
+                    <tbody id="screener-tbody"></tbody>
+                </table>
+            </div>
+
+            <div id="grid-content">
             <h2 class="sector-header">Industrials &amp; Defense <span class="sector-count">34</span></h2>
             <div class="company-grid">
                 <a href="report.html?company=lockheedmartin&from=industrials.html" class="company-card">Lockheed Martin</a>
@@ -122,6 +185,7 @@
                 <a href="report.html?company=luv&from=industrials.html" class="company-card pending">Southwest Airlines</a>
                 <a href="report.html?company=dal&from=industrials.html" class="company-card pending">Delta Air Lines</a>
             </div>
+            </div><!-- /grid-content -->
         </section>
     </main>
 
@@ -135,5 +199,97 @@
     <script src="script.min.js"></script>
     <script src="components/global-search/global-search.js" defer></script>
     <script src="components/mobile-nav/mobile-nav.js" defer></script>
+    <script>
+    (function () {
+        var COHORT = 'industrials_and_defense';
+        var FROM_PAGE = 'industrials.html';
+        var PHYSICS_LABEL = 'GBM+J';
+        var SLUG = {
+            'LMT': 'lockheedmartin', 'NOC': 'northropgrumman',
+            'GD': 'generaldynamics', 'LHX': 'l3harris',
+            'RHM.DE': 'rheinmetall', 'ERJ': 'embj3-sa'
+        };
+
+        function toSlug(sym) { return SLUG[sym] || sym.toLowerCase().replace(/\./g, '-'); }
+        function rClass(r) { return { 'AA': 'r-AA', 'A': 'r-A', 'BBB': 'r-BBB' }[r] || 'r-HY'; }
+
+        var tickers = [], sortCol = null, sortAsc = true;
+
+        function renderRows(data) {
+            var tbody = document.getElementById('screener-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = data.map(function (tk) {
+                var rc = rClass(tk.creditRating);
+                var vol = (tk.baselineVolatility * 100).toFixed(0) + '%';
+                return '<tr>' +
+                    '<td>' + tk.symbol + '</td>' +
+                    '<td>' + tk.name + '</td>' +
+                    '<td><span class="rating-badge ' + rc + '">' + tk.creditRating + '</span></td>' +
+                    '<td>' + vol + '</td>' +
+                    '<td>' + PHYSICS_LABEL + '</td>' +
+                    '<td><a href="report.html?company=' + toSlug(tk.symbol) + '&from=' + FROM_PAGE + '" class="sc-link">REPORT</a></td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        function applyFilter() {
+            var q = ((document.getElementById('company-search') || {}).value || '').toLowerCase().trim();
+            renderRows(q ? tickers.filter(function (tk) {
+                return tk.name.toLowerCase().indexOf(q) !== -1 || tk.symbol.toLowerCase().indexOf(q) !== -1;
+            }) : tickers);
+        }
+
+        function doSort(col) {
+            if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+            tickers.sort(function (a, b) {
+                var va = a[col], vb = b[col];
+                if (typeof va === 'string') { va = va.toUpperCase(); vb = (vb + '').toUpperCase(); }
+                return (va < vb ? -1 : va > vb ? 1 : 0) * (sortAsc ? 1 : -1);
+            });
+            document.querySelectorAll('.screener-tbl th[data-col]').forEach(function (th) {
+                th.classList.remove('s-asc', 's-desc');
+                var ind = th.querySelector('.sort-ind');
+                if (th.dataset.col === col) {
+                    th.classList.add(sortAsc ? 's-asc' : 's-desc');
+                    if (ind) ind.textContent = sortAsc ? '↑' : '↓';
+                } else { if (ind) ind.textContent = '↕'; }
+            });
+            applyFilter();
+        }
+
+        function switchView(view) {
+            var gc = document.getElementById('grid-content');
+            var sw = document.getElementById('screener-wrap');
+            var gb = document.getElementById('grid-btn');
+            var tb = document.getElementById('table-btn');
+            var isScreener = view === 'screener';
+            gc.style.display = isScreener ? 'none' : '';
+            sw.style.display = isScreener ? '' : 'none';
+            gb.classList.toggle('active', !isScreener);
+            tb.classList.toggle('active', isScreener);
+            if (isScreener) applyFilter();
+        }
+
+        function init() {
+            fetch('physics-config.json').then(function (r) { return r.json(); }).then(function (cfg) {
+                tickers = (cfg.cohorts[COHORT] || { tickers: [] }).tickers.slice();
+                document.querySelectorAll('.screener-tbl th[data-col]').forEach(function (th) {
+                    th.addEventListener('click', function () { doSort(th.dataset.col); });
+                });
+                var gb = document.getElementById('grid-btn');
+                var tb = document.getElementById('table-btn');
+                if (gb) gb.addEventListener('click', function () { switchView('grid'); });
+                if (tb) tb.addEventListener('click', function () { switchView('screener'); });
+                var si = document.getElementById('company-search');
+                if (si) si.addEventListener('input', function () {
+                    var sw = document.getElementById('screener-wrap');
+                    if (sw && sw.style.display !== 'none') applyFilter();
+                });
+            }).catch(function (e) { console.warn('screener init:', e); });
+        }
+
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+    })();
+    </script>
 </body>
 </html>

@@ -40,6 +40,33 @@ const CACHE_TTL = {
     'stock/dividend':             86400    // 24h   — dividends change quarterly at most
 };
 
+// In-process sliding-window rate limiter (persists across warm invocations).
+const rateLimitMap = new Map();
+
+function isRateLimited(ip) {
+    const WINDOW_MS = 60_000;
+    const MAX = 30;
+    const now = Date.now();
+    const entry = rateLimitMap.get(ip);
+    if (!entry || now - entry.windowStart > WINDOW_MS) {
+        rateLimitMap.set(ip, { count: 1, windowStart: now });
+        return false;
+    }
+    if (entry.count >= MAX) return true;
+    entry.count++;
+    return false;
+}
+
+function getClientIp(req) {
+    const xff = req.headers['x-forwarded-for'];
+    return xff ? xff.split(',')[0].trim() : (req.headers['x-real-ip'] || 'unknown');
+}
+
+// Tickers, ETFs, and indices (e.g. ^GSPC, BRK.B, RELIANCE.NS).
+const SYMBOL_RE = /^[A-Za-z0-9.\-\^]{1,20}$/;
+// YYYY-MM-DD dates for from/to params.
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 // Look up the Finnhub key from any of several common naming conventions.
 // Vercel env vars are case-sensitive on Linux, so we cover both casings
 // and a final substring scan as a safety net.
@@ -66,6 +93,30 @@ export default async function handler(req, res) {
     if (!ALLOWED_ENDPOINTS.has(endpoint)) {
         return res.status(400).json({ error: 'E400: ENDPOINT_NOT_ALLOWED' });
     }
+
+    // Validate forwarded query params before proxying.
+    if (params.symbol !== undefined && !SYMBOL_RE.test(params.symbol)) {
+        return res.status(400).json({ error: 'E400: INVALID_SYMBOL_FORMAT' });
+    }
+    if (params.from !== undefined && !DATE_RE.test(params.from)) {
+        return res.status(400).json({ error: 'E400: INVALID_DATE_FORMAT (from)' });
+    }
+    if (params.to !== undefined && !DATE_RE.test(params.to)) {
+        return res.status(400).json({ error: 'E400: INVALID_DATE_FORMAT (to)' });
+    }
+    // Reject any param value that exceeds a safe length.
+    for (const [k, v] of Object.entries(params)) {
+        if (typeof v === 'string' && v.length > 50) {
+            return res.status(400).json({ error: `E400: PARAM_TOO_LONG (${k})` });
+        }
+    }
+
+    const ip = getClientIp(req);
+    if (isRateLimited(ip)) {
+        res.setHeader('Retry-After', '60');
+        return res.status(429).json({ error: 'E429: RATE_LIMIT_EXCEEDED' });
+    }
+
     if (!apiKey) {
         console.warn('FINNHUB_API_KEY missing from environment');
         return res.status(500).json({ error: 'E500: ENVAR_MISSING (Check Dashboard)' });
