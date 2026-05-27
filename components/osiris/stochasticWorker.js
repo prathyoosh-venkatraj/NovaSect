@@ -72,70 +72,73 @@ function extractPercentilePaths(pathsMatrix, steps, paths, initialPrice) {
     };
 }
 
-// Engine A: Ornstein-Uhlenbeck (mean-reverting GBM form)
-// longTermMean is the calibrated reversion target (1y arithmetic mean of
-// adjClose, supplied via physicsParams.longTermMean). Falls back to the old
-// initialPrice * exp(drift) formula if the calibrated value is unavailable.
-// intradaySteps (default 1) collapses dt below the daily floor — when > 1,
-// each output step represents 1/(intradaySteps) of a trading day. Sigma is
-// expected to be annualised regardless; the dt rescaling handles the math.
+// Engine A: Ornstein-Uhlenbeck + GARCH(1,1) volatility
 //
-// IMPORTANT — diffusion is PROPORTIONAL (shock scales with current S):
-//   dS = θ(μ − S)dt + σ·S·dW
-// Sigma is stored as a dimensionless return vol (~0.22-0.40), so the shock
-// must scale with S to give the correct annualised return volatility.
-// Earlier versions applied an unscaled shock, producing variance ~100× too
-// small at typical equity prices and collapsing the percentile cone.
-function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMean, antithetic, intradaySteps) {
-    const dt = 1 / (252 * (intradaySteps || 1)); // sub-daily when intradaySteps > 1
+// dS = θ(μ − S)dt + σ_t·S·dW  where σ²_t evolves via GARCH(1,1).
+// GARCH(1,1): varT_{t+1} = ω + α·z²_t·varT_t + β·varT_t
+//   ω = varT0·(1 − α − β), anchoring the long-run variance to the input sigma.
+//   Default parameters α=0.10, β=0.85 are typical for equity daily returns.
+//   For steps=2 (1-day backtest) GARCH has no effect since only the initial
+//   variance is consumed. The benefit appears for multi-day UI simulations.
+function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMean, antithetic, intradaySteps, garchAlpha, garchBeta) {
+    const dt = 1 / (252 * (intradaySteps || 1));
     const reversionTarget = (typeof longTermMean === 'number' && longTermMean > 0)
         ? longTermMean
         : initialPrice * Math.exp(drift);
     const pathsMatrix = new Float32Array(paths * steps);
     const isZeroVol = (sigma <= 1e-8);
     const chunkSize = Math.max(1, Math.floor(paths / PROGRESS_TICKS));
-    const sigSqrtDt = sigma * Math.sqrt(dt);
+
+    const ga = garchAlpha ?? 0.10;
+    const gb = garchBeta  ?? 0.85;
+    const varT0 = sigma * sigma * dt;
+    const omega  = varT0 * (1.0 - ga - gb);
 
     if (antithetic && !isZeroVol) {
-        // Pair every two output paths: shared Brownian sequence, sign-flipped
-        // on the twin. Halves the underlying RNG work and ~halves variance.
-        const pairs = paths >> 1; // floor(paths/2)
+        const pairs = paths >> 1;
         for (let pp = 0; pp < pairs; pp++) {
             const idx1 = (pp * 2) * steps;
             const idx2 = (pp * 2 + 1) * steps;
             let S1 = initialPrice, S2 = initialPrice;
+            let varT = varT0;
             pathsMatrix[idx1] = S1;
             pathsMatrix[idx2] = S2;
             for (let i = 1; i < steps; i++) {
                 const z = randomNormal();
-                // Proportional shock — twins use the same Brownian increment
-                // but the magnitude scales with each twin's own current price.
-                S1 += theta * (reversionTarget - S1) * dt + sigSqrtDt * S1 * z;
-                S2 += theta * (reversionTarget - S2) * dt - sigSqrtDt * S2 * z;
+                const sqrtVar = Math.sqrt(varT);
+                // Twins share varT because z² is sign-symmetric.
+                S1 += theta * (reversionTarget - S1) * dt + sqrtVar * S1 *  z;
+                S2 += theta * (reversionTarget - S2) * dt + sqrtVar * S2 * -z;
                 pathsMatrix[idx1 + i] = Math.max(0, S1);
                 pathsMatrix[idx2 + i] = Math.max(0, S2);
+                varT = Math.max(omega + (ga * z * z + gb) * varT, 1e-10);
             }
             postProgress(pp * 2, paths, chunkSize);
         }
-        // Odd leftover when paths is odd — one un-paired path.
         if (paths & 1) {
             const lastIdx = (paths - 1) * steps;
-            let S = initialPrice;
+            let S = initialPrice, varT = varT0;
             pathsMatrix[lastIdx] = S;
             for (let i = 1; i < steps; i++) {
-                S += theta * (reversionTarget - S) * dt + sigSqrtDt * S * randomNormal();
+                const z = randomNormal();
+                S += theta * (reversionTarget - S) * dt + Math.sqrt(varT) * S * z;
                 pathsMatrix[lastIdx + i] = Math.max(0, S);
+                varT = Math.max(omega + (ga * z * z + gb) * varT, 1e-10);
             }
         }
     } else {
         for (let p = 0; p < paths; p++) {
-            let S = initialPrice;
-            pathsMatrix[p * steps] = S; // t=0
+            let S = initialPrice, varT = varT0;
+            pathsMatrix[p * steps] = S;
             for (let i = 1; i < steps; i++) {
-                const shock = isZeroVol ? 0 : (sigSqrtDt * S * randomNormal());
-                const dS = theta * (reversionTarget - S) * dt + shock;
-                S += dS;
-                pathsMatrix[p * steps + i] = Math.max(0, S); // Price cannot be negative
+                if (isZeroVol) {
+                    S += theta * (reversionTarget - S) * dt;
+                } else {
+                    const z = randomNormal();
+                    S += theta * (reversionTarget - S) * dt + Math.sqrt(varT) * S * z;
+                    varT = Math.max(omega + (ga * z * z + gb) * varT, 1e-10);
+                }
+                pathsMatrix[p * steps + i] = Math.max(0, S);
             }
             postProgress(p, paths, chunkSize);
         }
@@ -143,77 +146,84 @@ function simulateOU(initialPrice, drift, sigma, steps, paths, theta, longTermMea
     return extractPercentilePaths(pathsMatrix, steps, paths, initialPrice);
 }
 
-// Engine B: Geometric Brownian Motion + Jump Diffusion (Merton)
-// jumpMu is the log-jump mean (Phase 4): a positive value introduces upward
-// skew representing contract-driven flow asymmetry. Defaults to 0 (symmetric)
-// when not supplied for backward compatibility with non-industrial callers.
-function simulateGBMJump(initialPrice, mu, sigma, steps, paths, lambda, jumpMu, antithetic, intradaySteps) {
-    const dt = 1 / (252 * (intradaySteps || 1)); // sub-daily when intradaySteps > 1
+// Engine B: GBM + Merton Jump Diffusion + GARCH(1,1) volatility
+//
+// Log-return per step: Δlog(S) = (μ−compensator)·dt − ½·varT + √varT·z + jump
+// GARCH(1,1): varT_{t+1} = ω + α·z²_t·varT_t + β·varT_t
+//   Ito correction is time-varying (−½·varT) so expected price path is unchanged.
+//   With antithetic paths, both twins share varT because z² is sign-symmetric.
+function simulateGBMJump(initialPrice, mu, sigma, steps, paths, lambda, jumpMu, antithetic, intradaySteps, garchAlpha, garchBeta) {
+    const dt = 1 / (252 * (intradaySteps || 1));
     const pathsMatrix = new Float32Array(paths * steps);
     const isZeroVol = (sigma <= 1e-8);
     const chunkSize = Math.max(1, Math.floor(paths / PROGRESS_TICKS));
 
-    // Jump size distribution: log-jump ~ N(jumpMean, jumpStd^2)
+    // Jump size: fixed at 0.07 (7% std) — see simulate.mjs for calibration note.
     const jumpMean = (typeof jumpMu === 'number') ? jumpMu : 0;
-    const jumpStd = isZeroVol ? 0 : sigma * 1.5;
-
-    // Merton compensator: subtracts λ·E[J - 1] from the drift so the expected
-    // log-price growth rate is unchanged by the jump process. Re-derived with
-    // the (now-asymmetric) jumpMean: E[J] = exp(μ_J + ½σ_J²).
+    const jumpStd  = isZeroVol ? 0 : 0.07;
     const compensator = isZeroVol
         ? 0
         : lambda * (Math.exp(jumpMean + 0.5 * jumpStd * jumpStd) - 1);
-    const sigSqrtDt = sigma * Math.sqrt(dt);
-    const driftPerStep = (mu - compensator - 0.5 * sigma * sigma) * dt;
+    // Constant drift component; Ito correction is now time-varying via varT.
+    const driftDt = (mu - compensator) * dt;
+
+    const ga = garchAlpha ?? 0.10;
+    const gb = garchBeta  ?? 0.85;
+    const varT0 = sigma * sigma * dt;
+    const omega  = varT0 * (1.0 - ga - gb);
 
     if (antithetic && !isZeroVol) {
-        // Only the Gaussian diffusion shock is paired (sign-flipped on twin).
-        // Jumps stay independent — pairing them would collapse the Poisson
-        // distribution and break the Merton compensator.
+        // Gaussian shocks paired; jumps independent (preserves Poisson structure).
         const pairs = paths >> 1;
         for (let pp = 0; pp < pairs; pp++) {
             const idx1 = (pp * 2) * steps;
             const idx2 = (pp * 2 + 1) * steps;
             let S1 = initialPrice, S2 = initialPrice;
+            let varT = varT0;
             pathsMatrix[idx1] = S1;
             pathsMatrix[idx2] = S2;
             for (let i = 1; i < steps; i++) {
-                let jumpFactor1 = 1, jumpFactor2 = 1;
-                if (Math.random() < lambda * dt) jumpFactor1 = Math.exp(randomNormal() * jumpStd + jumpMean);
-                if (Math.random() < lambda * dt) jumpFactor2 = Math.exp(randomNormal() * jumpStd + jumpMean);
+                let jf1 = 1, jf2 = 1;
+                if (Math.random() < lambda * dt) jf1 = Math.exp(randomNormal() * jumpStd + jumpMean);
+                if (Math.random() < lambda * dt) jf2 = Math.exp(randomNormal() * jumpStd + jumpMean);
                 const z = randomNormal();
-                const shock = sigSqrtDt * z;
-                S1 = S1 * Math.exp(driftPerStep + shock) * jumpFactor1;
-                S2 = S2 * Math.exp(driftPerStep - shock) * jumpFactor2;
+                const halfVar = 0.5 * varT;
+                const sqrtVar = Math.sqrt(varT);
+                S1 = S1 * Math.exp(driftDt - halfVar + sqrtVar *  z) * jf1;
+                S2 = S2 * Math.exp(driftDt - halfVar + sqrtVar * -z) * jf2;
                 pathsMatrix[idx1 + i] = Math.max(0, S1);
                 pathsMatrix[idx2 + i] = Math.max(0, S2);
+                varT = Math.max(omega + (ga * z * z + gb) * varT, 1e-10);
             }
             postProgress(pp * 2, paths, chunkSize);
         }
         if (paths & 1) {
             const lastIdx = (paths - 1) * steps;
-            let S = initialPrice;
+            let S = initialPrice, varT = varT0;
             pathsMatrix[lastIdx] = S;
             for (let i = 1; i < steps; i++) {
-                let jumpFactor = 1;
-                if (Math.random() < lambda * dt) jumpFactor = Math.exp(randomNormal() * jumpStd + jumpMean);
-                const shock = sigSqrtDt * randomNormal();
-                S = S * Math.exp(driftPerStep + shock) * jumpFactor;
+                let jf = 1;
+                if (Math.random() < lambda * dt) jf = Math.exp(randomNormal() * jumpStd + jumpMean);
+                const z = randomNormal();
+                S = S * Math.exp(driftDt - 0.5 * varT + Math.sqrt(varT) * z) * jf;
                 pathsMatrix[lastIdx + i] = Math.max(0, S);
+                varT = Math.max(omega + (ga * z * z + gb) * varT, 1e-10);
             }
         }
     } else {
         for (let p = 0; p < paths; p++) {
-            let S = initialPrice;
-            pathsMatrix[p * steps] = S; // t=0
+            let S = initialPrice, varT = varT0;
+            pathsMatrix[p * steps] = S;
             for (let i = 1; i < steps; i++) {
-                let jumpFactor = 1;
-                if (Math.random() < lambda * dt) {
-                    jumpFactor = isZeroVol ? 1 : Math.exp(randomNormal() * jumpStd + jumpMean);
+                if (isZeroVol) {
+                    S = S * Math.exp(driftDt);
+                } else {
+                    let jf = 1;
+                    if (Math.random() < lambda * dt) jf = Math.exp(randomNormal() * jumpStd + jumpMean);
+                    const z = randomNormal();
+                    S = S * Math.exp(driftDt - 0.5 * varT + Math.sqrt(varT) * z) * jf;
+                    varT = Math.max(omega + (ga * z * z + gb) * varT, 1e-10);
                 }
-
-                const shock = isZeroVol ? 0 : (sigSqrtDt * randomNormal());
-                S = S * Math.exp(driftPerStep + shock) * jumpFactor;
                 pathsMatrix[p * steps + i] = Math.max(0, S);
             }
             postProgress(p, paths, chunkSize);
@@ -228,17 +238,22 @@ self.onmessage = function(e) {
     let result;
     const intradayStepsResolved = Math.max(1, intradaySteps || 1);
 
+    // GARCH(1,1) parameters — configurable per cohort via physicsParams,
+    // defaulting to empirically typical equity values (α=0.10, β=0.85).
+    const garchAlpha = physicsParams?.garchAlpha ?? 0.10;
+    const garchBeta  = physicsParams?.garchBeta  ?? 0.85;
+
     try {
         if (physicsType === 'Ornstein-Uhlenbeck') {
             const theta = physicsParams?.reversionSpeedTheta || 0.15;
             const longTermMean = (typeof physicsParams?.longTermMean === 'number')
                 ? physicsParams.longTermMean
                 : null;
-            result = simulateOU(initialPrice, drift, volatility, steps, paths, theta, longTermMean, !!antithetic, intradayStepsResolved);
+            result = simulateOU(initialPrice, drift, volatility, steps, paths, theta, longTermMean, !!antithetic, intradayStepsResolved, garchAlpha, garchBeta);
         } else if (physicsType === 'Geometric Brownian Motion + Jump Diffusion') {
             const lambda = physicsParams?.jumpFrequencyLambda || 4;
             const jumpMu = (typeof physicsParams?.jumpMu === 'number') ? physicsParams.jumpMu : 0;
-            result = simulateGBMJump(initialPrice, drift, volatility, steps, paths, lambda, jumpMu, !!antithetic, intradayStepsResolved);
+            result = simulateGBMJump(initialPrice, drift, volatility, steps, paths, lambda, jumpMu, !!antithetic, intradayStepsResolved, garchAlpha, garchBeta);
         } else {
             self.postMessage({ error: 'Unknown physicsType: ' + physicsType });
             return;
