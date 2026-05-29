@@ -19,8 +19,7 @@
  */
 
 import { timingSafeEqual } from 'crypto';
-
-const rateLimitMap = new Map();
+import { isRateLimited, getClientIp } from './_ratelimit.js';
 
 // Constant-time bearer-token check against SNAPSHOT_WRITE_SECRET.
 function isAuthorizedWrite(req) {
@@ -32,25 +31,6 @@ function isAuthorizedWrite(req) {
     const b = Buffer.from(secret);
     if (a.length !== b.length) return false;
     try { return timingSafeEqual(a, b); } catch { return false; }
-}
-
-function isRateLimited(ip) {
-    const WINDOW_MS = 60_000;
-    const MAX = 60;
-    const now = Date.now();
-    const entry = rateLimitMap.get(ip);
-    if (!entry || now - entry.windowStart > WINDOW_MS) {
-        rateLimitMap.set(ip, { count: 1, windowStart: now });
-        return false;
-    }
-    if (entry.count >= MAX) return true;
-    entry.count++;
-    return false;
-}
-
-function getClientIp(req) {
-    const xff = req.headers['x-forwarded-for'];
-    return xff ? xff.split(',')[0].trim() : (req.headers['x-real-ip'] || 'unknown');
 }
 
 // Tickers: alphanumeric + dots, dashes, underscores, max 15 chars (covers 2222.SR, EMBR3.SA, etc.)
@@ -78,7 +58,7 @@ export default async function handler(req, res) {
     }
 
     const ip = getClientIp(req);
-    if (isRateLimited(ip)) {
+    if (await isRateLimited(ip, 'sentinel-history', 60, 60)) {
         res.setHeader('Retry-After', '60');
         return res.status(429).json({ error: 'E429: RATE_LIMIT_EXCEEDED' });
     }
