@@ -643,13 +643,12 @@ async function loadFundamentals(company) {
 
 // --- 30-Day G-Spread History (Vercel KV) ---
 
-function tryPostDailySpread(company, spread) {
-    const today = new Date().toISOString().slice(0, 10);
-    if (company._spreadPostedDate === today) return;
-    company._spreadPostedDate = today;
-    fetch(`/api/sentinel-history?ticker=${encodeURIComponent(company.ticker)}&spread=${Math.round(spread)}`, {
-        method: 'POST'
-    }).catch(() => {});
+function tryPostDailySpread(_company, _spread) {
+    // Phase 1 (security): the browser is now READ-ONLY for spread history.
+    // Writes are server-only and require Authorization: Bearer SNAPSHOT_WRITE_SECRET
+    // (see api/sentinel-history.js). A client POST would now be rejected with 401,
+    // so we no longer attempt it. Daily snapshots are repopulated server-side.
+    return;
 }
 
 function buildSparklineSvg(history) {

@@ -4,12 +4,35 @@
  *
  * GET  ?ticker=XOM             → JSON array of {date, spread} objects (up to 30 entries)
  * POST ?ticker=XOM&spread=285  → appends today's entry; LTRIM keeps last 30
+ *                                REQUIRES Authorization: Bearer <SNAPSHOT_WRITE_SECRET>
  *
- * Security: IP rate limiting (60 req/min).
+ * Security:
+ *   - GET is public (read-only).
+ *   - POST (Phase 1): writes are now SERVER-ONLY. They require a bearer token
+ *     matching SNAPSHOT_WRITE_SECRET, compared in constant time. This closes
+ *     the previous hole where any anonymous client could POST arbitrary
+ *     spreads (1-5000) for any ticker and pollute the history shown to users.
+ *     The browser no longer writes (tryPostDailySpread is a no-op); a future
+ *     authenticated cron/Action repopulates history server-side.
+ *   - IP rate limiting (60 req/min).
  * Graceful degradation: returns [] when KV store not yet provisioned.
  */
 
+import { timingSafeEqual } from 'crypto';
+
 const rateLimitMap = new Map();
+
+// Constant-time bearer-token check against SNAPSHOT_WRITE_SECRET.
+function isAuthorizedWrite(req) {
+    const secret = process.env.SNAPSHOT_WRITE_SECRET;
+    if (!secret) return false; // no secret configured → no writes accepted
+    const header = req.headers['authorization'] || '';
+    const presented = header.startsWith('Bearer ') ? header.slice(7) : '';
+    const a = Buffer.from(presented);
+    const b = Buffer.from(secret);
+    if (a.length !== b.length) return false;
+    try { return timingSafeEqual(a, b); } catch { return false; }
+}
 
 function isRateLimited(ip) {
     const WINDOW_MS = 60_000;
@@ -86,6 +109,10 @@ export default async function handler(req, res) {
         }
 
         if (req.method === 'POST') {
+            // Server-only write gate — closes the public arbitrary-write hole.
+            if (!isAuthorizedWrite(req)) {
+                return res.status(401).json({ error: 'E401: WRITE_UNAUTHORIZED' });
+            }
             const spreadVal = parseInt(spread, 10);
             if (!spread || isNaN(spreadVal) || spreadVal < 1 || spreadVal > 5000) {
                 return res.status(400).json({ error: 'E400: INVALID_SPREAD' });
