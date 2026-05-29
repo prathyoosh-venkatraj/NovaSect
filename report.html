@@ -1404,7 +1404,7 @@
         </div>
     </section>
 
-    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
     <script defer src="script.min.js"></script>
     <script type="module">
         // FinVault report.html script — converted to a module so it can pull
@@ -1416,6 +1416,8 @@
             if (window.pdfjsLib) { cb(); return; }
             const s = document.createElement('script');
             s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+            s.integrity = 'sha384-uLiAv4VcjM5H2Jsqzl8EajEaxPugj1CIzQaCjQ8c5//vC+elhxO5pZfXGxoLQi1W';
+            s.crossOrigin = 'anonymous';
             s.onload = cb;
             document.head.appendChild(s);
         }

@@ -3,6 +3,18 @@
  * Sectored Batching | Focus Prioritization | Async Math Core
  */
 
+// Phase 2 (defense-in-depth): escape any registry/data string before it goes
+// into innerHTML, so a future externally-sourced value can't inject markup.
+function escHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 const COMPANIES = [
     // netLeverage = Net Debt / EBITDA (TTM); interestCoverage = EBITDA / Interest Expense (TTM). Source: 2024 annual reports.
     { ticker: 'XOM', name: 'Exxon Mobil', sector: 'Energy', type: 'IG', rating: 'AA', region: 'US', country: 'US', base_rate_type: 'UST', baseSpread: 125, marketBeta: 0.8, sectorBeta: 1.1, residual: 0, lastUpdated: 0, lastVerified: '2026-05-17', netLeverage: 0.3, interestCoverage: 22.5 },
@@ -846,11 +858,11 @@ function createCard(company) {
         <span class="stale-dot hidden absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]" title="Anchor refresh overdue — see SENTINEL-CALIBRATION.md"></span>
         <div class="flex justify-between items-start mb-4">
             <div>
-                <h3 class="font-black text-xl tracking-tight">${company.ticker}</h3>
-                <p class="text-[10px] text-gray-500 uppercase tracking-widest">${company.name}</p>
+                <h3 class="font-black text-xl tracking-tight">${escHtml(company.ticker)}</h3>
+                <p class="text-[10px] text-gray-500 uppercase tracking-widest">${escHtml(company.name)}</p>
             </div>
             <div class="text-right">
-                <span class="text-[10px] bg-neon-green/10 text-neon-green px-2 py-0.5 rounded border border-neon-green/20 font-mono tracking-tighter">${company.type}</span>
+                <span class="text-[10px] bg-neon-green/10 text-neon-green px-2 py-0.5 rounded border border-neon-green/20 font-mono tracking-tighter">${escHtml(company.type)}</span>
                 <p class="text-[10px] text-gray-600 mt-1 font-mono uppercase tracking-widest update-time">00:00:00</p>
                 <div class="mt-1">
                     <span class="text-[8px] bg-amber-500/10 text-amber-500 px-1 rounded border border-amber-500/20 font-mono hidden benchmark-badge">--</span>
