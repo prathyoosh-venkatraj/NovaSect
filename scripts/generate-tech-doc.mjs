@@ -329,7 +329,7 @@ const partSentinel = [
   spacer(),
 
   h2('2.1  Company Registry'),
-  body('The COMPANIES array in sentinel.v2.js holds 97 entries. Each entry carries: ticker, name, sector, credit type (IG/HY), rating, region, country, base_rate_type (UST/BUND/GILT), baseSpread (bps), marketBeta, sectorBeta, residual, lastVerified, netLeverage, and interestCoverage.'),
+  body('The COMPANIES array in sentinel.v2.js holds 83 entries. Each entry carries: ticker, name, sector, credit type (IG/HY), rating, region, country, base_rate_type (UST/BUND/GILT), baseSpread (bps), marketBeta, sectorBeta, residual, lastVerified, netLeverage, and interestCoverage.'),
   body('baseSpread is the hand-calibrated anchor spread for the company under neutral macro conditions, updated quarterly.'),
   spacer(),
 
@@ -528,7 +528,7 @@ const partOsiris = [
     ],
     [0.3, 0.35, 0.35]
   ),
-  body('Model parameters are stored in physics-config.json (schema v1.6-global) per ticker. Parameters requiring live market data — beta, dividend yield, and long-term mean price — are computed dynamically at simulation time by osirisIngestion.js.'),
+  body('Model parameters are stored in physics-config.json (schema v1.8-consumer-staples) per ticker. Parameters requiring live market data — beta, dividend yield, and long-term mean price — are computed dynamically at simulation time by osirisIngestion.js.'),
   spacer(),
 
   h2('3.2  Data Ingestion  (osirisIngestion.js)'),
@@ -668,7 +668,7 @@ const partOsiris = [
     [
       ['λ',      'Jump frequency (events/year)',              '4 – 7'],
       ['jumpMu', 'Mean log-jump size (positive skew)',        '0.008 – 0.025'],
-      ['σ_J',    'Jump vol = σ × 1.5',                       'Derived'],
+      ['σ_J',    'Jump vol (jumpStd), fixed 0.07 (7%)',       'Calibrated constant'],
       ['Z',      'Standard normal Brownian shock',            'Sampled per step'],
     ],
     [0.12, 0.55, 0.33]
