@@ -15,6 +15,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { parseLiteral } = require('./lib/safe-literal');
 
 const FRESH_DAYS = 60;
 const AGING_DAYS = 90;
@@ -25,11 +26,11 @@ function loadFromSentinel() {
 
     const compMatch = src.match(/const COMPANIES = (\[[\s\S]*?\n\]);/);
     if (!compMatch) throw new Error('Could not locate COMPANIES literal in sentinel.v2.js');
-    const COMPANIES = eval(compMatch[1]);
+    const COMPANIES = parseLiteral(compMatch[1]);
 
     const bandsMatch = src.match(/const RATING_BANDS = (\{[\s\S]*?\n\});/);
     if (!bandsMatch) throw new Error('Could not locate RATING_BANDS literal in sentinel.v2.js');
-    const RATING_BANDS = eval('(' + bandsMatch[1] + ')');
+    const RATING_BANDS = parseLiteral(bandsMatch[1]);
 
     return { COMPANIES, RATING_BANDS };
 }

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { parseLiteral } = require('./scripts/lib/safe-literal');
 
 const BASE_URL = 'https://novasect.space';
 
@@ -22,8 +23,8 @@ try {
     // Extract the array literal using a regex
     const match = sentinelCode.match(/const COMPANIES = (\[[\s\S]*?\]);/);
     if (match) {
-        // Safely evaluate the array literal
-        companies = new Function(`return ${match[1]}`)();
+        // Parse the array literal without executing code (no new Function/eval).
+        companies = parseLiteral(match[1]);
     } else {
         console.warn('Could not find COMPANIES array in sentinel.v2.js');
     }

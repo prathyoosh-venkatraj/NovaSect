@@ -17,6 +17,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { parseLiteral } = require('./lib/safe-literal');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -39,7 +40,7 @@ const KNOWN_REPORTS = {
 const sentinelSrc = fs.readFileSync(path.join(ROOT, 'sentinel.v2.js'), 'utf8');
 const compMatch = sentinelSrc.match(/const COMPANIES = (\[[\s\S]*?\n\]);/);
 if (!compMatch) throw new Error('Could not find COMPANIES literal in sentinel.v2.js');
-const COMPANIES = eval(compMatch[1]);
+const COMPANIES = parseLiteral(compMatch[1]);
 
 // ─── 2. Osiris physics params ──────────────────────────────────────────
 const physicsConfig = JSON.parse(
@@ -66,7 +67,7 @@ for (const cohortName of Object.keys(physicsConfig.cohorts)) {
 const reportSrc = fs.readFileSync(path.join(ROOT, 'report.html'), 'utf8');
 const skelMatch = reportSrc.match(/const skeletonReports = (\[[\s\S]*?\]);/);
 if (!skelMatch) throw new Error('Could not find skeletonReports in report.html');
-const skeletonRows = eval(skelMatch[1]);
+const skeletonRows = parseLiteral(skelMatch[1]);
 
 // Extract the 9 fully-built companyData entries so the brief page can
 // render the ratios table for those names. Brace-balanced parse keeps
@@ -86,7 +87,7 @@ function extractObjectLiteral(src, startMarker) {
     return null;
 }
 const cdLiteral = extractObjectLiteral(reportSrc, 'const companyData = ');
-const companyDataLookup = cdLiteral ? eval('(' + cdLiteral + ')') : {};
+const companyDataLookup = cdLiteral ? parseLiteral(cdLiteral) : {};
 // Each row: [slug, name, tvTicker, industry, yahooOverride]
 const finvaultByYahoo = {};
 for (const [slug, name, tvTicker, industry, yahooOverride] of skeletonRows) {
