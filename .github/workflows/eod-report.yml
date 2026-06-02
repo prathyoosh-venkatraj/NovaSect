@@ -1,0 +1,47 @@
+name: EOD Analytics Report
+
+# Posts a once-daily Umami analytics digest (last 7 days incl. today) to
+# Discord. Reuses the health-check Discord webhook unless a dedicated
+# DISCORD_REPORT_WEBHOOK_URL is set.
+#
+# Required secret:
+#   UMAMI_API_KEY  — Umami Cloud API key (cloud.umami.is -> Settings -> API)
+# Reused/optional secrets:
+#   DISCORD_REPORT_WEBHOOK_URL  (preferred) or DISCORD_WEBHOOK_URL
+#   UMAMI_WEBSITE_ID            (optional; defaults to the NovaSect site id)
+#
+# Manual run: Actions -> EOD Analytics Report -> Run workflow
+
+on:
+  schedule:
+    # 21:55 UTC ≈ end of day Europe/Berlin (22:55 CET / 23:55 CEST).
+    - cron: '55 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eod-report-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Build & post analytics digest
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build & post report
+        env:
+          UMAMI_API_KEY: ${{ secrets.UMAMI_API_KEY }}
+          UMAMI_WEBSITE_ID: ${{ secrets.UMAMI_WEBSITE_ID }}
+          DISCORD_REPORT_WEBHOOK_URL: ${{ secrets.DISCORD_REPORT_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          SITE_URL: https://novasect.space
+        run: node scripts/report/eod-umami.mjs
