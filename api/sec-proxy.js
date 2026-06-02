@@ -15,7 +15,7 @@
  */
 
 import { isRateLimited, getClientIp } from './_ratelimit.js';
-import { buildSeries, historyData } from '../scripts/lib/xbrl-history.mjs';
+import { buildSeries, historyData } from './_xbrl-history.js';
 
 // SEC asks for a UA identifying the app + a contact address.
 const SEC_UA = 'NovaSect FinVault (novasect.space) contact@novasect.space';
