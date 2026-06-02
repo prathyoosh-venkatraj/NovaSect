@@ -80,7 +80,7 @@ export default async function handler(req, res) {
 
     // companyfacts only changes on a new filing — cache hard at the edge.
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=43200');
-    return res.status(200).json({ ticker: ticker.toUpperCase(), cik, history });
+    return res.status(200).json({ ticker: ticker.toUpperCase(), cik, source: 'SEC EDGAR XBRL', history });
   } catch (e) {
     console.error('SEC Proxy Error:', e.message);
     return res.status(502).json({ error: 'E502: SEC_NETWORK_ERROR' });

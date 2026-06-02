@@ -17,6 +17,8 @@
  *     non-US tickers on the free tier).
  */
 
+import { historyFromYahoo } from './_xbrl-history.js';
+
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
 
 // In-process sliding-window rate limiter (persists across warm invocations).
@@ -43,7 +45,7 @@ function getClientIp(req) {
 
 // Tickers, ETFs, and indices (e.g. ^GSPC, BRK.B, RELIANCE.NS, 7203.T).
 const SYMBOL_RE = /^[A-Za-z0-9.\-\^]{1,20}$/;
-const ALLOWED_MODES = new Set(['earnings', 'quote-summary', 'news', 'history']);
+const ALLOWED_MODES = new Set(['earnings', 'quote-summary', 'news', 'history', 'financials']);
 // Yahoo chart range values (includes custom intraday defaults 30d/60d).
 const ALLOWED_RANGES = new Set(['1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'ytd', 'max', '30d', '60d']);
 
@@ -189,6 +191,32 @@ export default async function handler(req, res) {
             });
         } catch (error) {
             console.error('Yahoo quote-summary error:', error);
+            return res.status(502).json({ error: 'E502: YAHOO_AUTH_FAILED' });
+        }
+    }
+
+    // ── financials mode: 5-year (≈4yr) annual statement history → compact
+    // horizontal-analysis payload. Fallback for non-US filers with no SEC XBRL.
+    if (mode === 'financials') {
+        try {
+            const { cookie, crumb } = await getYahooAuth();
+            const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${symbol}` +
+                `?modules=incomeStatementHistory,balanceSheetHistory,cashflowStatementHistory&crumb=${encodeURIComponent(crumb)}`;
+            const response = await fetch(url, { headers: { 'User-Agent': UA, 'Cookie': cookie } });
+            if (!response.ok) {
+                return res.status(response.status).json({ error: `E${response.status}: YAHOO_API_REJECTED` });
+            }
+            const data = await response.json();
+            const r = data.quoteSummary?.result?.[0];
+            const income   = r?.incomeStatementHistory?.incomeStatementHistory || [];
+            const balance  = r?.balanceSheetHistory?.balanceSheetStatements   || [];
+            const cashflow = r?.cashflowStatementHistory?.cashflowStatements   || [];
+            const history = historyFromYahoo(income, balance, cashflow);
+            if (!history) return res.status(404).json({ error: 'E404: NO_DATA_FOUND' });
+            res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=43200');
+            return res.status(200).json({ symbol, source: 'Yahoo Finance', history });
+        } catch (error) {
+            console.error('Yahoo financials error:', error);
             return res.status(502).json({ error: 'E502: YAHOO_AUTH_FAILED' });
         }
     }

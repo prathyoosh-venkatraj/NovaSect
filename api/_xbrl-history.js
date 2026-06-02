@@ -117,6 +117,54 @@ function cagr(oldV, newV, periods) {
   return Math.pow(newV / oldV, 1 / periods) - 1;
 }
 
+// Build the same 5Y history shape from Yahoo quoteSummary statement-history
+// modules (fallback for non-US filers with no SEC XBRL). Yahoo provides ~4
+// annual years; operatingIncome is often absent for foreign filers (operating
+// margin then shows as a gap), but revenue/net income/equity/cash-flow do
+// populate → net margin, ROE, and CAGRs render.
+export function historyFromYahoo(income = [], balance = [], cashflow = []) {
+  const keys = ['revenue', 'operatingIncome', 'netIncome', 'equity', 'totalAssets',
+    'currentAssets', 'currentLiabilities', 'cash', 'longTermDebt', 'shortTermDebt',
+    'inventory', 'ocf', 'capex', 'dividendsPaid', 'da', 'interestExpense', 'epsDiluted'];
+  const x = {};
+  for (const k of keys) x[k] = [];
+  const num = (o) => (o && typeof o === 'object' && typeof o.raw === 'number') ? o.raw : null;
+  const endOf = (s) => s?.endDate?.fmt
+    || (typeof s?.endDate?.raw === 'number' ? new Date(s.endDate.raw * 1000).toISOString().slice(0, 10) : null);
+  const push = (arr, val, end) => { if (val != null && !isNaN(val) && end) arr.push({ value: val, end }); };
+
+  for (const s of income) {
+    const e = endOf(s);
+    push(x.revenue, num(s.totalRevenue), e);
+    push(x.operatingIncome, num(s.operatingIncome), e);
+    push(x.netIncome, num(s.netIncome), e);
+    push(x.interestExpense, num(s.interestExpense), e);
+  }
+  for (const s of balance) {
+    const e = endOf(s);
+    const eqRaw = num(s.totalStockholderEquity);
+    const ta = num(s.totalAssets);
+    const tl = num(s.totalLiab);
+    // Foreign filers often omit totalStockholderEquity → derive from A − L.
+    push(x.equity, eqRaw != null ? eqRaw : (ta != null && tl != null ? ta - tl : null), e);
+    push(x.totalAssets, ta, e);
+    push(x.currentAssets, num(s.totalCurrentAssets), e);
+    push(x.currentLiabilities, num(s.totalCurrentLiabilities), e);
+    push(x.cash, num(s.cash), e);
+    push(x.longTermDebt, num(s.longTermDebt), e);
+    push(x.shortTermDebt, num(s.shortLongTermDebt), e);
+    push(x.inventory, num(s.inventory), e);
+  }
+  for (const s of cashflow) {
+    const e = endOf(s);
+    push(x.ocf, num(s.totalCashFromOperatingActivities), e);
+    push(x.capex, num(s.capitalExpenditures), e);
+    const d = num(s.dividendsPaid);
+    push(x.dividendsPaid, d != null ? Math.abs(d) : null, e); // report as positive payment
+  }
+  return historyData(x);
+}
+
 export function historyData(x) {
   const maps = toYearMaps(x);
   const yearsDesc = Array.from(maps.revenue?.keys?.() || maps.netIncome?.keys?.() || [])

@@ -2006,16 +2006,26 @@
         // (computed server-side from SEC XBRL) and charts it. Stays hidden for
         // non-US filers (foreign / PDF-sourced) where the proxy returns 404.
         let _fyRevNiChart = null, _fyMarginsChart = null;
-        async function loadFiveYearTrends(tvTicker) {
+        async function loadFiveYearTrends(tvTicker, yahooSym) {
             const section = document.getElementById('fiveyear-section');
             if (!section || !tvTicker || typeof Chart === 'undefined') return;
-            const symbol = tvTicker.split(':')[1] || tvTicker;
-            let history;
+            let history = null, source = '';
+
+            // 1) US filers — SEC EDGAR XBRL.
             try {
+                const symbol = tvTicker.split(':')[1] || tvTicker;
                 const res = await fetch(`/api/sec-proxy?ticker=${encodeURIComponent(symbol)}`);
-                if (!res.ok) return;                       // foreign/PDF filer or no data
-                ({ history } = await res.json());
-            } catch { return; }
+                if (res.ok) { const j = await res.json(); history = j.history; source = j.source || 'SEC EDGAR XBRL'; }
+            } catch { /* fall through */ }
+
+            // 2) Fallback (foreign / non-SEC filers) — Yahoo annual statements.
+            if ((!history || history.years?.length < 2) && yahooSym) {
+                try {
+                    const res = await fetch(`/api/yahoo-proxy?mode=financials&symbol=${encodeURIComponent(yahooSym)}`);
+                    if (res.ok) { const j = await res.json(); history = j.history; source = j.source || 'Yahoo Finance'; }
+                } catch { /* stay hidden */ }
+            }
+
             if (!history || !Array.isArray(history.years) || history.years.length < 2) return;
 
             const GREEN = '#39FF14', AMBER = '#FFB000', CYAN = '#22d3ee';
@@ -2056,6 +2066,9 @@
                 ['Revenue CAGR', c.revenue], ['Net Income CAGR', c.netIncome],
                 ['EPS CAGR', c.eps], ['FCF CAGR', c.fcf], ['Dividend CAGR', c.dividends],
             ].map(([label, v]) => `<span class="fy-chip">${label} <strong class="${cls(v)}">${fmtC(v)}</strong></span>`).join('');
+
+            const note = section.querySelector('.fiveyear-note');
+            if (note) note.textContent = `${history.years.length}-year horizontal analysis · live from ${source} annual filings.`;
 
             section.style.display = 'block';
         }
@@ -2872,7 +2885,7 @@
                         loadFundamentals(data.ticker);
                         loadEarningsDate(data.ticker);
                         loadDividendHistory(data.ticker);
-                        loadFiveYearTrends(data.ticker);
+                        loadFiveYearTrends(data.ticker, data.yahooSymbol || (typeof toYahooSymbol === 'function' ? toYahooSymbol(data.ticker) : null));
                     }
                     loadDebtMaturity(company.toLowerCase(), companyData);
                     // Cross-tool badge: Sentinel's static rating anchor +
