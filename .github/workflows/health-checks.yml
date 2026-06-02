@@ -43,19 +43,19 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Set up Node 20
-        uses: actions/setup-node@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       # Restore the latest dedup state if any prior run cached one.
       # restore-keys does a prefix match across all caches with that
       # prefix, picking the most recently created.
       - name: Restore dedup state
         id: restore-state
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .health
           key: novasect-health-state-${{ github.run_id }}-${{ github.run_attempt }}
@@ -68,7 +68,7 @@ jobs:
       # caching by package-lock hash is safe.
       - name: Cache Playwright browsers
         id: cache-playwright
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-v1
@@ -92,7 +92,7 @@ jobs:
       # exits non-zero on failure, but the cache should still update).
       - name: Save dedup state
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .health
           key: novasect-health-state-${{ github.run_id }}-${{ github.run_attempt }}
