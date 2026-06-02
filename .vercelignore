@@ -20,6 +20,13 @@ generate-sitemap.js
 /osiris-bg.js
 /sentinel-promo.js
 
+# Raw Osiris ES-module client (the site loads the bundled .min versions).
+components/osiris/osiris.js
+components/osiris/osirisIngestion.js
+components/osiris/osirisCloudCanvas.js
+components/osiris/osirisOracle.js
+components/osiris/stochasticWorker.js
+
 # Internal docs / templates.
 *.docx
 *.md

@@ -715,8 +715,8 @@ class OsirisOrchestrator {
             const drift = baseDrift - dyAdj;
             const volatility = final_sigma;
 
-            // Instantiate New Worker
-            this.activeWorker = new Worker('/components/osiris/stochasticWorker.js');
+            // Instantiate New Worker (minified classic worker — see scripts/build.js)
+            this.activeWorker = new Worker('/components/osiris/stochasticWorker.min.js');
 
             // Resolve path budget: HI-FI selection wins when enabled, else
             // the device-class baseline that was applied in init().

@@ -1434,7 +1434,7 @@
         // FinVault report.html script — converted to a module so it can pull
         // live ticker metrics from osirisIngestion (shared IndexedDB cache,
         // no extra API calls beyond what Osiris already does on a 24h TTL).
-        import { osirisIngestion } from './components/osiris/osirisIngestion.js';
+        import { osirisIngestion } from './components/osiris/osirisIngestion.min.js';
 
         function loadPdfJs(cb) {
             if (window.pdfjsLib) { cb(); return; }
