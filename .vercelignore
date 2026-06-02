@@ -1,0 +1,25 @@
+# Files excluded from the Vercel deployment so they are NOT served publicly.
+# The live site loads only the .min.* assets, components/, data/, physics-config,
+# HTML and images — everything below is offline/build-only or de-minification aid.
+# (package.json/lock are intentionally NOT listed: Vercel needs them at build
+#  time and already 404s them for static requests.)
+
+# Offline build + CI pipeline (report generation, prompts, registry, optimizer,
+# health checks, sitemap generator) — never used by the live site.
+scripts/
+.github/
+generate-sitemap.js
+
+# De-minification aids — a public .map reconstructs original source.
+*.map
+
+# Unminified sources (the site references the *.min.* versions).
+/script.js
+/style.css
+/sentinel.v2.js
+/osiris-bg.js
+/sentinel-promo.js
+
+# Internal docs / templates.
+*.docx
+*.md

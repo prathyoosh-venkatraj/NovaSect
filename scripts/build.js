@@ -5,8 +5,8 @@
  * Usage:  npm run build
  *
  * HTML files reference the `.min.*` outputs. Source files remain editable;
- * re-run this script after any edit. Sourcemaps are generated for debugging
- * (kept since the repo is public anyway).
+ * re-run this script after any edit. Sourcemaps are intentionally NOT emitted
+ * — a public .map de-minifies the bundle back to original source.
  *
  * ES-module components under components/osiris/ are intentionally skipped:
  * they're small, frequently edited, and per-file minification would require
@@ -43,7 +43,7 @@ function fmt(n) { return (n / 1024).toFixed(1) + ' KB'; }
             entryPoints: [file],
             outfile: out,
             minify: true,
-            sourcemap: true,
+            sourcemap: false,
             target: 'es2020',
             bundle: false,
             legalComments: 'none'
@@ -65,7 +65,7 @@ function fmt(n) { return (n / 1024).toFixed(1) + ' KB'; }
             entryPoints: [file],
             outfile: out,
             minify: true,
-            sourcemap: true,
+            sourcemap: false,
             loader: { '.css': 'css' }
         });
         const before = fs.statSync(file).size;
