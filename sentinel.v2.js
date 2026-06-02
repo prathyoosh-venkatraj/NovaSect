@@ -854,6 +854,9 @@ function createCard(company) {
     card.className = 'bg-card-bg neon-border rounded-lg p-5 cursor-pointer flex flex-col transition-all group animate-in fade-in duration-300 relative';
     card.id = `card-${company.ticker}`;
     card.setAttribute('onclick', `openModal('${company.ticker}')`);
+    // Umami custom event — track Sentinel company opens (the core in-page action).
+    card.setAttribute('data-umami-event', 'sentinel-open');
+    card.setAttribute('data-umami-event-ticker', company.ticker);
     card.innerHTML = `
         <span class="stale-dot hidden absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_6px_#ef4444]" title="Anchor refresh overdue — see SENTINEL-CALIBRATION.md"></span>
         <div class="flex justify-between items-start mb-4">
