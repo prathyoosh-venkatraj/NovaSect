@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": null,
-  "buildCommand": "echo skip-build (assets are pre-built and committed)",
+  "buildCommand": "echo skip-build",
   "outputDirectory": ".",
   "routes": [
     {
