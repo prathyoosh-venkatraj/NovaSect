@@ -40,6 +40,18 @@ async function umami(path, params = {}) {
 
 const statVal = (s) => (s && typeof s.value === 'number' ? s.value : Number(s) || 0);
 
+// Top-pages metric: Umami renamed the page metric `type` between versions
+// ('url' on older, 'path' on current). Try both so this works regardless.
+async function pageMetric(startAt, endAt) {
+  for (const type of ['url', 'path']) {
+    try {
+      const rows = await umami('/metrics', { startAt, endAt, type, limit: 6 });
+      if (Array.isArray(rows) && rows.length) return rows;
+    } catch { /* try next type */ }
+  }
+  return [];
+}
+
 // ── Formatting helpers ────────────────────────────────────────────────────────
 
 const fmtInt = (n) => Math.round(n).toLocaleString('en-US');
@@ -67,7 +79,7 @@ async function buildReport() {
   const [stats, prev, urls, referrers, events, series] = await Promise.all([
     umami('/stats',   { startAt, endAt }),
     umami('/stats',   { startAt: prevStart, endAt: prevEnd }).catch(() => null),
-    umami('/metrics', { startAt, endAt, type: 'url',      limit: 6 }).catch(() => []),
+    pageMetric(startAt, endAt),
     umami('/metrics', { startAt, endAt, type: 'referrer', limit: 5 }).catch(() => []),
     umami('/metrics', { startAt, endAt, type: 'event',    limit: 6 }).catch(() => []),
     umami('/pageviews', { startAt, endAt, unit: 'day', timezone: TZ }).catch(() => null),
