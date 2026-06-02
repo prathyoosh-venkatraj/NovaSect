@@ -13,6 +13,30 @@
 const ANNUAL_FORMS = ['10-K', '10-K/A', '20-F', '20-F/A'];
 const UNIT_PREF = ['USD', 'EUR', 'GBP', 'NOK', 'BRL', 'shares', 'USD/shares', 'EUR/shares', 'pure'];
 
+// US-GAAP concept synonym map (mirrors generate-report.mjs CONCEPTS). Exported
+// so the live sec-proxy can extract the same series the offline pipeline uses.
+export const US_GAAP_CONCEPTS = {
+  revenue:            ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'SalesRevenueNet', 'RegulatedAndUnregulatedOperatingRevenue', 'ElectricUtilityRevenue', 'OilAndGasRevenue'],
+  operatingIncome:    ['OperatingIncomeLoss'],
+  da:                 ['DepreciationDepletionAndAmortization', 'DepreciationAndAmortization', 'Depreciation'],
+  interestExpense:    ['InterestExpense', 'InterestAndDebtExpense'],
+  netIncome:          ['NetIncomeLoss', 'ProfitLoss', 'NetIncomeLossAvailableToCommonStockholdersBasic'],
+  epsDiluted:         ['EarningsPerShareDiluted', 'EarningsPerShareBasic'],
+  longTermDebt:       ['LongTermDebt', 'LongTermDebtNoncurrent', 'LongTermDebtAndCapitalLeaseObligations'],
+  shortTermDebt:      ['ShortTermBorrowings', 'DebtCurrent', 'LongTermDebtCurrent'],
+  cash:               ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsAndShortTermInvestments'],
+  sharesOut:          ['CommonStockSharesOutstanding', 'EntityCommonStockSharesOutstanding'],
+  equity:             ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],
+  totalAssets:        ['Assets'],
+  totalLiabilities:   ['Liabilities'],
+  currentAssets:      ['AssetsCurrent'],
+  currentLiabilities: ['LiabilitiesCurrent'],
+  inventory:          ['InventoryNet', 'Inventories'],
+  ocf:                ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'],
+  capex:              ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsForCapitalImprovements'],
+  dividendsPaid:      ['PaymentsOfDividends', 'PaymentsOfDividendsCommonStock', 'PaymentsOfOrdinaryDividends'],
+};
+
 // All annual {value, end} for a single concept name, best available unit, desc by date.
 export function extractAnnual(facts, name, ns = null) {
   const namespaces = ns ? [ns, 'dei'] : ['us-gaap', 'dei'];
@@ -182,6 +206,59 @@ export function buildHistoryMarkdown(x) {
          `CAGR shown as "n/m" where a sign change makes a compound rate meaningless.*`, '');
 
   return L.join('\n');
+}
+
+// Extract the per-concept series object `x` directly from a companyfacts blob.
+export function buildSeries(facts, conceptMap = US_GAAP_CONCEPTS, ns = null, n = 5) {
+  const x = {};
+  for (const [k, list] of Object.entries(conceptMap)) x[k] = pickSeries(facts, list, ns, n);
+  return x;
+}
+
+// Structured 5-year data for client charting (compact; raw numbers, client
+// formats). Returns null when fewer than 2 annual years are available.
+export function historyData(x) {
+  const maps = toYearMaps(x);
+  const yearsDesc = Array.from(maps.revenue?.keys?.() || maps.netIncome?.keys?.() || [])
+    .sort((a, b) => Number(b) - Number(a)).slice(0, 5);
+  if (yearsDesc.length < 2) return null;
+
+  const chrono = [...yearsDesc].sort((a, b) => Number(a) - Number(b));
+  const R = chrono.map(y => ratiosForYear(maps, y));
+  const pick = k => R.map(r => (r[k] == null || isNaN(r[k]) ? null : r[k]));
+  const oldest = R[0], latest = R[R.length - 1], periods = chrono.length - 1;
+
+  return {
+    years: chrono.map(y => 'FY ' + y),
+    summary: {
+      revenue:         pick('rev'),
+      operatingIncome: pick('oi'),
+      ebitda:          pick('ebitda'),
+      netIncome:       pick('ni'),
+      eps:             pick('eps'),
+      freeCashFlow:    pick('fcf'),
+      totalDebt:       pick('td'),
+      netDebt:         pick('nd'),
+      equity:          pick('eq'),
+    },
+    ratios: {
+      operatingMargin:  pick('om'),
+      netMargin:        pick('nm'),
+      roe:              pick('roe'),
+      roa:              pick('roa'),
+      currentRatio:     pick('cr'),
+      netLeverage:      pick('netLev'),
+      interestCoverage: pick('ic'),
+    },
+    cagr: {
+      revenue:   cagr(oldest.rev, latest.rev, periods),
+      netIncome: cagr(oldest.ni,  latest.ni,  periods),
+      eps:       cagr(oldest.eps, latest.eps, periods),
+      fcf:       cagr(oldest.fcf, latest.fcf, periods),
+      dividends: cagr(oldest.div, latest.div, periods),
+      bookValue: cagr(oldest.eq,  latest.eq,  periods),
+    },
+  };
 }
 
 export { normShares };

@@ -1334,6 +1334,29 @@
                     </table>
                 </div>
 
+                <!-- Five-Year Trends — live from SEC EDGAR XBRL via /api/sec-proxy -->
+                <style>
+                  .fiveyear-container { margin-top: 28px; }
+                  .fiveyear-title { font-size: .85rem; letter-spacing: .2em; color: #39FF14; margin-bottom: 14px; }
+                  .fiveyear-cagr { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+                  .fy-chip { border: 1px solid rgba(57,255,20,.25); border-radius: 4px; padding: 6px 10px; font-size: .7rem; color: #cfcfcf; background: rgba(57,255,20,.04); font-family: 'JetBrains Mono', monospace; }
+                  .fy-chip strong { color: #fff; }
+                  .fy-chip .up { color: #39FF14; } .fy-chip .down { color: #FF4D4D; }
+                  .fiveyear-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                  .fiveyear-chart { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.06); border-radius: 6px; padding: 12px; height: 260px; }
+                  .fiveyear-note { font-size: .62rem; color: #666; margin-top: 10px; font-style: italic; }
+                  @media (max-width: 760px) { .fiveyear-charts { grid-template-columns: 1fr; } }
+                </style>
+                <div id="fiveyear-section" class="fiveyear-container" style="display: none;">
+                    <h2 class="fiveyear-title">FIVE-YEAR TRENDS</h2>
+                    <div class="fiveyear-cagr" id="fiveyear-cagr"></div>
+                    <div class="fiveyear-charts">
+                        <div class="fiveyear-chart"><canvas id="fy-revni"></canvas></div>
+                        <div class="fiveyear-chart"><canvas id="fy-margins"></canvas></div>
+                    </div>
+                    <p class="fiveyear-note">Five-year horizontal analysis computed live from SEC EDGAR XBRL annual filings (US filers).</p>
+                </div>
+
                 <div id="multiples-section" class="multiples-container" style="display: none;">
                     <h2 class="multiples-title">MULTIPLES</h2>
                     <div class="multiples-grid">
@@ -1405,6 +1428,7 @@
     </section>
 
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous"></script>
     <script defer src="script.min.js"></script>
     <script type="module">
         // FinVault report.html script — converted to a module so it can pull
@@ -1976,6 +2000,64 @@
                 el.classList.remove('fh-positive', 'fh-negative');
                 el.classList.add(opts.rawNumber >= 0 ? 'fh-positive' : 'fh-negative');
             }
+        }
+
+        // Five-Year Trends — fetches the compact 5Y series from /api/sec-proxy
+        // (computed server-side from SEC XBRL) and charts it. Stays hidden for
+        // non-US filers (foreign / PDF-sourced) where the proxy returns 404.
+        let _fyRevNiChart = null, _fyMarginsChart = null;
+        async function loadFiveYearTrends(tvTicker) {
+            const section = document.getElementById('fiveyear-section');
+            if (!section || !tvTicker || typeof Chart === 'undefined') return;
+            const symbol = tvTicker.split(':')[1] || tvTicker;
+            let history;
+            try {
+                const res = await fetch(`/api/sec-proxy?ticker=${encodeURIComponent(symbol)}`);
+                if (!res.ok) return;                       // foreign/PDF filer or no data
+                ({ history } = await res.json());
+            } catch { return; }
+            if (!history || !Array.isArray(history.years) || history.years.length < 2) return;
+
+            const GREEN = '#39FF14', AMBER = '#FFB000', CYAN = '#22d3ee';
+            const axis = { ticks: { color: '#9aa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.06)' } };
+            const legend = { labels: { color: '#cfcfcf', font: { size: 10 }, boxWidth: 12 } };
+            const B = v => v == null ? null : v / 1e9;
+            const pct = v => v == null ? null : v * 100;
+
+            if (_fyRevNiChart) _fyRevNiChart.destroy();
+            _fyRevNiChart = new Chart(document.getElementById('fy-revni'), {
+                type: 'bar',
+                data: { labels: history.years, datasets: [
+                    { label: 'Revenue ($B)',    data: history.summary.revenue.map(B),   backgroundColor: 'rgba(57,255,20,.55)' },
+                    { label: 'Net Income ($B)', data: history.summary.netIncome.map(B), backgroundColor: 'rgba(255,176,0,.6)' },
+                ] },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { legend, title: { display: true, text: 'Revenue & Net Income', color: GREEN, font: { size: 12 } } },
+                    scales: { x: axis, y: axis } }
+            });
+
+            if (_fyMarginsChart) _fyMarginsChart.destroy();
+            _fyMarginsChart = new Chart(document.getElementById('fy-margins'), {
+                type: 'line',
+                data: { labels: history.years, datasets: [
+                    { label: 'Operating margin %', data: history.ratios.operatingMargin.map(pct), borderColor: GREEN, backgroundColor: 'transparent', tension: .3, spanGaps: true },
+                    { label: 'Net margin %',       data: history.ratios.netMargin.map(pct),       borderColor: AMBER, backgroundColor: 'transparent', tension: .3, spanGaps: true },
+                    { label: 'ROE %',              data: history.ratios.roe.map(pct),             borderColor: CYAN,  backgroundColor: 'transparent', tension: .3, spanGaps: true },
+                ] },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { legend, title: { display: true, text: 'Margins & ROE', color: GREEN, font: { size: 12 } } },
+                    scales: { x: axis, y: axis } }
+            });
+
+            const fmtC = v => v == null ? 'n/m' : (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+            const cls  = v => v == null ? '' : (v >= 0 ? 'up' : 'down');
+            const c = history.cagr || {};
+            document.getElementById('fiveyear-cagr').innerHTML = [
+                ['Revenue CAGR', c.revenue], ['Net Income CAGR', c.netIncome],
+                ['EPS CAGR', c.eps], ['FCF CAGR', c.fcf], ['Dividend CAGR', c.dividends],
+            ].map(([label, v]) => `<span class="fy-chip">${label} <strong class="${cls(v)}">${fmtC(v)}</strong></span>`).join('');
+
+            section.style.display = 'block';
         }
 
         async function loadFundamentals(ticker) {
@@ -2790,6 +2872,7 @@
                         loadFundamentals(data.ticker);
                         loadEarningsDate(data.ticker);
                         loadDividendHistory(data.ticker);
+                        loadFiveYearTrends(data.ticker);
                     }
                     loadDebtMaturity(company.toLowerCase(), companyData);
                     // Cross-tool badge: Sentinel's static rating anchor +
