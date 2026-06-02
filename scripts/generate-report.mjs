@@ -25,6 +25,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
+import { pickSeries, buildHistoryMarkdown } from './lib/xbrl-history.mjs';
 
 const _require = createRequire(import.meta.url);
 
@@ -349,35 +350,9 @@ async function extract20FItems(cik, filing) {
 
 // ns: namespace to search — null defaults to ['us-gaap','dei'] for 10-K,
 //     'ifrs-full' for 20-F filers
-function extractTop2(facts, name, ns = null) {
-  const namespaces = ns ? [ns, 'dei'] : ['us-gaap', 'dei'];
-  for (const namespace of namespaces) {
-    const c = facts[namespace]?.[name];
-    if (!c) continue;
-    // IFRS filers report in native currency (EUR, GBP, NOK, etc.) — accept any currency unit
-    const units = Object.keys(c.units || {});
-    for (const unit of ['USD', 'EUR', 'GBP', 'NOK', 'BRL', 'shares', 'USD/shares', 'EUR/shares', 'pure', ...units]) {
-      const entries = c.units?.[unit];
-      if (!entries?.length) continue;
-      const annualForms = ['10-K', '10-K/A', '20-F', '20-F/A'];
-      const annual = entries
-        .filter(e => annualForms.includes(e.form) && e.end)
-        .sort((a, b) => b.end.localeCompare(a.end));
-      if (annual.length) return annual.slice(0, 2).map(e => ({ value: e.val, end: e.end }));
-    }
-  }
-  return [];
-}
-
-function pickBest2(facts, list, ns = null) {
-  let best = [];
-  for (const name of list) {
-    const cands = extractTop2(facts, name, ns);
-    if (cands.length && (best.length === 0 || cands[0].end > best[0].end)) best = cands;
-  }
-  return best;
-}
-
+// Fetch up to 5 fiscal years per concept (merging synonym tags by year via the
+// shared xbrl-history module). buildTables() still reads indices [0]/[1] for the
+// existing 2-year comparison; buildHistoryMarkdown() consumes the full series.
 async function fetchXBRL2(cik, filingType = '10-K') {
   const data = await fetchJSON(`${BASE_DATA}/api/xbrl/companyfacts/CIK${cik}.json`);
   await sleep(RATE_MS);
@@ -385,7 +360,7 @@ async function fetchXBRL2(cik, filingType = '10-K') {
   const concepts = filingType === '20-F' ? IFRS_CONCEPTS : CONCEPTS;
   const ns       = filingType === '20-F' ? 'ifrs-full'   : null;
   const out = {};
-  for (const [k, list] of Object.entries(concepts)) out[k] = pickBest2(facts, list, ns);
+  for (const [k, list] of Object.entries(concepts)) out[k] = pickSeries(facts, list, ns, 5);
   return out;
 }
 
@@ -1006,7 +981,7 @@ async function main() {
       ? await extract20FItems(cik, filing)
       : await extract10KItems(cik, filing);
 
-    process.stdout.write(`[4/5] XBRL 2-year financials (${filingType === '20-F' ? 'IFRS' : 'US-GAAP'}) ... `);
+    process.stdout.write(`[4/5] XBRL 5-year financials (${filingType === '20-F' ? 'IFRS' : 'US-GAAP'}) ... `);
     xbrlData = await fetchXBRL2(cik, filingType);
     const built = buildTables(xbrlData);
     fy0 = built.fy0; fy1 = built.fy1;
@@ -1017,7 +992,7 @@ async function main() {
       : `SEC EDGAR 10-K filing (US-GAAP). Filed ${filingDate}, period ending ${reportDate}.`;
 
     // reuse built tables markdown
-    var tables = built.markdown;
+    var tables = built.markdown + '\n\n' + buildHistoryMarkdown(xbrlData);
 
   } else if (filingType === 'PDF') {
 
@@ -1048,7 +1023,7 @@ async function main() {
 
     const built = buildTables(xbrlData);
     fy0 = built.fy0; fy1 = built.fy1;
-    var tables = built.markdown;
+    var tables = built.markdown + '\n\n' + buildHistoryMarkdown(xbrlData);
     filingDate  = 'N/A (PDF source)';
     reportDate  = fy0;
     dataSourceNote = `Annual Report PDF sourced from company IR page (${currency}, consolidated group accounts). Figures extracted via Claude — verify against published report before publishing.`;
