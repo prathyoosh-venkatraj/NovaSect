@@ -60,12 +60,12 @@
         <!-- Split Info Section (NovaSect + Methodology) -->
         <section class="info-split-section">
             <!-- Dynamic Holographic Dollar Background -->
-            <div class="dollar-bg-container"></div>
+            <div class="dollar-bg-container" data-parallax="0.06"></div>
 
             <div class="split-container">
 
                 <!-- Left: What is NovaSect -->
-                <div class="info-left">
+                <div class="info-left reveal">
                     <h2 class="section-heading">What is NovaSect?</h2>
                     <p class="value-writeup">
                         NovaSect is a real-time credit intelligence and equity research ecosystem targeting the <span style="color: var(--accent-green); font-weight: 700;">Energy and Industrials</span> sectors. We combine rigorous fundamental forensic accounting with the <span style="color: var(--accent-green); font-weight: 700;">Sentinel Heartbeat</span>—a live monitoring engine that calculates synthetic yields and G-Spreads in real-time. The <span style="color: var(--accent-green); font-weight: 700;">Osiris Engine</span> extends this forward, running 5000-path stochastic simulations to map probabilistic price trajectories across every covered ticker. From 10-K deep dives to non-linear stress tests on subordinated debt, NovaSect provides the institutional-grade tools needed to find the <span style="color: var(--accent-green); font-weight: 700;">signal in the chaos</span>.
@@ -73,7 +73,7 @@
                 </div>
 
                 <!-- Right: Methodology Terminal -->
-                <div class="info-right">
+                <div class="info-right reveal" style="--rd:.12s">
                     <h2 class="section-heading">SEGMENTS</h2>
                     <div class="terminal-container">
                         <div class="terminal-screen">
@@ -97,16 +97,16 @@
 
         <section class="cards-section">
             <div id="secondary-canvas-container" class="segments-bg-canvas"></div>
-            <h2 class="segments-heading">ENTER THE VAULT</h2>
+            <h2 class="segments-heading reveal">ENTER THE VAULT</h2>
             <div class="cards-carousel" style="position: relative; z-index: 2;">
-                <div class="card holographic-card" id="card-energy" onclick="window.location.href='energy.html'">
+                <div class="card holographic-card reveal-soft" id="card-energy" onclick="window.location.href='energy.html'">
                     <div class="card-bg">
                         <div class="hologram-image"></div>
                     </div>
                     <h2 class="card-title">ENERGY<br>and UTILITIES</h2>
                 </div>
-                <div class="card holographic-card" id="card-industrials"
-                    onclick="window.location.href='industrials.html'">
+                <div class="card holographic-card reveal-soft" id="card-industrials"
+                    style="--rd:.12s" onclick="window.location.href='industrials.html'">
                     <div class="card-bg">
                         <div class="hologram-image"></div>
                     </div>
@@ -131,7 +131,7 @@
                 <span class="reticle-ring inner"></span>
             </div>
             <div class="promo-overlay"></div>
-            <div class="sentinel-promo-content">
+            <div class="sentinel-promo-content reveal">
                 <h2 class="promo-hdr">SENTINEL</h2>
                 <h3 class="promo-tag">QUANTITATIVE CREDIT MONITOR</h3>
             </div>
@@ -145,7 +145,7 @@
             <div class="osiris-sim-readout">
                 <span class="osiris-sim-label">&gt; SIM:</span><span class="osiris-sim-counter">IDLE</span>
             </div>
-            <div class="sentinel-promo-content">
+            <div class="sentinel-promo-content reveal">
                 <h2 class="promo-hdr">OSIRIS</h2>
                 <h3 class="promo-tag" style="letter-spacing: 2px;">Stochastic stock price speculator</h3>
             </div>
@@ -153,7 +153,7 @@
 
         <section class="footer-section">
             <!-- Subtle Data Node Graphic Background -->
-            <svg class="footer-graphic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200"
+            <svg class="footer-graphic" data-parallax="0.05" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200"
                 preserveAspectRatio="xMidYMid slice">
                 <path d="M-100,100 L150,50 L300,120 L450,40 L600,110 L900,60" fill="none" stroke="currentColor"
                     stroke-width="1" />
@@ -173,7 +173,7 @@
                 <line x1="450" y1="40" x2="500" y2="90" stroke="currentColor" stroke-width="0.5" opacity="0.5" />
                 <line x1="600" y1="110" x2="650" y2="140" stroke="currentColor" stroke-width="0.5" opacity="0.5" />
             </svg>
-            <div class="footer-content-wrapper">
+            <div class="footer-content-wrapper reveal">
                 <h2 class="footer-title">Get in touch</h2>
                 <div class="footer-buttons">
                     <a href="https://www.youtube.com/channel/UCjpUzLKKBiJK1b9d6lC9sDA" class="footer-btn"
@@ -192,7 +192,7 @@
 
         <!-- Disclaimer Section -->
         <section class="disclaimer-section">
-            <div class="disclaimer-content">
+            <div class="disclaimer-content reveal">
                 <strong>DISCLAIMER:</strong> All information, data, and analytical content provided by NovaSect is for informational and educational purposes only and does not constitute financial, investment, tax, or legal advice. NovaSect is not a registered investment adviser, broker-dealer, or financial planning firm under any applicable securities law or regulation. We hold no positions in any of the companies covered on this platform and receive no compensation from any covered entity. The use of AI has been limited to presentation enhancement and user experience enrichment. Data is sourced from third-party providers including Yahoo Finance, FRED, Finnhub, and Alpha Vantage; NovaSect does not guarantee the accuracy, completeness, or timeliness of any information displayed. This platform is provided free of charge. NovaSect assumes no liability for any investment or other decisions made based on information provided herein. Use of this platform constitutes acknowledgement of these terms.
             </div>
         </section>
@@ -205,6 +205,7 @@
     <script defer src="sentinel-promo.min.js"></script>
     <script src="components/global-search/global-search.js" defer></script>
     <script src="components/mobile-nav/mobile-nav.js" defer></script>
+    <script defer src="enhance.min.js"></script>
 </body>
 
 </html>

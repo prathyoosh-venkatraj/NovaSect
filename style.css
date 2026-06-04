@@ -1722,3 +1722,224 @@ body.contagion-alert::before {
     scroll-behavior: auto !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLUIDITY & POLISH LAYER  — additive, opacity/transform only, no reflow.
+   A1 scroll-reveal · A2 scroll-header · A3 smooth-scroll + scrollbar
+   B1 motion tokens · B2 calmer hero glow · B5 focus-visible
+   Hidden states are armed by enhance.js ONLY when motion is allowed, so no-JS
+   and reduced-motion users always see fully-visible, static content. The
+   prefers-reduced-motion block above neutralises every transition/animation
+   here. Safe to delete this whole block (and enhance.js) to revert.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* B1 — shared motion tokens (used by the additions below; existing rules
+   are left untouched to avoid any behavioural change). */
+:root {
+    --ease:     cubic-bezier(0.16, 0.84, 0.44, 1);
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-fast: 0.18s;
+    --dur:      0.30s;
+    --dur-slow: 0.62s;
+}
+
+/* A3 — smooth in-page scrolling + theme-matched scrollbar */
+html {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(57, 255, 20, 0.4) #000;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb {
+    background: rgba(57, 255, 20, 0.32);
+    border: 2px solid #000;
+    border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(57, 255, 20, 0.55); }
+
+/* A1 — scroll reveal. The hidden state (.reveal--armed) is added by JS only
+   when motion is allowed; default (no class) is fully visible. */
+.reveal {
+    transition: opacity var(--dur-slow) var(--ease-out),
+                transform var(--dur-slow) var(--ease-out);
+    transition-delay: var(--rd, 0s);
+    will-change: opacity, transform;
+}
+.reveal.reveal--armed { opacity: 0; transform: translateY(24px); }
+.reveal.reveal--in    { opacity: 1; transform: none; }
+
+/* Opacity-only reveal for the holographic cards — their transform is driven by
+   the tilt JS, so we keep that 0.1s transform transition and only fade opacity. */
+.card.reveal-soft {
+    transition: transform 0.1s ease-out,
+                opacity var(--dur-slow) var(--ease-out);
+    transition-delay: 0s, var(--rd, 0s);
+    will-change: opacity, transform;
+}
+.card.reveal-soft.reveal--armed { opacity: 0; }
+.card.reveal-soft.reveal--in    { opacity: 1; }
+
+/* A2 — header condenses + gains a blurred backdrop after the page is scrolled */
+.header {
+    transition: padding var(--dur-slow) var(--ease),
+                background var(--dur-slow) var(--ease),
+                backdrop-filter var(--dur-slow) var(--ease),
+                border-color var(--dur-slow) var(--ease);
+    border-bottom: 1px solid transparent;
+}
+.header.scrolled {
+    padding-top: 1.1rem;
+    padding-bottom: 1.1rem;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(57, 255, 20, 0.14);
+}
+@media (max-width: 768px) {
+    .header.scrolled { padding-top: 0.9rem; padding-bottom: 0.9rem; }
+}
+
+/* B2 — calmer "breathing" hero glow replaces the strobe flicker (overrides the
+   earlier .hero-cta rule by source order; reduced-motion disables it). */
+@keyframes neon-breathe {
+    0%, 100% {
+        filter: drop-shadow(0 0 8px rgba(57, 255, 20, 0.80))
+                drop-shadow(0 0 20px rgba(57, 255, 20, 0.40));
+    }
+    50% {
+        filter: drop-shadow(0 0 14px rgba(57, 255, 20, 0.95))
+                drop-shadow(0 0 34px rgba(57, 255, 20, 0.55));
+    }
+}
+.hero-cta {
+    opacity: 1;
+    animation: neon-breathe 5s ease-in-out infinite;
+}
+
+/* B5 — keyboard focus rings (shown only for keyboard navigation) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.dropdown-trigger:focus-visible,
+.card:focus-visible {
+    outline: 2px solid var(--accent-green);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+
+/* ───────────────────────────── UNSTARRED POLISH ─────────────────────────────
+   A4 parallax · B3 button sheen · B4 nav underline · C1 soft seams ·
+   C2 heading shimmer · C3 matte grain. Same guarantees: additive, no reflow,
+   neutralised by the reduced-motion block. Each is independently removable.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* A4 — background parallax. The offset (--parallax) is set by enhance.js. Targets
+   are enlarged and sit inside overflow:hidden sections, so the clamped ±40px
+   translate can never reveal an edge. Scoped via [data-parallax] = index only. */
+.dollar-bg-container[data-parallax] {
+    top: -10%;
+    height: 120%;
+    transform: translateY(var(--parallax, 0));
+    will-change: transform;
+}
+.footer-graphic[data-parallax] {
+    height: 120%;
+    transform: translate(-50%, calc(-50% + var(--parallax, 0)));
+    will-change: transform;
+}
+
+/* B3 — light sheen sweep across the pill buttons on hover */
+.footer-btn { overflow: hidden; }
+.footer-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 80%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(57, 255, 20, 0.18), transparent);
+    transform: skewX(-18deg);
+    transition: left var(--dur-slow) var(--ease-out);
+    pointer-events: none;
+}
+.footer-btn:hover::before { left: 140%; }
+
+/* B4 — animated underline on nav links. The dropdown caret already uses
+   .dropdown-trigger::after, so the underline uses ::before. */
+.nav-link, .dropdown-trigger { position: relative; }
+.nav-link::before,
+.dropdown-trigger::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    width: 100%;
+    height: 2px;
+    background: var(--accent-green);
+    box-shadow: 0 0 8px rgba(57, 255, 20, 0.7);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur) var(--ease-out);
+    pointer-events: none;
+}
+.nav-link:hover::before,
+.dropdown-trigger:hover::before,
+.nav-dropdown:hover .dropdown-trigger::before { transform: scaleX(1); }
+
+/* C1 — soft gradient seam between stacked dark sections: a centred line that
+   fades at both ends, layered over the existing faint border. */
+.disclaimer-section { position: relative; }
+.info-split-section::before,
+.cards-section::before,
+.footer-section::before,
+.disclaimer-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(900px, 80%);
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(57, 255, 20, 0.35), transparent);
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* C2 — gentle glow shimmer on the big neon headings. Pulses the existing
+   text-shadow palette only (no colour/clip change), so the neon look is kept. */
+@keyframes heading-shimmer {
+    0%, 100% {
+        text-shadow:
+            0 0 3px rgba(255, 255, 255, 0.5),
+            0 0 8px rgba(57, 255, 20, 0.8),
+            0 0 15px rgba(57, 255, 20, 0.5),
+            0 0 30px rgba(57, 255, 20, 0.3);
+    }
+    50% {
+        text-shadow:
+            0 0 4px rgba(255, 255, 255, 0.7),
+            0 0 12px rgba(57, 255, 20, 0.95),
+            0 0 22px rgba(57, 255, 20, 0.7),
+            0 0 44px rgba(57, 255, 20, 0.45);
+    }
+}
+.segments-heading,
+.promo-hdr {
+    animation: heading-shimmer 6s ease-in-out infinite;
+}
+
+/* C3 — fixed matte grain overlay: removes banding on the dark gradients and adds
+   a premium matte texture. ~3.5%, blended, click-through. */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
