@@ -47,6 +47,67 @@
             fill: currentColor;
             display: block;
         }
+
+        /* ── About-page refinements (page-scoped — no other page is affected) ──
+           Group 1 space/composition · Group 2 typography/hierarchy ·
+           Group 4 polish. Reveal/header/parallax come from enhance.min.js. */
+
+        /* 1a — content-driven height + balanced padding (removes the empty 100vh) */
+        .about-section {
+            min-height: auto;
+            padding: 9rem 4rem 6rem;
+            align-items: center;
+        }
+
+        /* 1b — balanced intro composition + capped text measure */
+        .about-container { gap: 4rem; align-items: center; justify-content: center; }
+        .about-container .about-text-box { flex: 1 1 520px; max-width: 640px; }
+
+        /* coin + caption stack */
+        .coin-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2rem;
+            flex-shrink: 0;
+        }
+        .coin-caption {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(57, 255, 20, 0.7);
+            text-shadow: 0 0 6px rgba(57, 255, 20, 0.35);
+        }
+
+        /* 4b — calmer coin spin so the photo stays legible */
+        .coin-container { animation-duration: 7s; }
+
+        /* 2a — denser, more readable body copy on About */
+        .about-section .value-writeup,
+        .founder-section .value-writeup { font-size: 1.08rem; line-height: 1.75; }
+
+        /* 2b — mono eyebrow label + clearer heading hierarchy */
+        .about-eyebrow {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(57, 255, 20, 0.75);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 6px rgba(57, 255, 20, 0.3);
+        }
+        .about-section .section-heading { font-size: 2.8rem; margin-bottom: 1.6rem; }
+
+        /* 1c — founder block balance + capped bio measure */
+        .founder-container { align-items: center; }
+        .founder-text .value-writeup { max-width: 60ch; }
+
+        @media (max-width: 768px) {
+            .about-section { padding: 7rem 1.5rem 4rem; }
+            .about-section .section-heading { font-size: 2rem; }
+            .about-container .about-text-box { flex: 1 1 100%; max-width: 100%; }
+        }
     </style>
   <!-- Umami Analytics: replace value with your NovaSect Website ID from umami.is -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="134ef845-3a61-49b4-b2f2-1a954fc62467"></script>
@@ -75,7 +136,8 @@
             <div id="secondary-canvas-container" class="segments-bg-canvas"></div>
             
             <div class="about-container">
-                <!-- Holographic Coin Box -->
+                <!-- Holographic Coin Box + caption -->
+                <div class="coin-stack reveal">
                 <div class="holographic-coin-box">
                     <div class="coin-container">
                         <div class="coin-face coin-front" style="overflow: hidden;">
@@ -86,9 +148,12 @@
                         </div>
                     </div>
                 </div>
+                <div class="coin-caption">EST 2026</div>
+                </div>
 
                 <!-- Box for text -->
-                <div class="about-text-box">
+                <div class="about-text-box reveal" style="--rd:.1s">
+                    <div class="about-eyebrow">// ABOUT</div>
                     <h1 class="section-heading">Who are we?</h1>
                     <p class="value-writeup" style="max-width: 100%;">
                         NovaSect is an intelligence platform engineered for financial analysis and equity research within the global <strong style="color: var(--accent-green); text-shadow: 0 0 5px var(--accent-green);">Energy, Utilities, and Industrials</strong> sectors. We bridge the gap between raw data and actionable insight, providing analytics that span the entire corporate spectrum. Our operations consist of the decomposition of both static and dynamic datasets in an effort to equip our users with a granular understanding of the fundamental drivers shaping the global energy, utilities and industrials sectors.
@@ -99,11 +164,12 @@
 
         <!-- Founder Section -->
         <section class="founder-section" style="padding: 6rem 2rem;">
-            <h2 class="section-heading" style="text-align: center; margin-bottom: 4rem;">About our founder</h2>
-            <div class="founder-container" style="display: flex; gap: 4rem; max-width: 1200px; margin: 0 auto; align-items: center; flex-wrap: wrap; justify-content: center;">
+            <div class="about-eyebrow reveal" style="text-align: center;">// FOUNDER</div>
+            <h2 class="section-heading reveal" style="text-align: center; margin-bottom: 2.5rem;">About our founder</h2>
+            <div class="founder-container" style="display: flex; gap: 3.5rem; max-width: 1000px; margin: 0 auto; align-items: center; flex-wrap: wrap; justify-content: center;">
                 
                 <!-- Circular image + LinkedIn (Left) -->
-                <div class="founder-image-stack">
+                <div class="founder-image-stack reveal">
                     <div class="about-image-box" style="padding: 0; overflow: hidden; border-radius: 50%; width: 280px; height: 280px;">
                         <img src="assets/website-picture.webp" alt="Prathyoosh Venkatraj - NovaSect Founder" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                     </div>
@@ -120,8 +186,8 @@
                 </div>
 
                 <!-- Bio Text (Right) -->
-                <div class="about-text-box founder-text" style="flex: 1; min-width: 300px; text-align: left;">
-                    <p class="value-writeup" style="max-width: 100%; font-size: 1.25rem;">
+                <div class="about-text-box founder-text reveal" style="flex: 1; min-width: 300px; text-align: left; --rd:.1s">
+                    <p class="value-writeup" style="max-width: 60ch; font-size: 1.08rem; line-height: 1.75;">
                         Hi, I’m <strong>Prathyoosh Venkatraj</strong>. With an academic foundation in Finance and Accountancy and professional experience in Asset Management, I have spent years pondering over the mechanics of global markets. I founded NovaSect as a dedicated space to decrypt the technical mysteries of the Energy and Industrial sectors. As I continue my journey into an MSc in Finance, NovaSect serves as my commitment to shared learning and the pursuit of analytical precision.
                     </p>
                 </div>
@@ -130,7 +196,7 @@
 
         <section class="footer-section">
             <!-- Subtle Data Node Graphic Background -->
-            <svg class="footer-graphic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200"
+            <svg class="footer-graphic" data-parallax="0.05" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200"
                 preserveAspectRatio="xMidYMid slice">
                 <path d="M-100,100 L150,50 L300,120 L450,40 L600,110 L900,60" fill="none" stroke="currentColor"
                     stroke-width="1" />
@@ -179,6 +245,7 @@
     <script src="script.min.js"></script>
     <script src="components/global-search/global-search.js" defer></script>
     <script src="components/mobile-nav/mobile-nav.js" defer></script>
+    <script defer src="enhance.min.js"></script>
 </body>
 
 </html>
