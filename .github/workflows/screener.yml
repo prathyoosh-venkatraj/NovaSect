@@ -1,0 +1,46 @@
+name: Refresh Screener Dataset
+
+# Rebuilds data/screener.json from SEC EDGAR XBRL for every US filer in the
+# universe (deterministic fundamentals + analytics — no API keys needed) and
+# commits it back. companyfacts only change on a new filing, so weekly is ample.
+#
+# Manual run: Actions -> Refresh Screener Dataset -> Run workflow
+
+on:
+  schedule:
+    # Mondays 06:30 UTC.
+    - cron: '30 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screener-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & commit screener.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Build screener dataset
+        run: node scripts/build-screener.mjs
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain data/screener.json)" ]; then
+            git add data/screener.json
+            git commit -m "chore: refresh screener.json [skip ci]"
+            git push
+          else
+            echo "screener.json unchanged — nothing to commit."
+          fi

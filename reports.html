@@ -53,6 +53,25 @@
             border-color: rgba(57, 255, 20, 0.55);
             color: rgba(255, 255, 255, 0.9);
         }
+        /* Tier 3 — cross-company screener */
+        .view-toggle { display: flex; gap: .5rem; width: 100%; max-width: 1200px; margin: 0 auto 1.5rem; }
+        .view-btn { background: rgba(0,0,0,.6); border: 1px solid rgba(57,255,20,.3); color: #cfcfcf; padding: .5rem 1.4rem; border-radius: 6px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: .72rem; letter-spacing: 1px; transition: all .2s; }
+        .view-btn.active { background: rgba(57,255,20,.12); border-color: var(--accent-green); color: var(--accent-green); }
+        #screener-view { width: 100%; max-width: 1200px; margin: 0 auto; }
+        .screener-controls { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+        .screener-chip { background: rgba(0,0,0,.6); border: 1px solid rgba(57,255,20,.25); color: #9aa; padding: .35rem .85rem; border-radius: 20px; cursor: pointer; font-size: .66rem; letter-spacing: .5px; }
+        .screener-chip.active { background: rgba(57,255,20,.12); border-color: var(--accent-green); color: var(--accent-green); }
+        .screener-wrap { width: 100%; overflow-x: auto; }
+        .screener-tbl { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: .72rem; }
+        .screener-tbl th, .screener-tbl td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid rgba(255,255,255,.06); }
+        .screener-tbl th { color: #39FF14; cursor: pointer; user-select: none; letter-spacing: .04em; }
+        .screener-tbl th.sorted::after { content: ' ▼'; font-size: .6rem; } .screener-tbl th.asc::after { content: ' ▲'; font-size: .6rem; }
+        .screener-tbl td:first-child, .screener-tbl th:first-child, .screener-tbl td:nth-child(2), .screener-tbl th:nth-child(2), .screener-tbl td:nth-child(3), .screener-tbl th:nth-child(3) { text-align: left; }
+        .screener-tbl td.tk { color: #fff; } .screener-tbl tr.computed td.tk a { color: var(--accent-green); text-decoration: none; }
+        .screener-tbl tr.computed td.tk a:hover { text-decoration: underline; }
+        .screener-tbl tbody tr:hover { background: rgba(57,255,20,.05); }
+        .screener-tbl .rb { padding: 1px 6px; border-radius: 3px; font-size: .62rem; font-weight: 700; }
+        .screener-note { font-size: .62rem; color: #666; margin-top: 12px; font-style: italic; max-width: 1200px; }
     </style>
   <!-- Umami Analytics: replace value with your NovaSect Website ID from umami.is -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="134ef845-3a61-49b4-b2f2-1a954fc62467"></script>
@@ -86,6 +105,13 @@
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
             </div>
+
+            <div class="view-toggle">
+                <button class="view-btn active" id="btn-cards" type="button">Cards</button>
+                <button class="view-btn" id="btn-screener" type="button">Screener</button>
+            </div>
+
+            <div id="cards-view">
             <h2 class="sector-header">Energy <span class="sector-count">25</span></h2>
             <div class="company-grid">
                 <a href="report.html?company=exxonmobil&from=reports.html" class="company-card">ExxonMobil</a>
@@ -209,6 +235,18 @@
                 <a href="report.html?company=hsy&from=reports.html" class="company-card pending">Hershey Co</a>
                 <a href="report.html?company=cpb&from=reports.html" class="company-card pending">Campbell Soup</a>
             </div>
+            </div><!-- /#cards-view -->
+
+            <div id="screener-view" style="display:none;">
+                <div class="screener-controls" id="screener-sectors"></div>
+                <div class="screener-wrap">
+                    <table class="screener-tbl" id="screener-tbl">
+                        <thead><tr id="screener-head"></tr></thead>
+                        <tbody id="screener-body"></tbody>
+                    </table>
+                </div>
+                <p class="screener-note" id="screener-note">Loading screener…</p>
+            </div>
         </section>
     </main>
 
@@ -222,5 +260,90 @@
     <script src="script.min.js"></script>
     <script src="components/global-search/global-search.js" defer></script>
     <script src="components/mobile-nav/mobile-nav.js" defer></script>
+    <!-- Tier 3 — cross-company screener (reads precomputed data/screener.json) -->
+    <script>
+    (function () {
+        const COLS = [
+            { k: 'ticker', l: 'Ticker' }, { k: 'name', l: 'Company' }, { k: 'sector', l: 'Sector' },
+            { k: 'rating', l: 'Rating' },
+            { k: 'netMargin', l: 'Net mgn', n: 1, f: 'pct' }, { k: 'roe', l: 'ROE', n: 1, f: 'pct' },
+            { k: 'roic', l: 'ROIC', n: 1, f: 'pct' }, { k: 'debtToEquity', l: 'D/E', n: 1, f: 'x' },
+            { k: 'netLeverage', l: 'Net lev', n: 1, f: 'x' }, { k: 'interestCoverage', l: 'Int cov', n: 1, f: 'x' },
+            { k: 'fcfMargin', l: 'FCF mgn', n: 1, f: 'pct' }, { k: 'revGrowth', l: 'Rev CAGR', n: 1, f: 'pct' },
+            { k: 'impliedCredit', l: 'Impl. credit' },
+        ];
+        const pct = v => v == null ? '–' : (v * 100).toFixed(1) + '%';
+        const xf = v => v == null ? '–' : v.toFixed(2) + 'x';
+        const fmt = (v, f) => f === 'pct' ? pct(v) : f === 'x' ? xf(v) : (v == null ? '–' : v);
+        const ratingColor = r => ({ 'AAA/AA': '#39FF14', 'AA': '#39FF14', 'A': '#9ae600', 'BBB': '#F5C518', 'BB': '#ff9500', 'B': '#ff6a00', 'CCC': '#FF4D4D', 'HY': '#ff6a00', 'IG': '#9ae600' })[r] || '#9aa';
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+        let DATA = [], sortKey = 'roe', sortAsc = false, sectorFilter = 'All', q = '';
+
+        function render() {
+            const body = document.getElementById('screener-body'); if (!body) return;
+            const col = COLS.find(c => c.k === sortKey);
+            const rows = DATA.filter(r => {
+                if (sectorFilter !== 'All' && r.sector !== sectorFilter) return false;
+                if (q && !((r.ticker || '').toLowerCase().includes(q) || (r.name || '').toLowerCase().includes(q))) return false;
+                return true;
+            }).sort((a, b) => {
+                let av = a[sortKey], bv = b[sortKey];
+                if (col && col.n) { av = av == null ? -Infinity : av; bv = bv == null ? -Infinity : bv; return sortAsc ? av - bv : bv - av; }
+                return sortAsc ? String(av || '').localeCompare(String(bv || '')) : String(bv || '').localeCompare(String(av || ''));
+            });
+            body.innerHTML = rows.map(r => {
+                const computed = r.roe != null;
+                const url = r.reportUrl ? (r.reportUrl + (r.reportUrl.includes('?') ? '&' : '?') + 'from=reports.html') : null;
+                const tds = COLS.map(c => {
+                    if (c.k === 'ticker' || c.k === 'name') {
+                        const txt = esc(r[c.k]); return `<td class="tk">${url ? `<a href="${esc(url)}">${txt}</a>` : txt}</td>`;
+                    }
+                    if (c.k === 'rating') return r.rating ? `<td><span class="rb" style="color:${ratingColor(r.rating)};border:1px solid ${ratingColor(r.rating)}">${esc(r.rating)}</span></td>` : '<td>–</td>';
+                    if (c.k === 'sector') return `<td>${esc(r.sector)}</td>`;
+                    if (c.k === 'impliedCredit') return `<td style="color:${r.impliedCredit ? ratingColor(r.impliedCredit) : '#9aa'}">${esc(r.impliedCredit || '–')}</td>`;
+                    return `<td>${fmt(r[c.k], c.f)}</td>`;
+                }).join('');
+                return `<tr class="${computed ? 'computed' : ''}">${tds}</tr>`;
+            }).join('');
+            document.querySelectorAll('#screener-head th').forEach(th => { th.classList.remove('sorted', 'asc'); if (th.dataset.k === sortKey) th.classList.add(sortAsc ? 'asc' : 'sorted'); });
+        }
+        function buildHead() {
+            const head = document.getElementById('screener-head');
+            head.innerHTML = COLS.map(c => `<th data-k="${c.k}">${c.l}</th>`).join('');
+            head.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
+                const k = th.dataset.k; if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = false; } render();
+            }));
+        }
+        function buildSectors() {
+            const secs = ['All', ...[...new Set(DATA.map(r => r.sector).filter(Boolean))]];
+            const wrap = document.getElementById('screener-sectors');
+            wrap.innerHTML = secs.map(s => `<span class="screener-chip ${s === 'All' ? 'active' : ''}" data-s="${esc(s)}">${esc(s)}</span>`).join('');
+            wrap.querySelectorAll('.screener-chip').forEach(ch => ch.addEventListener('click', () => {
+                sectorFilter = ch.dataset.s; wrap.querySelectorAll('.screener-chip').forEach(x => x.classList.toggle('active', x === ch)); render();
+            }));
+        }
+        async function load() {
+            if (DATA.length) return;
+            try {
+                const r = await fetch('data/screener.json'); if (!r.ok) throw new Error('HTTP ' + r.status);
+                const j = await r.json(); DATA = j.rows || [];
+                buildHead(); buildSectors(); render();
+                const note = document.getElementById('screener-note');
+                if (note) note.textContent = `${j.ok} companies with live SEC-XBRL fundamentals · ${j.foreign} foreign (rating only) · generated ${j.generated} · ${j.source}. Click a column to sort. Indicative — not investment advice.`;
+            } catch (e) {
+                const note = document.getElementById('screener-note'); if (note) note.textContent = 'Screener data unavailable.';
+            }
+        }
+        const cards = document.getElementById('cards-view'), screener = document.getElementById('screener-view');
+        const bc = document.getElementById('btn-cards'), bs = document.getElementById('btn-screener');
+        if (bc && bs) {
+            bc.addEventListener('click', () => { cards.style.display = ''; screener.style.display = 'none'; bc.classList.add('active'); bs.classList.remove('active'); });
+            bs.addEventListener('click', () => { cards.style.display = 'none'; screener.style.display = ''; bs.classList.add('active'); bc.classList.remove('active'); load(); });
+        }
+        const search = document.getElementById('company-search');
+        if (search) search.addEventListener('input', () => { q = search.value.trim().toLowerCase(); if (screener && screener.style.display !== 'none') render(); });
+    })();
+    </script>
 </body>
 </html>
