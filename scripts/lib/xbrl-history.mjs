@@ -35,6 +35,7 @@ export const US_GAAP_CONCEPTS = {
   ocf:                ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'],
   capex:              ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsForCapitalImprovements'],
   dividendsPaid:      ['PaymentsOfDividends', 'PaymentsOfDividendsCommonStock', 'PaymentsOfOrdinaryDividends'],
+  pretaxIncome:       ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxes'],
 };
 
 // All annual {value, end} for a single concept name, best available unit, desc by date.
@@ -101,18 +102,22 @@ function ratiosForYear(maps, yr) {
   const eq = g('equity'), ta = g('totalAssets');
   const ca = g('currentAssets'), cl = g('currentLiabilities'), inv = g('inventory');
   const ocf = g('ocf'), capex = g('capex'), div = g('dividendsPaid');
+  const pti = g('pretaxIncome');
+  // EBIT proxy when a filer doesn't tag OperatingIncomeLoss (e.g. oil majors):
+  // pretax income + interest expense.
+  const oiEff = (oi != null) ? oi : (pti != null ? pti + (ie || 0) : null);
 
-  const ebitda = (oi != null && da != null) ? oi + da : null;
+  const ebitda = (oiEff != null && da != null) ? oiEff + da : null;
   const td = (ltd ?? 0) + (std ?? 0);
   const nd = td - (cash ?? 0);
   const fcf = (ocf != null && capex != null) ? ocf - Math.abs(capex) : null;
 
   return {
-    rev, oi, ebitda, ni, eps, fcf, div, ie, sharesOut: g('sharesOut'),
+    rev, oi: oiEff, ebitda, ni, eps, fcf, div, ie, sharesOut: g('sharesOut'),
     td: (ltd == null && std == null) ? null : td,
     nd: (ltd == null && std == null && cash == null) ? null : nd,
     cash, eq, ta,
-    om: (oi != null && rev) ? oi / rev : null,
+    om: (oiEff != null && rev) ? oiEff / rev : null,
     nm: (ni != null && rev) ? ni / rev : null,
     roa: (ni != null && ta) ? ni / ta : null,
     roe: (ni != null && eq) ? ni / Math.abs(eq) : null,
