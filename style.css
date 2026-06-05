@@ -1974,11 +1974,18 @@ body::after {
     opacity: 0.4; mix-blend-mode: screen; animation: vdScan 6s linear infinite;
 }
 @keyframes vdScan { from { background-position: 0 0; } to { background-position: 0 16px; } }
+/* Breathing reactor core — the focal point; ENTER reads faintly inside it. */
 .vault-glow {
-    position: absolute; width: 60%; height: 60%; border-radius: 50%;
-    background: radial-gradient(circle, rgba(57, 255, 20, 0.4) 0%, transparent 70%);
-    opacity: 0.16; pointer-events: none;
-    transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 46%; height: 46%; border-radius: 50%;
+    background: radial-gradient(circle, rgba(57, 255, 20, 0.9) 0%, rgba(57, 255, 20, 0.4) 28%, transparent 68%);
+    opacity: 0.5; pointer-events: none;
+    animation: coreBreathe 3.2s ease-in-out infinite;
+    transition: filter 0.4s var(--ease);
+}
+@keyframes coreBreathe {
+    0%, 100% { opacity: 0.38; transform: translate(-50%, -50%) scale(0.9); }
+    50%      { opacity: 0.78; transform: translate(-50%, -50%) scale(1.12); }
 }
 .vault-emboss {
     position: relative; z-index: 2;
@@ -1986,13 +1993,13 @@ body::after {
     color: rgba(255, 255, 255, 0.95);
     text-shadow: 0 0 8px rgba(57, 255, 20, 0.8), 0 0 18px rgba(57, 255, 20, 0.45);
 }
+/* No chrome — ENTER sits embedded in the core glow. */
 .vault-cta {
     position: relative; z-index: 2;
-    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 2px;
-    color: var(--accent-green); text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
-    border: 1px solid rgba(57, 255, 20, 0.45); border-radius: 50px; padding: 0.32rem 0.95rem;
-    background: rgba(0, 0, 0, 0.35);
-    transition: all 0.3s var(--ease);
+    font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.7);
+    text-shadow: 0 0 6px rgba(57, 255, 20, 0.7), 0 0 13px rgba(57, 255, 20, 0.5);
+    transition: color 0.3s var(--ease), text-shadow 0.3s var(--ease);
 }
 .vault-coverage {
     position: relative; z-index: 2; margin-top: 1.5rem; text-align: center;
@@ -2000,14 +2007,13 @@ body::after {
     color: rgba(57, 255, 20, 0.7);
 }
 .vault-link:hover .vd-spokes, .vault-link:focus-visible .vd-spokes { transform: rotate(40deg); }
-.vault-link:hover .vault-glow, .vault-link:focus-visible .vault-glow { opacity: 0.4; }
+.vault-link:hover .vault-glow, .vault-link:focus-visible .vault-glow { filter: brightness(1.5); }
 .vault-link:hover .vault-door, .vault-link:focus-visible .vault-door { box-shadow: 0 0 75px rgba(57, 255, 20, 0.32); }
 .vault-link:hover .vault-cta, .vault-link:focus-visible .vault-cta {
-    background: rgba(57, 255, 20, 0.12); box-shadow: 0 0 18px rgba(57, 255, 20, 0.3);
+    color: #fff; text-shadow: 0 0 10px rgba(57, 255, 20, 0.95), 0 0 22px rgba(57, 255, 20, 0.6);
 }
 .vault-link:focus-visible { outline: none; }
 .vault--open .vd-spokes { animation: vaultDial 1.5s var(--ease-out); }
-.vault--open .vault-glow { animation: vaultBloom 1.5s var(--ease-out); }
 .vault--open .vault-door { animation: vaultPower 1.5s var(--ease-out); }
 @keyframes vaultDial { 0% { transform: rotate(0); } 100% { transform: rotate(230deg); } }
 @keyframes vaultBloom { 0% { opacity: 0; transform: scale(.4); } 45% { opacity: .7; transform: scale(1.25); } 100% { opacity: .16; transform: scale(1); } }
