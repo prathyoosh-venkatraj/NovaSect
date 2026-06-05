@@ -1987,9 +1987,11 @@ body::after {
     text-shadow: 0 0 8px rgba(57, 255, 20, 0.8), 0 0 18px rgba(57, 255, 20, 0.45);
 }
 .vault-cta {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; letter-spacing: 3px;
+    position: relative; z-index: 2;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; letter-spacing: 2px;
     color: var(--accent-green); text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
-    border: 1px solid rgba(57, 255, 20, 0.4); border-radius: 50px; padding: 0.5rem 1.7rem;
+    border: 1px solid rgba(57, 255, 20, 0.45); border-radius: 50px; padding: 0.32rem 0.95rem;
+    background: rgba(0, 0, 0, 0.35);
     transition: all 0.3s var(--ease);
 }
 .vault-coverage {
