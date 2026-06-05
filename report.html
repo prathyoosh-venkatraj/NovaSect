@@ -1381,6 +1381,14 @@
                     <p class="fiveyear-note" id="analytics-note"></p>
                 </div>
 
+                <!-- Tier 4 — earnings track record (reported EPS vs consensus) -->
+                <div id="earnings-track-section" class="fiveyear-container" style="display: none; margin-top: 28px;">
+                    <h2 class="fiveyear-title">EARNINGS TRACK RECORD</h2>
+                    <div class="analytics-grid" id="earnings-track-summary"></div>
+                    <div class="fy-table-wrap"><table class="fy-table" id="earnings-track-tbl"></table></div>
+                    <p class="fiveyear-note" id="earnings-track-note"></p>
+                </div>
+
                 <div id="multiples-section" class="multiples-container" style="display: none;">
                     <h2 class="multiples-title">MULTIPLES</h2>
                     <div class="multiples-grid">
@@ -2090,6 +2098,13 @@
             const upside = (fairPS != null && price) ? fairPS / price - 1 : null;
             const mktEq = (price && shares) ? price * shares : null;
             const impG = (mktEq != null && fcf != null && wacc != null) ? _impliedGrowth(mktEq, fcf, GT, wacc, YEARS, nd) : null;
+            // Tier 4: DCF scenario band — perturb growth ±3pp and WACC ∓1pp.
+            let scenBear = null, scenBull = null;
+            if (fcf != null && wacc != null && shares) {
+                const mk = (gg, ww) => { const d = _dcfEquity(fcf, Math.max(-0.05, Math.min(0.15, gg)), GT, ww, YEARS, nd); return d ? d.equity / shares : null; };
+                scenBear = mk(g - 0.03, wacc + 0.01);
+                scenBull = mk(g + 0.03, Math.max(GT + 0.005, wacc - 0.01));
+            }
             const fcfMargin = (fcf != null && rev) ? fcf / rev : null;
             const fcfConv = (fcf != null && ni && ni > 0) ? fcf / ni : null;
             const divCovFcf = (fcf != null && div && div > 0) ? fcf / div : null;
@@ -2107,6 +2122,7 @@
             if (wacc != null) cards.push(card('WACC (book-wt)', P(wacc), `Ke ${P(ke)} · Kd ${P(kd)} · β ${beta != null ? beta.toFixed(2) : '–'}`));
             if (fairPS != null) cards.push(card('DCF fair value', '$' + fairPS.toFixed(2), upside != null ? `${(upside >= 0 ? '+' : '') + (upside * 100).toFixed(0)}% vs $${price.toFixed(2)}` : `g ${P(g)}`, upside != null ? (upside >= 0 ? 'pos' : 'neg') : ''));
             else if (dcf) cards.push(card('DCF equity value', '$' + (dcf.equity / 1e9).toFixed(1) + 'B', `g ${P(g)} · term ${P(GT)}`));
+            if (scenBear != null && scenBull != null) cards.push(card('DCF range (bear–bull)', '$' + scenBear.toFixed(0) + ' – $' + scenBull.toFixed(0), '±3pp growth · ∓1pp WACC'));
             if (impG != null) cards.push(card('Reverse-DCF', P(impG), 'FCF growth priced in'));
             if (fcfMargin != null) cards.push(card('FCF margin', P(fcfMargin), fcfConv != null ? `${X(fcfConv)} of net income` : ''));
             if (divCovFcf != null) cards.push(card('Dividend cover (FCF)', X(divCovFcf), payout != null ? `payout ${P(payout)} of NI` : ''));
@@ -2116,6 +2132,42 @@
             document.getElementById('analytics-grid').innerHTML = cards.join('');
             const note = document.getElementById('analytics-note');
             if (note) note.textContent = `Deterministic models · tax ${(TAX * 100).toFixed(0)}% · ERP ${(ERP * 100).toFixed(0)}% · terminal g ${(GT * 100).toFixed(1)}% · DCF growth ${(g * 100).toFixed(1)}% (5y FCF CAGR, capped) · book-weighted WACC (rf = FRED 10Y${rf != null ? ' ' + (rf * 100).toFixed(2) + '%' : ' n/a'}, β vs SPY). Indicative — not investment advice.`;
+            sec.style.display = 'block';
+        }
+
+        // ── Tier 4: earnings track record — reported EPS vs consensus ──
+        async function loadEarningsTrack(ticker) {
+            const sec = document.getElementById('earnings-track-section');
+            if (!sec) return;
+            const ys = (typeof toYahooSymbol === 'function') ? toYahooSymbol(ticker) : ticker;
+            if (!ys) return;
+            let data = null;
+            try { const r = await fetch('/api/finnhub-proxy?endpoint=stock/earnings&symbol=' + encodeURIComponent(ys)); if (r.ok) data = await r.json(); } catch { return; }
+            if (!Array.isArray(data)) return;
+            const rows = data.filter(d => d && typeof d.actual === 'number' && typeof d.estimate === 'number').slice(0, 8);
+            if (rows.length < 2) return;
+            const chrono = [...rows].reverse();
+            const surpPct = d => (typeof d.surprisePercent === 'number') ? d.surprisePercent : (d.estimate !== 0 ? (d.actual - d.estimate) / Math.abs(d.estimate) * 100 : 0);
+            const beats = rows.filter(d => d.actual >= d.estimate).length;
+            const avgSurp = rows.reduce((s, d) => s + surpPct(d), 0) / rows.length;
+            let streak = 0, dir = null;
+            for (const d of rows) { const beat = d.actual >= d.estimate; if (dir === null) { dir = beat; streak = 1; } else if (beat === dir) streak++; else break; }
+            const P1 = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+            const card = (l, v, s, c) => `<div class="an-card"><div class="an-label">${l}</div><div class="an-value ${c || ''}">${v}</div>${s ? `<div class="an-sub">${s}</div>` : ''}</div>`;
+            document.getElementById('earnings-track-summary').innerHTML = [
+                card('Beat rate', beats + '/' + rows.length, `last ${rows.length} quarters`),
+                card('Avg surprise', P1(avgSurp), 'actual vs estimate', avgSurp >= 0 ? 'pos' : 'neg'),
+                card((dir ? 'Beat' : 'Miss') + ' streak', streak + 'Q', 'current run', dir ? 'pos' : 'neg'),
+            ].join('');
+            const td = (label, fn) => `<tr><td>${label}</td>${chrono.map(fn).join('')}</tr>`;
+            document.getElementById('earnings-track-tbl').innerHTML =
+                `<thead><tr><th>Quarter</th>${chrono.map(d => `<th>${(d.period || '').slice(0, 7)}</th>`).join('')}</tr></thead><tbody>`
+                + td('Estimate EPS', d => `<td>$${d.estimate.toFixed(2)}</td>`)
+                + td('Actual EPS', d => `<td>$${d.actual.toFixed(2)}</td>`)
+                + td('Surprise', d => { const sp = surpPct(d); return `<td><span class="fy-trend ${sp >= 0 ? 'up' : 'down'}">${P1(sp)}</span></td>`; })
+                + `</tbody>`;
+            const note = document.getElementById('earnings-track-note');
+            if (note) note.textContent = `Reported EPS vs consensus · Finnhub · ${ys}. Past results do not predict future performance.`;
             sec.style.display = 'block';
         }
 
@@ -3084,6 +3136,7 @@
                         loadFundamentals(data.ticker);
                         loadEarningsDate(data.ticker);
                         loadDividendHistory(data.ticker);
+                        loadEarningsTrack(data.ticker);
                         loadFiveYearTrends(data.ticker, data.yahooSymbol || (typeof toYahooSymbol === 'function' ? toYahooSymbol(data.ticker) : null));
                     }
                     loadDebtMaturity(company.toLowerCase(), companyData);
