@@ -14,6 +14,10 @@ over live public data — no black boxes in the browser.
 The formal spec is auto-generated at `NovaSect_Technical_Reference.docx`
 (via `scripts/generate-tech-doc.mjs`).
 
+**Engineering log:** change history in [`CHANGELOG.md`](CHANGELOG.md); the *why* behind
+architectural decisions in [`docs/adr/`](docs/adr/). Each push to `main` posts a summary to the
+Discord `#updates-and-implementation` channel (`scripts/changelog.mjs` + the push-report workflow).
+
 ## The three tools
 
 | Tool | What it does |
