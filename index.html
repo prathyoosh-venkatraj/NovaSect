@@ -98,21 +98,26 @@
         <section class="cards-section">
             <div id="secondary-canvas-container" class="segments-bg-canvas"></div>
             <h2 class="segments-heading reveal">ENTER THE VAULT</h2>
-            <div class="cards-carousel" style="position: relative; z-index: 2;">
-                <div class="card holographic-card reveal-soft" id="card-energy" onclick="window.location.href='energy.html'">
-                    <div class="card-bg">
-                        <div class="hologram-image"></div>
-                    </div>
-                    <h2 class="card-title">ENERGY<br>and UTILITIES</h2>
+            <a href="reports.html" class="vault-link reveal" id="finvault-vault" data-vault
+               aria-label="Enter FinVault — equity research reports and screener"
+               data-umami-event="enter-finvault">
+                <div class="vault-door">
+                    <svg class="vault-svg" viewBox="0 0 200 200" aria-hidden="true">
+                        <g class="vd-bolts">
+                            <circle cx="186" cy="100" r="3.2"/><circle cx="160.8" cy="160.8" r="3.2"/>
+                            <circle cx="100" cy="186" r="3.2"/><circle cx="39.2" cy="160.8" r="3.2"/>
+                            <circle cx="14" cy="100" r="3.2"/><circle cx="39.2" cy="39.2" r="3.2"/>
+                            <circle cx="100" cy="14" r="3.2"/><circle cx="160.8" cy="39.2" r="3.2"/>
+                        </g>
+                        <circle class="vd-dial" cx="100" cy="100" r="64" fill="none" stroke="rgba(57,255,20,.5)" stroke-width="3" stroke-dasharray="2 8"/>
+                        <circle cx="100" cy="100" r="50" fill="none" stroke="rgba(57,255,20,.16)" stroke-width="1.5"/>
+                    </svg>
+                    <div class="vault-glow" aria-hidden="true"></div>
+                    <div class="vault-emboss">FIN<span>VAULT</span></div>
                 </div>
-                <div class="card holographic-card reveal-soft" id="card-industrials"
-                    style="--rd:.12s" onclick="window.location.href='industrials.html'">
-                    <div class="card-bg">
-                        <div class="hologram-image"></div>
-                    </div>
-                    <h2 class="card-title">INDUSTRIALS</h2>
-                </div>
-            </div>
+                <div class="vault-cta">ENTER&nbsp;→</div>
+            </a>
+            <div class="vault-coverage reveal" style="--rd:.15s">ENERGY · UTILITIES · INDUSTRIALS · STAPLES</div>
         </section>
 
         <!-- Sentinel Promo Section -->

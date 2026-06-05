@@ -56,6 +56,19 @@
         sync(); // set initial state (e.g. on reload mid-page)
     }
 
+    /* ── FinVault vault door: play the one-time "open" sequence in view ────── */
+    var vault = document.querySelector('[data-vault]');
+    if (vault && motionOK && ('IntersectionObserver' in window)) {
+        var vio = new IntersectionObserver(function (entries) {
+            for (var i = 0; i < entries.length; i++) {
+                if (!entries[i].isIntersecting) continue;
+                entries[i].target.classList.add('vault--open');
+                vio.unobserve(entries[i].target);
+            }
+        }, { threshold: 0.4 });
+        vio.observe(vault);
+    }
+
     /* ── A1: scroll-reveal ────────────────────────────────────────────────── */
     var els = document.querySelectorAll('.reveal, .reveal-soft');
     if (!els.length) return;
