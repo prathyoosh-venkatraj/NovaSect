@@ -171,6 +171,12 @@ export function historyData(x) {
     .sort((a, b) => Number(b) - Number(a)).slice(0, 5);
   if (yearsDesc.length < 2) return null;
 
+  // Full fiscal-year-end date per year (for aligning prices → valuation bands).
+  const endByYear = new Map();
+  for (const k of Object.keys(x)) for (const e of (x[k] || [])) {
+    if (e && e.end) { const y = e.end.slice(0, 4); if (!endByYear.has(y)) endByYear.set(y, e.end); }
+  }
+
   const chrono = [...yearsDesc].sort((a, b) => Number(a) - Number(b));
   const R = chrono.map(y => ratiosForYear(maps, y));
   const pick = k => R.map(r => (r[k] == null || isNaN(r[k]) ? null : r[k]));
@@ -178,6 +184,7 @@ export function historyData(x) {
 
   return {
     years: chrono.map(y => 'FY ' + y),
+    endDates: chrono.map(y => endByYear.get(y) || (y + '-12-31')),
     summary: {
       revenue: pick('rev'), operatingIncome: pick('oi'), ebitda: pick('ebitda'),
       netIncome: pick('ni'), eps: pick('eps'), freeCashFlow: pick('fcf'),
@@ -185,7 +192,8 @@ export function historyData(x) {
     },
     ratios: {
       operatingMargin: pick('om'), netMargin: pick('nm'), roe: pick('roe'),
-      roa: pick('roa'), currentRatio: pick('cr'), netLeverage: pick('netLev'),
+      roa: pick('roa'), currentRatio: pick('cr'), quickRatio: pick('qr'),
+      debtToEquity: pick('de'), netLeverage: pick('netLev'),
       interestCoverage: pick('ic'),
     },
     cagr: {

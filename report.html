@@ -1346,6 +1346,15 @@
                   .fiveyear-chart { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.06); border-radius: 6px; padding: 12px; height: 260px; }
                   .fiveyear-note { font-size: .62rem; color: #666; margin-top: 10px; font-style: italic; }
                   @media (max-width: 760px) { .fiveyear-charts { grid-template-columns: 1fr; } }
+                  /* Tier 1 — full horizontal table */
+                  .fy-table-wrap { margin-top: 20px; overflow-x: auto; }
+                  .fy-table { width: 100%; border-collapse: collapse; font-size: .72rem; font-family: 'JetBrains Mono', monospace; }
+                  .fy-table th, .fy-table td { padding: 6px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid rgba(255,255,255,.05); }
+                  .fy-table th { color: #39FF14; font-weight: 600; letter-spacing: .04em; }
+                  .fy-table td:first-child, .fy-table th:first-child { text-align: left; color: #cfcfcf; position: sticky; left: 0; background: #000; }
+                  .fy-table td { color: #fff; font-variant-numeric: tabular-nums; }
+                  .fy-table .fy-sub td { color: #39FF14; font-size: .6rem; letter-spacing: .14em; padding-top: 12px; border-bottom: 1px solid rgba(57,255,20,.18); }
+                  .fy-table .fy-trend.up { color: #39FF14; } .fy-table .fy-trend.down { color: #FF4D4D; } .fy-table .fy-trend.flat { color: #888; }
                 </style>
                 <div id="fiveyear-section" class="fiveyear-container" style="display: none;">
                     <h2 class="fiveyear-title">FIVE-YEAR TRENDS</h2>
@@ -1354,6 +1363,7 @@
                         <div class="fiveyear-chart"><canvas id="fy-revni"></canvas></div>
                         <div class="fiveyear-chart"><canvas id="fy-margins"></canvas></div>
                     </div>
+                    <div class="fy-table-wrap" id="fiveyear-table-wrap"></div>
                     <p class="fiveyear-note">Five-year horizontal analysis computed live from SEC EDGAR XBRL annual filings (US filers).</p>
                 </div>
 
@@ -2067,8 +2077,90 @@
                 ['EPS CAGR', c.eps], ['FCF CAGR', c.fcf], ['Dividend CAGR', c.dividends],
             ].map(([label, v]) => `<span class="fy-chip">${label} <strong class="${cls(v)}">${fmtC(v)}</strong></span>`).join('');
 
+            // ── Tier 1: full horizontal table from the same fetched series ──
+            const S = history.summary || {}, RA = history.ratios || {}, yrs = history.years;
+            const lastOf  = a => { for (let i = (a||[]).length - 1; i >= 0; i--) if (a[i] != null) return a[i]; return null; };
+            const firstOf = a => { for (let i = 0; i < (a||[]).length; i++) if (a[i] != null) return a[i]; return null; };
+            const arrow = a => { const o = firstOf(a), n = lastOf(a); if (o == null || n == null || o === n) return '<span class="fy-trend flat">–</span>'; return n > o ? '<span class="fy-trend up">▲</span>' : '<span class="fy-trend down">▼</span>'; };
+            const fmtB = v => v == null ? '–' : (v < 0 ? '-' : '') + '$' + Math.abs(v / 1e9).toFixed(1) + 'B';
+            const fmtE = v => v == null ? '–' : '$' + v.toFixed(2);
+            const fmtP = v => v == null ? '–' : (v * 100).toFixed(1) + '%';
+            const fmtX = v => v == null ? '–' : v.toFixed(2) + 'x';
+            const fyRow = (label, arr, fmt) => `<tr><td>${label}</td>${(arr || []).map(v => `<td>${fmt(v)}</td>`).join('')}<td>${arrow(arr)}</td></tr>`;
+            const fySub = label => `<tr class="fy-sub"><td>${label}</td>${yrs.map(() => '<td></td>').join('')}<td></td></tr>`;
+            const fyHead = `<tr><th>Metric</th>${yrs.map(y => `<th>${y}</th>`).join('')}<th>Trend</th></tr>`;
+
+            // ── Tier 1: 5-year trailing P/E band — price at each FY-end ÷ that
+            //    year's diluted EPS. Defensive: any failure leaves '–' cells. ──
+            let peArr = (yrs || []).map(() => null);
+            try {
+                if (yahooSym && Array.isArray(history.endDates) && Array.isArray(S.eps)) {
+                    const pres = await fetch(`/api/yahoo-proxy?mode=history&range=5y&symbol=${encodeURIComponent(yahooSym)}`);
+                    if (pres.ok) {
+                        const pj = await pres.json();
+                        const series = (pj.series || [])
+                            .filter(p => p && p.date && p.adjClose != null)
+                            .sort((a, b) => a.date < b.date ? -1 : 1);
+                        const priceAsOf = d => { let px = null; for (const p of series) { if (p.date <= d) px = p.adjClose; else break; } return px; };
+                        peArr = history.endDates.map((d, i) => {
+                            const eps = S.eps?.[i], px = priceAsOf(d);
+                            return (px != null && eps != null && eps > 0) ? px / eps : null;
+                        });
+                    }
+                }
+            } catch { /* leave peArr null — row degrades to '–' */ }
+
+            const tableHtml = `<table class="fy-table"><thead>${fyHead}</thead><tbody>`
+                + fySub('STATEMENT ($B)')
+                + fyRow('Revenue', S.revenue, fmtB)
+                + fyRow('Operating income', S.operatingIncome, fmtB)
+                + fyRow('EBITDA', S.ebitda, fmtB)
+                + fyRow('Net income', S.netIncome, fmtB)
+                + fyRow('EPS (diluted)', S.eps, fmtE)
+                + fyRow('Free cash flow', S.freeCashFlow, fmtB)
+                + fyRow('Total debt', S.totalDebt, fmtB)
+                + fyRow('Net debt', S.netDebt, fmtB)
+                + fyRow('Total equity', S.equity, fmtB)
+                + fySub('RATIOS')
+                + fyRow('Operating margin', RA.operatingMargin, fmtP)
+                + fyRow('Net margin', RA.netMargin, fmtP)
+                + fyRow('Return on equity', RA.roe, fmtP)
+                + fyRow('Return on assets', RA.roa, fmtP)
+                + fyRow('Current ratio', RA.currentRatio, fmtX)
+                + fyRow('Quick ratio', RA.quickRatio, fmtX)
+                + fyRow('Debt / equity', RA.debtToEquity, fmtX)
+                + fyRow('Net leverage (ND/EBITDA)', RA.netLeverage, fmtX)
+                + fyRow('Interest coverage', RA.interestCoverage, fmtX)
+                + fySub('VALUATION')
+                + fyRow('Trailing P/E (FY-end ÷ EPS)', peArr, fmtX)
+                + `</tbody></table>`;
+            const fyWrap = document.getElementById('fiveyear-table-wrap');
+            if (fyWrap) fyWrap.innerHTML = tableHtml;
+
+            // ── Tier 1: backfill the Financial Ratios table for skeleton tickers ──
+            // (only fills cells still showing '--', so curated values are never clobbered)
+            const backfill = [
+                ['Current',            fmtX(lastOf(RA.currentRatio))],
+                ['Acid test',          fmtX(lastOf(RA.quickRatio))],
+                ['Debt to Equity',     fmtX(lastOf(RA.debtToEquity))],
+                ['Interest coverage',  fmtX(lastOf(RA.interestCoverage))],
+                ['Operating margin',   fmtP(lastOf(RA.operatingMargin))],
+                ['Net profit margin',  fmtP(lastOf(RA.netMargin))],
+                ['Return on assets',   fmtP(lastOf(RA.roa))],
+                ['Return on equity',   fmtP(lastOf(RA.roe))],
+            ];
+            const statsBody = document.getElementById('stats-body');
+            if (statsBody) {
+                statsBody.querySelectorAll('tr').forEach(tr => {
+                    const tds = tr.querySelectorAll('td');
+                    if (tds.length < 2) return;
+                    const hit = backfill.find(([l]) => l === tds[0].textContent.trim());
+                    if (hit && tds[1].textContent.trim() === '--' && hit[1] !== '–') tds[1].textContent = hit[1];
+                });
+            }
+
             const note = section.querySelector('.fiveyear-note');
-            if (note) note.textContent = `${history.years.length}-year horizontal analysis · live from ${source} annual filings.`;
+            if (note) note.textContent = `${history.years.length}-year horizontal analysis · ${source} · latest ${yrs[yrs.length - 1]} · as of ${new Date().toISOString().slice(0, 10)}`;
 
             section.style.display = 'block';
         }
