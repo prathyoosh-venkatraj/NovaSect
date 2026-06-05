@@ -203,9 +203,7 @@ class OsirisOrchestrator {
             'ENERGY & UTILITIES // OU MEAN-REVERSION':
                 { key: 'energy_and_utilities', display: 'Energy/Util' },
             'INDUSTRIALS & DEFENSE // GBM + POISSON JUMPS':
-                { key: 'industrials_and_defense', display: 'Industrials' },
-            'CONSUMER STAPLES // OU MEAN-REVERSION':
-                { key: 'consumer_staples', display: 'Staples' }
+                { key: 'industrials_and_defense', display: 'Industrials' }
         };
 
         const items = [];
@@ -430,26 +428,14 @@ class OsirisOrchestrator {
             sliderPhysics.value = physicsParams.reversionSpeedTheta;
             labelPhysics.innerText = 'REVERSION SPEED (θ)';
 
-            if (currentCohort === 'consumer_staples') {
-                metadataReadout.dataset.baseText = 'TETHERED HUB: CONSUMER SPENDING INDEX';
-                metadataReadout.innerText = metadataReadout.dataset.baseText;
-                if (operationalShock) {
-                    operationalShock.innerHTML = `
-                        <option value="1.0">Normal Demand Cycle</option>
-                        <option value="1.5">Inflation Squeeze</option>
-                        <option value="0.7">Consumer Downtrading</option>
-                    `;
-                }
-            } else {
-                metadataReadout.dataset.baseText = 'TETHERED HUB: BRENT CRUDE BASIS';
-                metadataReadout.innerText = metadataReadout.dataset.baseText;
-                if (operationalShock) {
-                    operationalShock.innerHTML = `
-                        <option value="1.0">Standard Regulatory Gravity</option>
-                        <option value="1.5">Tight Commodity Bounds</option>
-                        <option value="0.5">Structural Decoupling</option>
-                    `;
-                }
+            metadataReadout.dataset.baseText = 'TETHERED HUB: BRENT CRUDE BASIS';
+            metadataReadout.innerText = metadataReadout.dataset.baseText;
+            if (operationalShock) {
+                operationalShock.innerHTML = `
+                    <option value="1.0">Standard Regulatory Gravity</option>
+                    <option value="1.5">Tight Commodity Bounds</option>
+                    <option value="0.5">Structural Decoupling</option>
+                `;
             }
         } else {
             sliderPhysics.min = 1;

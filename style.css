@@ -1953,36 +1953,39 @@ body::after {
     display: flex; flex-direction: column; align-items: center; gap: 1.3rem;
     text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
+/* Holographic projection: transparent door, green wireframe over the page grid. */
 .vault-door {
     position: relative;
     width: 340px; height: 340px; max-width: 78vw; max-height: 78vw;
     border-radius: 50%;
-    background: radial-gradient(circle at 38% 32%, #0d160d 0%, #050805 56%, #010301 100%);
-    border: 3px solid rgba(57, 255, 20, 0.5);
-    box-shadow: 0 0 40px rgba(57, 255, 20, 0.16), inset 0 0 60px rgba(0, 0, 0, 0.85), inset 0 0 22px rgba(57, 255, 20, 0.12);
+    background: radial-gradient(circle, rgba(57, 255, 20, 0.05) 0%, transparent 68%);
+    box-shadow: 0 0 55px rgba(57, 255, 20, 0.16);
     display: flex; align-items: center; justify-content: center; overflow: hidden;
     transition: box-shadow 0.45s var(--ease), transform 0.45s var(--ease);
 }
-.vault-door::before {
-    content: ''; position: absolute; inset: 20px; border-radius: 50%;
-    border: 2px solid rgba(57, 255, 20, 0.22); box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+.vault-svg { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 0 3px rgba(57, 255, 20, 0.55)); }
+.vd-teeth  { transform-origin: 100px 100px; animation: vdTeeth 90s linear infinite; }
+.vd-spokes { transform-origin: 100px 100px; transition: transform 1s var(--ease); }
+@keyframes vdTeeth { to { transform: rotate(360deg); } }
+/* holographic scanlines drifting across the projection */
+.vault-scan {
+    position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(57, 255, 20, 0.06) 0px, rgba(57, 255, 20, 0.06) 1px, transparent 1px, transparent 4px);
+    opacity: 0.4; mix-blend-mode: screen; animation: vdScan 6s linear infinite;
 }
-.vault-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.vd-bolts circle { fill: rgba(57, 255, 20, 0.55); }
-.vd-dial { transform-origin: 100px 100px; transition: transform 1s var(--ease); }
+@keyframes vdScan { from { background-position: 0 0; } to { background-position: 0 16px; } }
 .vault-glow {
-    position: absolute; width: 62%; height: 62%; border-radius: 50%;
-    background: radial-gradient(circle, rgba(57, 255, 20, 0.45) 0%, transparent 70%);
+    position: absolute; width: 60%; height: 60%; border-radius: 50%;
+    background: radial-gradient(circle, rgba(57, 255, 20, 0.4) 0%, transparent 70%);
     opacity: 0.16; pointer-events: none;
     transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
 }
 .vault-emboss {
     position: relative; z-index: 2;
-    font-family: var(--font-display); font-weight: 900; font-size: 2rem; letter-spacing: 4px;
-    color: rgba(255, 255, 255, 0.92);
-    text-shadow: 0 0 8px rgba(57, 255, 20, 0.8), 0 0 18px rgba(57, 255, 20, 0.4);
+    font-family: var(--font-display); font-weight: 900; font-size: 1.6rem; letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 0 8px rgba(57, 255, 20, 0.8), 0 0 18px rgba(57, 255, 20, 0.45);
 }
-.vault-emboss span { color: var(--accent-green); }
 .vault-cta {
     font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; letter-spacing: 3px;
     color: var(--accent-green); text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
@@ -1994,27 +1997,25 @@ body::after {
     font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 3px;
     color: rgba(57, 255, 20, 0.7);
 }
-.vault-link:hover .vd-dial, .vault-link:focus-visible .vd-dial { transform: rotate(40deg); }
+.vault-link:hover .vd-spokes, .vault-link:focus-visible .vd-spokes { transform: rotate(40deg); }
 .vault-link:hover .vault-glow, .vault-link:focus-visible .vault-glow { opacity: 0.4; }
-.vault-link:hover .vault-door, .vault-link:focus-visible .vault-door {
-    box-shadow: 0 0 60px rgba(57, 255, 20, 0.35), inset 0 0 60px rgba(0, 0, 0, 0.85), inset 0 0 26px rgba(57, 255, 20, 0.2);
-}
+.vault-link:hover .vault-door, .vault-link:focus-visible .vault-door { box-shadow: 0 0 75px rgba(57, 255, 20, 0.32); }
 .vault-link:hover .vault-cta, .vault-link:focus-visible .vault-cta {
     background: rgba(57, 255, 20, 0.12); box-shadow: 0 0 18px rgba(57, 255, 20, 0.3);
 }
 .vault-link:focus-visible { outline: none; }
-.vault--open .vd-dial { animation: vaultDial 1.5s var(--ease-out); }
+.vault--open .vd-spokes { animation: vaultDial 1.5s var(--ease-out); }
 .vault--open .vault-glow { animation: vaultBloom 1.5s var(--ease-out); }
 .vault--open .vault-door { animation: vaultPower 1.5s var(--ease-out); }
 @keyframes vaultDial { 0% { transform: rotate(0); } 100% { transform: rotate(230deg); } }
 @keyframes vaultBloom { 0% { opacity: 0; transform: scale(.4); } 45% { opacity: .7; transform: scale(1.25); } 100% { opacity: .16; transform: scale(1); } }
 @keyframes vaultPower {
-    0%   { box-shadow: 0 0 0 rgba(57,255,20,0), inset 0 0 60px rgba(0,0,0,.85); }
-    45%  { box-shadow: 0 0 70px rgba(57,255,20,.5), inset 0 0 40px rgba(57,255,20,.25); }
-    100% { box-shadow: 0 0 40px rgba(57,255,20,.16), inset 0 0 60px rgba(0,0,0,.85), inset 0 0 22px rgba(57,255,20,.12); }
+    0%   { box-shadow: 0 0 0 rgba(57,255,20,0); }
+    45%  { box-shadow: 0 0 85px rgba(57,255,20,.5); }
+    100% { box-shadow: 0 0 55px rgba(57,255,20,.16); }
 }
 @media (max-width: 768px) {
     .vault-door { width: 270px; height: 270px; }
-    .vault-emboss { font-size: 1.5rem; letter-spacing: 3px; }
+    .vault-emboss { font-size: 1.3rem; letter-spacing: 1px; }
     .vault-coverage { font-size: 0.6rem; letter-spacing: 2px; }
 }

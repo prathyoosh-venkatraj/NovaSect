@@ -103,21 +103,55 @@
                data-umami-event="enter-finvault">
                 <div class="vault-door">
                     <svg class="vault-svg" viewBox="0 0 200 200" aria-hidden="true">
-                        <g class="vd-bolts">
-                            <circle cx="186" cy="100" r="3.2"/><circle cx="160.8" cy="160.8" r="3.2"/>
-                            <circle cx="100" cy="186" r="3.2"/><circle cx="39.2" cy="160.8" r="3.2"/>
-                            <circle cx="14" cy="100" r="3.2"/><circle cx="39.2" cy="39.2" r="3.2"/>
-                            <circle cx="100" cy="14" r="3.2"/><circle cx="160.8" cy="39.2" r="3.2"/>
+                        <defs>
+                            <pattern id="vmesh" width="14" height="12" patternUnits="userSpaceOnUse">
+                                <path d="M0,12 L7,0 L14,12" fill="none" stroke="rgba(57,255,20,0.09)" stroke-width="0.5"/>
+                            </pattern>
+                            <clipPath id="vclip"><circle cx="100" cy="100" r="88"/></clipPath>
+                        </defs>
+                        <g clip-path="url(#vclip)"><rect x="0" y="0" width="200" height="200" fill="url(#vmesh)"/></g>
+                        <g class="vd-teeth"><circle cx="100" cy="100" r="94" fill="none" stroke="rgba(57,255,20,.55)" stroke-width="6" stroke-dasharray="4 6"/></g>
+                        <circle cx="100" cy="100" r="88" fill="none" stroke="rgba(57,255,20,.45)" stroke-width="1.5"/>
+                        <circle cx="100" cy="100" r="74" fill="none" stroke="rgba(57,255,20,.3)" stroke-width="1.5"/>
+                        <circle cx="100" cy="100" r="70" fill="none" stroke="rgba(57,255,20,.18)" stroke-width="1"/>
+                        <g class="vd-plates" stroke="rgba(57,255,20,.3)" stroke-width="1.2">
+                            <line x1="174" y1="100" x2="188" y2="100"/>
+                            <line x1="164.08" y1="137" x2="176.21" y2="144"/>
+                            <line x1="137" y1="164.08" x2="144" y2="176.21"/>
+                            <line x1="100" y1="174" x2="100" y2="188"/>
+                            <line x1="63" y1="164.08" x2="56" y2="176.21"/>
+                            <line x1="35.92" y1="137" x2="23.79" y2="144"/>
+                            <line x1="26" y1="100" x2="12" y2="100"/>
+                            <line x1="35.92" y1="63" x2="23.79" y2="56"/>
+                            <line x1="63" y1="35.92" x2="56" y2="23.79"/>
+                            <line x1="100" y1="26" x2="100" y2="12"/>
+                            <line x1="137" y1="35.92" x2="144" y2="23.79"/>
+                            <line x1="164.08" y1="63" x2="176.21" y2="56"/>
                         </g>
-                        <circle class="vd-dial" cx="100" cy="100" r="64" fill="none" stroke="rgba(57,255,20,.5)" stroke-width="3" stroke-dasharray="2 8"/>
-                        <circle cx="100" cy="100" r="50" fill="none" stroke="rgba(57,255,20,.16)" stroke-width="1.5"/>
+                        <g class="vd-bolts" fill="rgba(57,255,20,.6)">
+                            <circle cx="156.57" cy="156.57" r="2.6"/><circle cx="43.43" cy="156.57" r="2.6"/>
+                            <circle cx="43.43" cy="43.43" r="2.6"/><circle cx="156.57" cy="43.43" r="2.6"/>
+                        </g>
+                        <g class="vd-spokes" stroke="rgba(57,255,20,.55)" stroke-width="3.4" stroke-linecap="round">
+                            <line x1="144" y1="100" x2="168" y2="100"/>
+                            <line x1="131.1" y1="131.1" x2="148.08" y2="148.08"/>
+                            <line x1="100" y1="144" x2="100" y2="168"/>
+                            <line x1="68.9" y1="131.1" x2="51.92" y2="148.08"/>
+                            <line x1="56" y1="100" x2="32" y2="100"/>
+                            <line x1="68.9" y1="68.9" x2="51.92" y2="51.92"/>
+                            <line x1="100" y1="56" x2="100" y2="32"/>
+                            <line x1="131.1" y1="68.9" x2="148.08" y2="51.92"/>
+                        </g>
+                        <circle cx="100" cy="100" r="44" fill="rgba(57,255,20,.05)" stroke="rgba(57,255,20,.4)" stroke-width="2"/>
+                        <circle cx="100" cy="100" r="30" fill="none" stroke="rgba(57,255,20,.18)" stroke-width="1"/>
                     </svg>
+                    <div class="vault-scan" aria-hidden="true"></div>
                     <div class="vault-glow" aria-hidden="true"></div>
-                    <div class="vault-emboss">FIN<span>VAULT</span></div>
+                    <div class="vault-emboss">FINVAULT</div>
                 </div>
                 <div class="vault-cta">ENTER&nbsp;→</div>
             </a>
-            <div class="vault-coverage reveal" style="--rd:.15s">ENERGY · UTILITIES · INDUSTRIALS · STAPLES</div>
+            <div class="vault-coverage reveal" style="--rd:.15s">ENERGY · UTILITIES · INDUSTRIALS</div>
         </section>
 
         <!-- Sentinel Promo Section -->

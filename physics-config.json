@@ -1,5 +1,5 @@
 {
-  "version": "1.8-consumer-staples",
+  "version": "1.9-staples-removed",
   "defaultPaths": 8000,
   "timeHorizonDays": 252,
   "notes": "beta, dividendYield, longTermMeanPrice are auto-computed in osirisIngestion. Drift = US10Y - dividendYield + cohort.driftBoostAnnual. OU mean target = 1y arithmetic mean. Phase 4: GBM industrials use positively-skewed lognormal jumps (jumpMu > 0). v1.7 calibration: (1) jumpStd fixed at 0.07 in simulate.mjs/stochasticWorker.js (was sigma*1.5, causing -0.3%/day systematic bias via oversized Merton compensator); (2) driftBoostAnnual added to industrials cohort (+6%/yr) to close residual equity-premium gap post-jumpStd-fix; (3) sigmaScale per-ticker for 8 energy names with ci90 < 0.875; (4) 7011.T moved to industrials (Mitsubishi Heavy is defence/industrial, not energy); (5) EMBR3.SA replaced with ERJ (NYSE listing, B3 symbol 404s on Yahoo); (6) defaultPaths 25000 → 8000 + antithetic in runner (equiv to ~16k plain, DA std ±0.001).",
@@ -98,37 +98,6 @@
         { "symbol": "UPS",     "name": "United Parcel",       "jumpFrequencyLambda": 5, "jumpMu": 0.008, "baselineVolatility": 0.24, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "VOLV-B.ST","name": "Volvo Group",         "jumpFrequencyLambda": 6, "jumpMu": 0.008, "baselineVolatility": 0.26, "creditRating": "A",   "ratingLastVerified": "2026-05" },
         { "symbol": "VOW3.DE", "name": "Volkswagen",          "jumpFrequencyLambda": 7, "jumpMu": 0.008, "baselineVolatility": 0.32, "creditRating": "BBB", "ratingLastVerified": "2026-05" }
-      ]
-    },
-    "consumer_staples": {
-      "physics": "Ornstein-Uhlenbeck",
-      "description": "Defensive consumer brands with stable cash flows and dividend yield anchoring. Mean-reverting to long-run earnings multiples with low commodity sensitivity.",
-      "tickers": [
-        { "symbol": "PG",            "name": "Procter & Gamble",     "reversionSpeedTheta": 0.22, "baselineVolatility": 0.16, "creditRating": "AA",  "ratingLastVerified": "2026-05" },
-        { "symbol": "KO",            "name": "Coca-Cola",            "reversionSpeedTheta": 0.22, "baselineVolatility": 0.16, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "PEP",           "name": "PepsiCo",              "reversionSpeedTheta": 0.22, "baselineVolatility": 0.17, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "NESN.SW",       "name": "Nestlé",               "reversionSpeedTheta": 0.20, "baselineVolatility": 0.16, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "ULVR.L",        "name": "Unilever",             "reversionSpeedTheta": 0.20, "baselineVolatility": 0.18, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "WMT",           "name": "Walmart",              "reversionSpeedTheta": 0.22, "baselineVolatility": 0.18, "creditRating": "AA",  "ratingLastVerified": "2026-05" },
-        { "symbol": "COST",          "name": "Costco Wholesale",     "reversionSpeedTheta": 0.22, "baselineVolatility": 0.22, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "PM",            "name": "Philip Morris",        "reversionSpeedTheta": 0.20, "baselineVolatility": 0.18, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "MO",            "name": "Altria Group",         "reversionSpeedTheta": 0.18, "baselineVolatility": 0.20, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "BATS.L",        "name": "BAT",                  "reversionSpeedTheta": 0.18, "baselineVolatility": 0.20, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "DGE.L",         "name": "Diageo",               "reversionSpeedTheta": 0.20, "baselineVolatility": 0.18, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "BUD",           "name": "AB InBev",             "reversionSpeedTheta": 0.18, "baselineVolatility": 0.22, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "OR.PA",         "name": "L'Oréal",              "reversionSpeedTheta": 0.22, "baselineVolatility": 0.18, "creditRating": "AA",  "ratingLastVerified": "2026-05" },
-        { "symbol": "BN.PA",         "name": "Danone",               "reversionSpeedTheta": 0.20, "baselineVolatility": 0.18, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "HEIA.AS",       "name": "Heineken",             "reversionSpeedTheta": 0.20, "baselineVolatility": 0.20, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "CL",            "name": "Colgate-Palmolive",    "reversionSpeedTheta": 0.22, "baselineVolatility": 0.17, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "KMB",           "name": "Kimberly-Clark",       "reversionSpeedTheta": 0.22, "baselineVolatility": 0.16, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "GIS",           "name": "General Mills",        "reversionSpeedTheta": 0.22, "baselineVolatility": 0.16, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "MDLZ",          "name": "Mondelez Intl",        "reversionSpeedTheta": 0.20, "baselineVolatility": 0.18, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "KHC",           "name": "Kraft Heinz",          "reversionSpeedTheta": 0.18, "baselineVolatility": 0.22, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "HINDUNILVR.NS", "name": "Hindustan Unilever",   "reversionSpeedTheta": 0.22, "baselineVolatility": 0.18, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "RKT.L",         "name": "Reckitt",              "reversionSpeedTheta": 0.20, "baselineVolatility": 0.18, "creditRating": "BBB", "ratingLastVerified": "2026-05" },
-        { "symbol": "HEN3.DE",       "name": "Henkel AG",            "reversionSpeedTheta": 0.20, "baselineVolatility": 0.18, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "HSY",           "name": "Hershey Co",           "reversionSpeedTheta": 0.20, "baselineVolatility": 0.18, "creditRating": "A",   "ratingLastVerified": "2026-05" },
-        { "symbol": "CPB",           "name": "Campbell Soup",        "reversionSpeedTheta": 0.20, "baselineVolatility": 0.20, "creditRating": "BBB", "ratingLastVerified": "2026-05" }
       ]
     }
   }
