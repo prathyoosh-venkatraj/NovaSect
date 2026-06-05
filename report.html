@@ -1355,6 +1355,13 @@
                   .fy-table td { color: #fff; font-variant-numeric: tabular-nums; }
                   .fy-table .fy-sub td { color: #39FF14; font-size: .6rem; letter-spacing: .14em; padding-top: 12px; border-bottom: 1px solid rgba(57,255,20,.18); }
                   .fy-table .fy-trend.up { color: #39FF14; } .fy-table .fy-trend.down { color: #FF4D4D; } .fy-table .fy-trend.flat { color: #888; }
+                  /* Tier 2 — deterministic analytics */
+                  .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+                  .an-card { border: 1px solid rgba(57,255,20,.18); border-radius: 6px; padding: 12px 14px; background: rgba(57,255,20,.03); }
+                  .an-label { font-size: .58rem; letter-spacing: .12em; color: #39FF14; text-transform: uppercase; }
+                  .an-value { font-size: 1.15rem; color: #fff; font-family: 'JetBrains Mono', monospace; margin-top: 6px; }
+                  .an-value.pos { color: #39FF14; } .an-value.neg { color: #FF4D4D; }
+                  .an-sub { font-size: .6rem; color: #9aa; margin-top: 4px; line-height: 1.3; }
                 </style>
                 <div id="fiveyear-section" class="fiveyear-container" style="display: none;">
                     <h2 class="fiveyear-title">FIVE-YEAR TRENDS</h2>
@@ -1365,6 +1372,13 @@
                     </div>
                     <div class="fy-table-wrap" id="fiveyear-table-wrap"></div>
                     <p class="fiveyear-note">Five-year horizontal analysis computed live from SEC EDGAR XBRL annual filings (US filers).</p>
+                </div>
+
+                <!-- Tier 2 — deterministic analytics (DuPont, ROIC vs WACC, DCF, etc.) -->
+                <div id="analytics-section" class="fiveyear-container" style="display: none; margin-top: 28px;">
+                    <h2 class="fiveyear-title">ANALYTICS — DETERMINISTIC MODELS</h2>
+                    <div class="analytics-grid" id="analytics-grid"></div>
+                    <p class="fiveyear-note" id="analytics-note"></p>
                 </div>
 
                 <div id="multiples-section" class="multiples-container" style="display: none;">
@@ -2015,6 +2029,96 @@
         // Five-Year Trends — fetches the compact 5Y series from /api/sec-proxy
         // (computed server-side from SEC XBRL) and charts it. Stays hidden for
         // non-US filers (foreign / PDF-sourced) where the proxy returns 404.
+        // ── Tier 2: deterministic equity-research analytics (no ML, no new feeds) ──
+        const _lastOf = a => { for (let i = (a || []).length - 1; i >= 0; i--) if (a[i] != null) return a[i]; return null; };
+        function _creditTier(ic) {
+            if (ic == null) return null;
+            if (ic >= 12) return 'AAA/AA'; if (ic >= 8) return 'A'; if (ic >= 5) return 'BBB';
+            if (ic >= 2.5) return 'BB'; if (ic >= 1.5) return 'B'; return 'CCC';
+        }
+        // DCF (FCFF → EV → equity). Returns null on degenerate inputs.
+        function _dcfEquity(fcf0, g, gT, wacc, years, netDebt) {
+            if (fcf0 == null || !(fcf0 > 0) || wacc == null || !(wacc > gT)) return null;
+            let pv = 0, f = fcf0;
+            for (let t = 1; t <= years; t++) { f *= (1 + g); pv += f / Math.pow(1 + wacc, t); }
+            const tv = (f * (1 + gT)) / (wacc - gT);
+            pv += tv / Math.pow(1 + wacc, years);
+            return { ev: pv, equity: pv - (netDebt || 0) };
+        }
+        // Reverse-DCF: growth implied by the current market equity (bisection).
+        function _impliedGrowth(marketEquity, fcf0, gT, wacc, years, netDebt) {
+            if (marketEquity == null || fcf0 == null || !(fcf0 > 0) || wacc == null) return null;
+            const f = g => { const d = _dcfEquity(fcf0, g, gT, wacc, years, netDebt); return d ? d.equity - marketEquity : null; };
+            let lo = -0.2, hi = wacc - 1e-4, flo = f(lo), fhi = f(hi);
+            if (flo == null || fhi == null || flo * fhi > 0) return null;
+            for (let i = 0; i < 64; i++) {
+                const mid = (lo + hi) / 2, fm = f(mid);
+                if (fm == null) return null;
+                if (flo * fm <= 0) { hi = mid; fhi = fm; } else { lo = mid; flo = fm; }
+            }
+            return (lo + hi) / 2;
+        }
+        async function renderAnalytics(history, yahooSym) {
+            const sec = document.getElementById('analytics-section');
+            if (!sec || !history || !history.summary) return;
+            const s = history.summary, c = history.cagr || {}, RA = history.ratios || {}, L = _lastOf;
+            const ni = L(s.netIncome), rev = L(s.revenue), ta = L(s.totalAssets), eq = L(s.equity),
+                  oi = L(s.operatingIncome), td = L(s.totalDebt), cash = L(s.cash), nd = L(s.netDebt),
+                  fcf = L(s.freeCashFlow), ie = L(s.interestExpense), div = L(s.dividendsPaid);
+            let shares = L(s.sharesOutstanding);
+            if (shares != null && shares > 0 && shares < 5e6) shares *= 1000;  // filer reported in thousands
+            if (!(shares > 1e6)) shares = null;
+
+            const TAX = 0.21, ERP = 0.05, GT = 0.025, YEARS = 5;
+            let rf = null, beta = null, price = null;
+            try { const r = await fetch('/api/fred-proxy?series_id=DGS10'); if (r.ok) { const j = await r.json(); if (j && j.value != null) rf = Number(j.value) / 100; } } catch { /* rf stays null */ }
+            try { const m = await osirisIngestion.getTickerMetrics(yahooSym); if (m) { if (typeof m.beta === 'number') beta = m.beta; if (typeof m.currentPrice === 'number') price = m.currentPrice; } } catch { /* live metrics optional */ }
+
+            const dupont = (ni != null && rev && ta && eq) ? { nm: ni / rev, at: rev / ta, em: ta / eq, roe: (ni / rev) * (rev / ta) * (ta / eq) } : null;
+            const invCap = (td != null || eq != null) ? ((td || 0) + (eq || 0) - (cash || 0)) : null;
+            const roic = (oi != null && invCap && invCap > 0) ? (oi * (1 - TAX)) / invCap : null;
+            let wacc = null, ke = null, kd = null;
+            if (eq != null && rf != null && beta != null) {
+                const V = eq + (td || 0);
+                if (V > 0) { ke = rf + beta * ERP; kd = (ie != null && td > 0) ? ie / td : rf; wacc = (eq / V) * ke + ((td || 0) / V) * kd * (1 - TAX); }
+            }
+            const spread = (roic != null && wacc != null) ? roic - wacc : null;
+            let g = (typeof c.fcf === 'number') ? c.fcf : (typeof c.revenue === 'number' ? c.revenue : 0.04);
+            g = Math.max(-0.02, Math.min(0.12, g));
+            const dcf = (fcf != null && wacc != null) ? _dcfEquity(fcf, g, GT, wacc, YEARS, nd) : null;
+            const fairPS = (dcf && shares) ? dcf.equity / shares : null;
+            const upside = (fairPS != null && price) ? fairPS / price - 1 : null;
+            const mktEq = (price && shares) ? price * shares : null;
+            const impG = (mktEq != null && fcf != null && wacc != null) ? _impliedGrowth(mktEq, fcf, GT, wacc, YEARS, nd) : null;
+            const fcfMargin = (fcf != null && rev) ? fcf / rev : null;
+            const fcfConv = (fcf != null && ni && ni > 0) ? fcf / ni : null;
+            const divCovFcf = (fcf != null && div && div > 0) ? fcf / div : null;
+            const payout = (div != null && ni && ni > 0) ? div / ni : null;
+            const icv = L(RA.interestCoverage), tier = _creditTier(icv);
+
+            const P = v => v == null ? '–' : (v * 100).toFixed(1) + '%';
+            const X = v => v == null ? '–' : v.toFixed(2) + 'x';
+            const PP = v => v == null ? '–' : (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + 'pp';
+            const card = (label, value, sub, cls) => `<div class="an-card"><div class="an-label">${label}</div><div class="an-value ${cls || ''}">${value}</div>${sub ? `<div class="an-sub">${sub}</div>` : ''}</div>`;
+            const cards = [];
+            if (dupont) cards.push(card('ROE (DuPont)', P(dupont.roe), `${P(dupont.nm)} margin × ${X(dupont.at)} turn × ${X(dupont.em)} lev`));
+            if (roic != null) cards.push(card('ROIC', P(roic), 'NOPAT ÷ invested capital'));
+            if (spread != null) cards.push(card('ROIC − WACC', PP(spread), spread >= 0 ? 'value-creating' : 'value-destroying', spread >= 0 ? 'pos' : 'neg'));
+            if (wacc != null) cards.push(card('WACC (book-wt)', P(wacc), `Ke ${P(ke)} · Kd ${P(kd)} · β ${beta != null ? beta.toFixed(2) : '–'}`));
+            if (fairPS != null) cards.push(card('DCF fair value', '$' + fairPS.toFixed(2), upside != null ? `${(upside >= 0 ? '+' : '') + (upside * 100).toFixed(0)}% vs $${price.toFixed(2)}` : `g ${P(g)}`, upside != null ? (upside >= 0 ? 'pos' : 'neg') : ''));
+            else if (dcf) cards.push(card('DCF equity value', '$' + (dcf.equity / 1e9).toFixed(1) + 'B', `g ${P(g)} · term ${P(GT)}`));
+            if (impG != null) cards.push(card('Reverse-DCF', P(impG), 'FCF growth priced in'));
+            if (fcfMargin != null) cards.push(card('FCF margin', P(fcfMargin), fcfConv != null ? `${X(fcfConv)} of net income` : ''));
+            if (divCovFcf != null) cards.push(card('Dividend cover (FCF)', X(divCovFcf), payout != null ? `payout ${P(payout)} of NI` : ''));
+            if (tier) cards.push(card('Implied credit', tier, icv != null ? `interest coverage ${X(icv)}` : ''));
+
+            if (!cards.length) return;
+            document.getElementById('analytics-grid').innerHTML = cards.join('');
+            const note = document.getElementById('analytics-note');
+            if (note) note.textContent = `Deterministic models · tax ${(TAX * 100).toFixed(0)}% · ERP ${(ERP * 100).toFixed(0)}% · terminal g ${(GT * 100).toFixed(1)}% · DCF growth ${(g * 100).toFixed(1)}% (5y FCF CAGR, capped) · book-weighted WACC (rf = FRED 10Y${rf != null ? ' ' + (rf * 100).toFixed(2) + '%' : ' n/a'}, β vs SPY). Indicative — not investment advice.`;
+            sec.style.display = 'block';
+        }
+
         let _fyRevNiChart = null, _fyMarginsChart = null;
         async function loadFiveYearTrends(tvTicker, yahooSym) {
             const section = document.getElementById('fiveyear-section');
@@ -2163,6 +2267,9 @@
             if (note) note.textContent = `${history.years.length}-year horizontal analysis · ${source} · latest ${yrs[yrs.length - 1]} · as of ${new Date().toISOString().slice(0, 10)}`;
 
             section.style.display = 'block';
+
+            // Tier 2: deterministic analytics from the same series (fire-and-forget).
+            renderAnalytics(history, yahooSym);
         }
 
         async function loadFundamentals(ticker) {

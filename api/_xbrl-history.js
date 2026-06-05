@@ -95,7 +95,7 @@ function ratiosForYear(maps, yr) {
   const fcf = (ocf != null && capex != null) ? ocf - Math.abs(capex) : null;
 
   return {
-    rev, oi, ebitda, ni, eps, fcf, div,
+    rev, oi, ebitda, ni, eps, fcf, div, ie, sharesOut: g('sharesOut'),
     td: (ltd == null && std == null) ? null : td,
     nd: (ltd == null && std == null && cash == null) ? null : nd,
     cash, eq, ta,
@@ -189,6 +189,8 @@ export function historyData(x) {
       revenue: pick('rev'), operatingIncome: pick('oi'), ebitda: pick('ebitda'),
       netIncome: pick('ni'), eps: pick('eps'), freeCashFlow: pick('fcf'),
       totalDebt: pick('td'), netDebt: pick('nd'), equity: pick('eq'),
+      totalAssets: pick('ta'), cash: pick('cash'), interestExpense: pick('ie'),
+      dividendsPaid: pick('div'), sharesOutstanding: pick('sharesOut'),
     },
     ratios: {
       operatingMargin: pick('om'), netMargin: pick('nm'), roe: pick('roe'),
