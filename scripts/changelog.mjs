@@ -26,7 +26,7 @@ const remote   = sh('git config --get remote.origin.url');
 const repoFull = (process.env.REPO || remote.match(/[:/]([^/]+\/[^/.]+?)(?:\.git)?$/)?.[1] || 'repo');
 const repoName = repoFull.split('/').pop();
 const isAurum  = /aurum/i.test(repoFull);
-const label    = isAurum ? 'Aurum' : 'NovaSect / FinVault';
+const label    = isAurum ? 'Aurum' : 'NovaSect';
 const color    = isAurum ? 0xF5C518 : 0x39FF14;
 
 const TYPE = {
