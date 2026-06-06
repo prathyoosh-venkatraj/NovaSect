@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
- * Layer-1 health check orchestrator. Runs all four canaries serially,
+ * Layer-1 health check orchestrator. Runs all canaries serially and
  * routes results through the Discord notifier (with dedup + recovery
- * posts), and exits non-zero if anything failed so the GitHub Actions
- * run shows red in the UI even when Discord suppressed the alert.
+ * posts). Failed checks are reported to Discord ONLY — the script exits 0
+ * so the GitHub Actions run stays green and GitHub sends no workflow-failure
+ * email. Discord is the single source of truth for health state; only a
+ * genuine script/infra crash (which throws) fails the job.
  *
  * Invocation:
  *   DISCORD_WEBHOOK_URL=... SITE_URL=https://novasect.space node scripts/health/run-all.mjs
@@ -102,4 +104,8 @@ await postDigest(results, SITE_URL);
 
 const anyFailed = results.some(r => r.severity !== 'pass');
 console.log('[health] done · status=' + (anyFailed ? 'fail' : 'ok'));
-process.exit(anyFailed ? 1 : 0);
+// Exit 0 even when checks fail: failures are surfaced in the Discord digest
+// above, and keeping the Actions run green stops GitHub from emailing a
+// workflow-failure notification on every 2-hour heartbeat. A real crash
+// (uncaught error / failed Discord POST) still propagates and fails the job.
+process.exit(0);
