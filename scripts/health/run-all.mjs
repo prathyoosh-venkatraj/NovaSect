@@ -20,6 +20,8 @@ import {
     checkFred, checkStaleAnchors, checkUniverseDrift, checkFinnhubAuthz,
     checkOsirisEngine, checkPdfRender
 } from './checks.mjs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 const SITE_URL = (process.env.SITE_URL || 'https://novasect.space').replace(/\/$/, '');
 const SMOKE_TEST = process.env.SMOKE_TEST === 'true';
@@ -68,20 +70,28 @@ if (SMOKE_TEST) {
     }
 }
 
-// Order from cheapest → heaviest. Heavy ones (engine, PDF render)
-// run last so transient external-API blips don't waste their compute.
-const CHECKS = [
-    { name: 'yahoo-canary',         fn: () => checkYahoo(SITE_URL) },
-    { name: 'finnhub-canary',       fn: () => checkFinnhub(SITE_URL) },
-    { name: 'fred-canary',          fn: () => checkFred(SITE_URL) },
-    { name: 'universe-coverage',    fn: () => checkUniverse(SITE_URL) },
-    { name: 'public-assets',        fn: () => checkPublicAssets(SITE_URL) },
-    { name: 'finnhub-authz',        fn: () => checkFinnhubAuthz(SITE_URL) },
-    { name: 'stale-anchors',        fn: () => checkStaleAnchors() },
-    { name: 'universe-drift',       fn: () => checkUniverseDrift() },
-    { name: 'osiris-engine',        fn: () => checkOsirisEngine() },
-    { name: 'pdf-render',           fn: () => checkPdfRender(SITE_URL) }
+// Each check is tagged by cadence group:
+//   'liveness'  — availability / engine / render checks; time-sensitive, run a
+//                 few times a day so an outage is caught quickly.
+//   'freshness' — data staleness / drift; these only change after the daily EOD
+//                 refresh, so they run once a day (just after it).
+// Order from cheapest → heaviest (engine, PDF render last).
+const ALL_CHECKS = [
+    { name: 'yahoo-canary',      group: 'liveness',  fn: () => checkYahoo(SITE_URL) },
+    { name: 'finnhub-canary',    group: 'liveness',  fn: () => checkFinnhub(SITE_URL) },
+    { name: 'fred-canary',       group: 'liveness',  fn: () => checkFred(SITE_URL) },
+    { name: 'universe-coverage', group: 'liveness',  fn: () => checkUniverse(SITE_URL) },
+    { name: 'public-assets',     group: 'liveness',  fn: () => checkPublicAssets(SITE_URL) },
+    { name: 'finnhub-authz',     group: 'liveness',  fn: () => checkFinnhubAuthz(SITE_URL) },
+    { name: 'stale-anchors',     group: 'freshness', fn: () => checkStaleAnchors() },
+    { name: 'universe-drift',    group: 'freshness', fn: () => checkUniverseDrift() },
+    { name: 'osiris-engine',     group: 'liveness',  fn: () => checkOsirisEngine() },
+    { name: 'pdf-render',        group: 'liveness',  fn: () => checkPdfRender(SITE_URL) }
 ];
+
+// HEALTH_SET picks the cadence group to run: 'all' (default) | 'liveness' | 'freshness'.
+const HEALTH_SET = (process.env.HEALTH_SET || 'all').toLowerCase();
+const CHECKS = HEALTH_SET === 'all' ? ALL_CHECKS : ALL_CHECKS.filter(c => c.group === HEALTH_SET);
 
 console.log('[health] starting · site=' + SITE_URL + ' · ' + new Date().toISOString());
 
@@ -97,15 +107,49 @@ for (const { name, fn } of CHECKS) {
     results.push({ check: name, ...result });
 }
 
-// One digest per run — replaces the per-check alerts. The digest
-// itself reflects current state (persistent fails appear in every
-// digest; recoveries are visible by a row flipping back to ✓ PASS).
-await postDigest(results, SITE_URL);
+// ── Post policy: heartbeat (always) vs alert-on-change ──────────────────────
+// ALWAYS_POST=true  → post the digest every run (the once-a-day heartbeat).
+// ALWAYS_POST=false → post ONLY when an executed check FLIPPED state since the
+//                     previous run (a new failure or a recovery); silent if the
+//                     state is unchanged. This kills the "10 green messages a
+//                     day" noise while still surfacing genuine changes promptly.
+// State is a small JSON map (check → 'pass'|'fail') persisted in the cached
+// .health dir, so it survives between scheduled runs.
+const ALWAYS_POST = (process.env.ALWAYS_POST || 'true').toLowerCase() === 'true';
+const STATE_DIR   = process.env.HEALTH_STATE_DIR || '.health';
+const STATE_FILE  = join(STATE_DIR, 'alert-state.json');
 
+let prevState = {};
+try { if (existsSync(STATE_FILE)) prevState = JSON.parse(readFileSync(STATE_FILE, 'utf8')); } catch {}
+
+const statusOf = r => (r.severity === 'pass' ? 'pass' : 'fail');
+const newly = [], recovered = [];
+for (const r of results) {
+    const now = statusOf(r), was = prevState[r.check];
+    if (now === 'fail' && was !== 'fail') newly.push(r.check);
+    if (now === 'pass' && was === 'fail') recovered.push(r.check);
+}
+const changed   = newly.length > 0 || recovered.length > 0;
 const anyFailed = results.some(r => r.severity !== 'pass');
-console.log('[health] done · status=' + (anyFailed ? 'fail' : 'ok'));
-// Exit 0 even when checks fail: failures are surfaced in the Discord digest
-// above, and keeping the Actions run green stops GitHub from emailing a
-// workflow-failure notification on every 2-hour heartbeat. A real crash
-// (uncaught error / failed Discord POST) still propagates and fails the job.
+
+if (ALWAYS_POST) {
+    await postDigest(results, SITE_URL, { setLabel: HEALTH_SET, reason: 'heartbeat' });
+} else if (changed) {
+    await postDigest(results, SITE_URL, { setLabel: HEALTH_SET, reason: 'change', newly, recovered });
+} else {
+    console.log('[health] no state change in "' + HEALTH_SET + '" set — staying silent');
+}
+
+// Persist the new state for the checks we actually ran.
+try {
+    if (!existsSync(STATE_DIR)) mkdirSync(STATE_DIR, { recursive: true });
+    for (const r of results) prevState[r.check] = statusOf(r);
+    writeFileSync(STATE_FILE, JSON.stringify(prevState, null, 2));
+} catch (e) { console.warn('[health] could not persist alert state:', e.message); }
+
+console.log('[health] done · set=' + HEALTH_SET + ' · status=' + (anyFailed ? 'fail' : 'ok')
+    + ' · changed=' + changed + ' · posted=' + (ALWAYS_POST || changed));
+// Exit 0 even when checks fail: failures are surfaced in Discord; keeping the
+// Actions run green stops GitHub emailing a workflow-failure notice every run.
+// A real crash (uncaught error / failed POST) still propagates and fails the job.
 process.exit(0);

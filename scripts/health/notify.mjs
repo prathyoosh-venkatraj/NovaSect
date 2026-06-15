@@ -97,15 +97,30 @@ function buildDetails(results) {
     return blocks.join('\n\n');
 }
 
-export async function postDigest(results, siteUrl) {
+export async function postDigest(results, siteUrl, meta = {}) {
     const webhook = process.env.DISCORD_WEBHOOK_URL;
     const passCount = results.filter(r => r.severity === 'pass').length;
     const total = results.length;
     const tableText = buildTable(results);
     const detailsText = buildDetails(results);
 
+    // Title/description adapt to why we're posting:
+    //   reason 'change'    → a check flipped state (alert-on-change run)
+    //   reason 'heartbeat' → the once-a-day full snapshot (or a manual run)
+    const setLabel = (meta.setLabel && meta.setLabel !== 'all') ? ' (' + meta.setLabel + ')' : '';
+    const title = (meta.reason === 'change' ? 'Health change' : 'Health digest')
+                + setLabel + ' · ' + passCount + '/' + total + ' passing';
+    let description;
+    if (meta.reason === 'change') {
+        const parts = [];
+        if (meta.newly && meta.newly.length)         parts.push('🔴 new fail: ' + meta.newly.join(', '));
+        if (meta.recovered && meta.recovered.length) parts.push('🟢 recovered: ' + meta.recovered.join(', '));
+        if (parts.length) description = parts.join('   ·   ');
+    }
+
     if (!webhook) {
-        console.log('[health] DISCORD_WEBHOOK_URL not set — digest dry-run:');
+        console.log('[health] DISCORD_WEBHOOK_URL not set — digest dry-run: ' + title);
+        if (description) console.log(description);
         console.log(tableText);
         if (detailsText) console.log('\n' + detailsText);
         return;
@@ -118,14 +133,17 @@ export async function postDigest(results, siteUrl) {
         fields.push({ name: 'Failure details', value: '```\n' + detailsText + '\n```' });
     }
 
+    const embed = {
+        title,
+        color: pickColor(results),
+        fields,
+        footer: { text: 'novasect-health · ' + (siteUrl || '') + ' · ' + new Date().toISOString() }
+    };
+    if (description) embed.description = description;
+
     const payload = {
         username: 'NovaSect Health',
-        embeds: [{
-            title: 'Health digest · ' + passCount + '/' + total + ' passing',
-            color: pickColor(results),
-            fields,
-            footer: { text: 'novasect-health · ' + (siteUrl || '') + ' · ' + new Date().toISOString() }
-        }]
+        embeds: [embed]
     };
 
     try {
