@@ -16,6 +16,7 @@
 
 import { isRateLimited, getClientIp } from './_ratelimit.js';
 import { buildSeries, historyData } from './_xbrl-history.js';
+import { forensicScores } from './_forensic-scores.js';
 
 // SEC asks for a UA identifying the app + a contact address.
 const SEC_UA = 'NovaSect FinVault (novasect.space) contact@novasect.space';
@@ -47,7 +48,7 @@ async function getCik(ticker) {
 }
 
 export default async function handler(req, res) {
-  const { ticker } = req.query;
+  const { ticker, sector } = req.query;
   if (!ticker || !TICKER_RE.test(ticker)) {
     return res.status(400).json({ error: 'E400: INVALID_TICKER' });
   }
@@ -78,9 +79,16 @@ export default async function handler(req, res) {
     const history = historyData(x);
     if (!history) return res.status(404).json({ error: 'E404: INSUFFICIENT_HISTORY' });
 
+    // Forensic-accounting scores (Altman Z sector-aware · Beneish M · Piotroski F)
+    // from the same raw series. `sector` (constant per ticker → cache stays warm)
+    // selects the Altman variant; Industrials' market-value X4 is refined client-
+    // side with the live price, so we don't take mktCap here (keeps the edge cache
+    // keyed by ticker only).
+    const scores = forensicScores(x, { sector: typeof sector === 'string' ? sector : undefined });
+
     // companyfacts only changes on a new filing — cache hard at the edge.
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=43200');
-    return res.status(200).json({ ticker: ticker.toUpperCase(), cik, source: 'SEC EDGAR XBRL', history });
+    return res.status(200).json({ ticker: ticker.toUpperCase(), cik, source: 'SEC EDGAR XBRL', history, scores });
   } catch (e) {
     console.error('SEC Proxy Error:', e.message);
     return res.status(502).json({ error: 'E502: SEC_NETWORK_ERROR' });
