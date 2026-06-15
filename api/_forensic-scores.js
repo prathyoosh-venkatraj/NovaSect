@@ -106,7 +106,10 @@ function beneish(maps, y, p) {
   const DEPI = div(depRate(gp('da'), gp('ppeNet')), depRate(gy('da'), gy('ppeNet')));
 
   const SGAI = div(div(gy('sga'), salesY), div(gp('sga'), salesP));
-  const LVGI = div(div(gy('totalLiabilities'), gy('totalAssets')), div(gp('totalLiabilities'), gp('totalAssets')));
+  // Leverage = (current liabilities + long-term debt) / total assets (canonical Beneish).
+  const lev = (cl, ltd, ta) => (cl != null && ltd != null && ta != null && ta !== 0) ? (cl + ltd) / ta : null;
+  const LVGI = div(lev(gy('currentLiabilities'), gy('longTermDebt'), gy('totalAssets')),
+                   lev(gp('currentLiabilities'), gp('longTermDebt'), gp('totalAssets')));
   const TATA = div(sub(gy('netIncome'), gy('ocf')), gy('totalAssets'));
 
   const idx = { DSRI, GMI, AQI, SGI, DEPI, SGAI, LVGI, TATA };

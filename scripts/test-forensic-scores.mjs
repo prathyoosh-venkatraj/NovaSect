@@ -72,10 +72,11 @@ const X = series(FIX);
 }
 
 // ── Beneish M ─────────────────────────────────────────────────────────────────
-// Hand sum ≈ −2.647 → below −1.78 → Unlikely
+// LVGI = (CL+LTD)/TA: (200+300)/1000=0.50 ÷ (180+320)/900=0.5556 = 0.90
+// Hand sum ≈ −2.635 → below −1.78 → Unlikely
 {
   const b = forensicScores(X, { sector: 'Energy' }).beneish;
-  ok(near(b.score, -2.647, 0.01), 'Beneish M ≈ −2.647 (got ' + b.score?.toFixed(3) + ')');
+  ok(near(b.score, -2.635, 0.01), 'Beneish M ≈ −2.635 (got ' + b.score?.toFixed(3) + ')');
   ok(b.flag === 'Unlikely', 'Beneish flag = Unlikely');
   ok(near(b.indices.DSRI, 1.05) && near(b.indices.TATA, -0.08), 'Beneish DSRI/TATA components correct');
 }

@@ -129,9 +129,11 @@ function beneish(maps, y, p) {
   const sgaRatioY = div(gy('sga'), salesY), sgaRatioP = div(gp('sga'), salesP);
   const SGAI = div(sgaRatioY, sgaRatioP);
 
-  const levY = div(gy('totalLiabilities'), gy('totalAssets'));
-  const levP = div(gp('totalLiabilities'), gp('totalAssets'));
-  const LVGI = div(levY, levP);
+  // Leverage = (current liabilities + long-term debt) / total assets — the
+  // canonical Beneish definition (not all of total liabilities).
+  const lev = (cl, ltd, ta) => (cl != null && ltd != null && ta != null && ta !== 0) ? (cl + ltd) / ta : null;
+  const LVGI = div(lev(gy('currentLiabilities'), gy('longTermDebt'), gy('totalAssets')),
+                   lev(gp('currentLiabilities'), gp('longTermDebt'), gp('totalAssets')));
 
   const TATA = div(sub(gy('netIncome'), gy('ocf')), gy('totalAssets'));
 
