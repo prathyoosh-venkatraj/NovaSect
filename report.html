@@ -642,6 +642,32 @@
            TTM growth + valuation metrics from Finnhub /stock/metric.
            Complements (does not duplicate) the static FINANCIAL RATIOS
            table — these are live, time-dynamic numbers. */
+        .forensic-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        @media (max-width: 760px) { .forensic-grid { grid-template-columns: 1fr; } }
+        .forensic-card {
+            background: rgba(1, 10, 1, 0.6);
+            border: 1px solid rgba(57, 255, 20, 0.25);
+            border-radius: 8px;
+            padding: 0.9rem 1rem;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .forensic-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+        .forensic-title { color: var(--accent-green); font-weight: bold; letter-spacing: 0.5px; }
+        .forensic-band { font-size: 0.68rem; border: 1px solid; border-radius: 4px; padding: 1px 6px; text-transform: uppercase; white-space: nowrap; }
+        .forensic-sub { color: #9aa; font-size: 0.72rem; margin: 0.2rem 0 0.45rem; }
+        .forensic-value { font-size: 1.7rem; font-weight: bold; line-height: 1.1; }
+        .forensic-foot { color: #778; font-size: 0.66rem; margin-top: 0.25rem; }
+        .forensic-na { color: #9aa; font-size: 0.8rem; padding: 0.6rem 0; }
+        .forensic-detail { margin-top: 0.55rem; }
+        .forensic-detail summary { color: #9aa; font-size: 0.72rem; cursor: pointer; }
+        .forensic-detail table { width: 100%; margin-top: 0.3rem; border-collapse: collapse; }
+        .forensic-detail td { color: #bcd; font-size: 0.7rem; padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+        .forensic-detail td:last-child { text-align: right; color: #fff; }
+
         .fundamentals-section {
             background: rgba(1, 10, 1, 0.9);
             border: 1px solid rgba(57, 255, 20, 0.3);
@@ -1381,6 +1407,13 @@
                     <p class="fiveyear-note" id="analytics-note"></p>
                 </div>
 
+                <!-- Forensic screens — Altman Z (sector-aware), Beneish M, Piotroski F -->
+                <div id="forensic-section" class="fiveyear-container" style="display: none; margin-top: 28px;">
+                    <h2 class="fiveyear-title">FORENSIC SCREENS</h2>
+                    <div class="forensic-grid" id="forensic-grid"></div>
+                    <p class="fiveyear-note" id="forensic-note"></p>
+                </div>
+
                 <!-- Tier 4 — earnings track record (reported EPS vs consensus) -->
                 <div id="earnings-track-section" class="fiveyear-container" style="display: none; margin-top: 28px;">
                     <h2 class="fiveyear-title">EARNINGS TRACK RECORD</h2>
@@ -2066,7 +2099,85 @@
             }
             return (lo + hi) / 2;
         }
-        async function renderAnalytics(history, yahooSym) {
+        // Forensic-accounting screens — renders Altman Z (sector-aware), Beneish M,
+        // Piotroski F from the sec-proxy `scores` payload. For Industrials, refines
+        // Altman's market-value X4 with the live market cap (the proxy used book
+        // equity to keep its cache key clean).
+        function renderForensicScores(scores, sector, mktEq, history) {
+            const sectionEl = document.getElementById('forensic-section');
+            const grid = document.getElementById('forensic-grid');
+            const note = document.getElementById('forensic-note');
+            if (!sectionEl || !grid || !scores) return;
+
+            const bandColor = b => /safe|unlikely|strong/i.test(b || '') ? '#39FF14'
+                                 : /grey|moderate/i.test(b || '') ? '#FFB000'
+                                 : /distress|likely|weak/i.test(b || '') ? '#ff4d4d' : '#9aa';
+            const f2 = v => (v == null || isNaN(v)) ? '–' : v.toFixed(2);
+            const f3 = v => (v == null || isNaN(v)) ? '–' : v.toFixed(3);
+            const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+            const card = (title, sub, value, band, reason, foot, rows) => {
+                const bc = bandColor(band);
+                if (value == null) {
+                    return `<div class="forensic-card"><div class="forensic-head"><span class="forensic-title">${title}</span></div>`
+                         + `<div class="forensic-sub">${esc(sub || '')}</div>`
+                         + `<div class="forensic-na">Insufficient data${reason ? ' — ' + esc(reason) : ''}</div></div>`;
+                }
+                const detail = (rows && rows.length)
+                    ? `<details class="forensic-detail"><summary>components</summary><table>`
+                      + rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') + `</table></details>`
+                    : '';
+                return `<div class="forensic-card">`
+                     + `<div class="forensic-head"><span class="forensic-title">${title}</span>`
+                     + `<span class="forensic-band" style="color:${bc};border-color:${bc}">${esc(band || '')}</span></div>`
+                     + `<div class="forensic-sub">${esc(sub || '')}</div>`
+                     + `<div class="forensic-value" style="color:${bc}">${value}</div>`
+                     + (foot ? `<div class="forensic-foot">${esc(foot)}</div>` : '')
+                     + detail + `</div>`;
+            };
+
+            // Altman — refine Industrials X4 with the live market cap when available.
+            const a = scores.altman || {};
+            let aScore = a.score, aBand = a.band, aFoot = a.note, comps = a.components || {};
+            if (a.available && /industr/i.test(sector || '') && mktEq && history && history.summary) {
+                const last = arr => { for (let i = (arr || []).length - 1; i >= 0; i--) if (arr[i] != null) return arr[i]; return null; };
+                const TA = last(history.summary.totalAssets), EQ = last(history.summary.equity);
+                const TL = (TA != null && EQ != null) ? TA - EQ : null;
+                if (TL && TL > 0 && comps.X1 != null && comps.X2 != null && comps.X3 != null && comps.X5 != null) {
+                    const X4 = mktEq / TL;
+                    aScore = 1.2 * comps.X1 + 1.4 * comps.X2 + 3.3 * comps.X3 + 0.6 * X4 + 1.0 * comps.X5;
+                    aBand = aScore > 2.99 ? 'Safe' : aScore >= 1.81 ? 'Grey' : 'Distress';
+                    aFoot = 'X4 uses live market value of equity';
+                    comps = Object.assign({}, comps, { X4 });
+                }
+            }
+            const aRows = a.available ? [
+                ['Working capital / assets (X1)', f3(comps.X1)],
+                ['Retained earnings / assets (X2)', f3(comps.X2)],
+                ['EBIT / assets (X3)', f3(comps.X3)],
+                ['Equity / liabilities (X4)', f3(comps.X4)],
+                comps.X5 != null ? ['Sales / assets (X5)', f3(comps.X5)] : null,
+            ].filter(Boolean) : [];
+
+            const b = scores.beneish || {};
+            const p = scores.piotroski || {};
+            const cards = [
+                card('Altman Z', a.model || 'distress risk', a.available ? f2(aScore) : null, aBand, a.reason, aFoot, aRows),
+                card('Beneish M', 'earnings-manipulation (8-factor)', b.available ? f2(b.score) : null, b.flag, b.reason,
+                     b.available ? 'flag threshold −1.78' : null,
+                     b.available ? Object.entries(b.indices || {}).map(([k, v]) => [k, f3(v)]) : []),
+                card('Piotroski F', 'fundamental strength (9 signals)', p.available ? (p.score + ' / 9') : null, p.band, p.reason,
+                     p.available ? (p.evaluable + ' of 9 evaluable') : null,
+                     p.available ? Object.entries(p.signals || {}).map(([k, v]) => [k, v === true ? '✓' : v === false ? '✗' : '–']) : []),
+            ];
+
+            grid.innerHTML = cards.join('');
+            note.textContent = 'As of FY ' + (scores.asOf || '—') + ' · SEC EDGAR XBRL · screening signals, not verdicts · '
+                             + "Altman: original Z for Industrials, Z'' for Utilities/Energy.";
+            sectionEl.style.display = 'block';
+        }
+
+        async function renderAnalytics(history, yahooSym, scores, sector) {
             const sec = document.getElementById('analytics-section');
             if (!sec || !history || !history.summary) return;
             const s = history.summary, c = history.cagr || {}, RA = history.ratios || {}, L = _lastOf;
@@ -2097,6 +2208,7 @@
             const fairPS = (dcf && shares) ? dcf.equity / shares : null;
             const upside = (fairPS != null && price) ? fairPS / price - 1 : null;
             const mktEq = (price && shares) ? price * shares : null;
+            renderForensicScores(scores, sector, mktEq, history);
             const impG = (mktEq != null && fcf != null && wacc != null) ? _impliedGrowth(mktEq, fcf, GT, wacc, YEARS, nd) : null;
             // Tier 4: DCF scenario band — perturb growth ±3pp and WACC ∓1pp.
             let scenBear = null, scenBull = null;
@@ -2172,16 +2284,16 @@
         }
 
         let _fyRevNiChart = null, _fyMarginsChart = null;
-        async function loadFiveYearTrends(tvTicker, yahooSym) {
+        async function loadFiveYearTrends(tvTicker, yahooSym, sector) {
             const section = document.getElementById('fiveyear-section');
             if (!section || !tvTicker || typeof Chart === 'undefined') return;
-            let history = null, source = '';
+            let history = null, source = '', scores = null;
 
             // 1) US filers — SEC EDGAR XBRL.
             try {
                 const symbol = tvTicker.split(':')[1] || tvTicker;
-                const res = await fetch(`/api/sec-proxy?ticker=${encodeURIComponent(symbol)}`);
-                if (res.ok) { const j = await res.json(); history = j.history; source = j.source || 'SEC EDGAR XBRL'; }
+                const res = await fetch(`/api/sec-proxy?ticker=${encodeURIComponent(symbol)}&sector=${encodeURIComponent(sector || '')}`);
+                if (res.ok) { const j = await res.json(); history = j.history; scores = j.scores || null; source = j.source || 'SEC EDGAR XBRL'; }
             } catch { /* fall through */ }
 
             // 2) Fallback (foreign / non-SEC filers) — Yahoo annual statements.
@@ -2321,7 +2433,7 @@
             section.style.display = 'block';
 
             // Tier 2: deterministic analytics from the same series (fire-and-forget).
-            renderAnalytics(history, yahooSym);
+            renderAnalytics(history, yahooSym, scores, sector);
         }
 
         async function loadFundamentals(ticker) {
@@ -3137,7 +3249,7 @@
                         loadEarningsDate(data.ticker);
                         loadDividendHistory(data.ticker);
                         loadEarningsTrack(data.ticker);
-                        loadFiveYearTrends(data.ticker, data.yahooSymbol || (typeof toYahooSymbol === 'function' ? toYahooSymbol(data.ticker) : null));
+                        loadFiveYearTrends(data.ticker, data.yahooSymbol || (typeof toYahooSymbol === 'function' ? toYahooSymbol(data.ticker) : null), data.industry);
                     }
                     loadDebtMaturity(company.toLowerCase(), companyData);
                     // Cross-tool badge: Sentinel's static rating anchor +
