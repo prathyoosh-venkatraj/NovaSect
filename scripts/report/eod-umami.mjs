@@ -147,16 +147,19 @@ async function buildReport() {
 // ── Main ────────────────────────────────────────────────────────────────────
 
 (async () => {
+  // Exit 0 on every error path: this report posts to Discord, so a failure
+  // should be logged in the Actions run (not emailed to the repo owner as a
+  // GitHub "workflow failed" notification). Genuine breakages show in the logs.
   if (!API_KEY) {
-    console.error('[eod] UMAMI_API_KEY not set — cannot fetch analytics.');
-    process.exit(1);
+    console.error('[eod] UMAMI_API_KEY not set — cannot fetch analytics; skipping.');
+    process.exit(0);
   }
   let payload;
   try {
     payload = await buildReport();
   } catch (e) {
     console.error('[eod] Failed to build report:', e.message);
-    process.exit(1);
+    process.exit(0);
   }
 
   if (!WEBHOOK) {
@@ -173,11 +176,11 @@ async function buildReport() {
     });
     if (!res.ok) {
       console.error('[eod] Discord POST failed:', res.status, (await res.text().catch(() => '')).slice(0, 200));
-      process.exit(1);
+      process.exit(0);
     }
     console.log('[eod] Report posted to Discord.');
   } catch (e) {
     console.error('[eod] Discord POST threw:', e.message);
-    process.exit(1);
+    process.exit(0);
   }
 })();
