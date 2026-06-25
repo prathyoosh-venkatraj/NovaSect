@@ -20,6 +20,7 @@
 
 import { timingSafeEqual } from 'crypto';
 import { isRateLimited, getClientIp } from './_ratelimit.js';
+import { TICKER_RE } from './_validate.js';
 
 // Constant-time bearer-token check against SNAPSHOT_WRITE_SECRET.
 function isAuthorizedWrite(req) {
@@ -32,9 +33,6 @@ function isAuthorizedWrite(req) {
     if (a.length !== b.length) return false;
     try { return timingSafeEqual(a, b); } catch { return false; }
 }
-
-// Tickers: alphanumeric + dots, dashes, underscores, max 15 chars (covers 2222.SR, EMBR3.SA, etc.)
-const TICKER_RE = /^[A-Za-z0-9.\-_]{1,15}$/;
 
 function kvPipeline(kvUrl, kvToken, commands) {
     return fetch(`${kvUrl}/pipeline`, {

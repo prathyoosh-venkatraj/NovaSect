@@ -10,37 +10,40 @@
 const ANNUAL_FORMS = ['10-K', '10-K/A', '20-F', '20-F/A'];
 const UNIT_PREF = ['USD', 'EUR', 'GBP', 'NOK', 'BRL', 'shares', 'USD/shares', 'EUR/shares', 'pure'];
 
+// US-GAAP tags first, IFRS (ifrs-full) equivalents appended so 20-F/IFRS filers
+// populate too. See scripts/lib/xbrl-history.mjs for the full rationale; keep the
+// two copies in sync.
 export const US_GAAP_CONCEPTS = {
-  revenue:            ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'SalesRevenueNet', 'RegulatedAndUnregulatedOperatingRevenue', 'ElectricUtilityRevenue', 'OilAndGasRevenue'],
-  operatingIncome:    ['OperatingIncomeLoss'],
-  da:                 ['DepreciationDepletionAndAmortization', 'DepreciationAndAmortization', 'Depreciation'],
-  interestExpense:    ['InterestExpense', 'InterestAndDebtExpense'],
-  netIncome:          ['NetIncomeLoss', 'ProfitLoss', 'NetIncomeLossAvailableToCommonStockholdersBasic'],
-  epsDiluted:         ['EarningsPerShareDiluted', 'EarningsPerShareBasic'],
-  longTermDebt:       ['LongTermDebt', 'LongTermDebtNoncurrent', 'LongTermDebtAndCapitalLeaseObligations'],
-  shortTermDebt:      ['ShortTermBorrowings', 'DebtCurrent', 'LongTermDebtCurrent'],
-  cash:               ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsAndShortTermInvestments'],
+  revenue:            ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'SalesRevenueNet', 'RegulatedAndUnregulatedOperatingRevenue', 'ElectricUtilityRevenue', 'OilAndGasRevenue', 'Revenue', 'RevenueFromContractsWithCustomers'],
+  operatingIncome:    ['OperatingIncomeLoss', 'ProfitLossFromOperatingActivities'],
+  da:                 ['DepreciationDepletionAndAmortization', 'DepreciationAndAmortization', 'Depreciation', 'DepreciationAndAmortisationExpense'],
+  interestExpense:    ['InterestExpense', 'InterestAndDebtExpense', 'FinanceCosts'],
+  netIncome:          ['NetIncomeLoss', 'ProfitLoss', 'NetIncomeLossAvailableToCommonStockholdersBasic', 'ProfitLossAttributableToOwnersOfParent'],
+  epsDiluted:         ['EarningsPerShareDiluted', 'EarningsPerShareBasic', 'DilutedEarningsLossPerShare', 'BasicEarningsLossPerShare'],
+  longTermDebt:       ['LongTermDebt', 'LongTermDebtNoncurrent', 'LongTermDebtAndCapitalLeaseObligations', 'NoncurrentBorrowings'],
+  shortTermDebt:      ['ShortTermBorrowings', 'DebtCurrent', 'LongTermDebtCurrent', 'CurrentBorrowings'],
+  cash:               ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsAndShortTermInvestments', 'CashAndCashEquivalents'],
   sharesOut:          ['CommonStockSharesOutstanding', 'EntityCommonStockSharesOutstanding'],
-  equity:             ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],
+  equity:             ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest', 'Equity', 'EquityAttributableToOwnersOfParent'],
   totalAssets:        ['Assets'],
   totalLiabilities:   ['Liabilities'],
-  currentAssets:      ['AssetsCurrent'],
-  currentLiabilities: ['LiabilitiesCurrent'],
+  currentAssets:      ['AssetsCurrent', 'CurrentAssets'],
+  currentLiabilities: ['LiabilitiesCurrent', 'CurrentLiabilities'],
   inventory:          ['InventoryNet', 'Inventories'],
-  retainedEarnings:   ['RetainedEarningsAccumulatedDeficit'],
-  receivables:        ['AccountsReceivableNetCurrent', 'ReceivablesNetCurrent', 'AccountsAndOtherReceivablesNetCurrent'],
-  ppeNet:             ['PropertyPlantAndEquipmentNet'],
-  cogs:               ['CostOfGoodsAndServicesSold', 'CostOfRevenue', 'CostOfGoodsSold'],
+  retainedEarnings:   ['RetainedEarningsAccumulatedDeficit', 'RetainedEarnings'],
+  receivables:        ['AccountsReceivableNetCurrent', 'ReceivablesNetCurrent', 'AccountsAndOtherReceivablesNetCurrent', 'TradeAndOtherCurrentReceivables', 'CurrentTradeReceivables'],
+  ppeNet:             ['PropertyPlantAndEquipmentNet', 'PropertyPlantAndEquipment'],
+  cogs:               ['CostOfGoodsAndServicesSold', 'CostOfRevenue', 'CostOfGoodsSold', 'CostOfSales'],
   grossProfit:        ['GrossProfit'],
-  sga:                ['SellingGeneralAndAdministrativeExpense', 'SellingGeneralAndAdministrativeExpenses', 'GeneralAndAdministrativeExpense'],
-  ocf:                ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'],
-  capex:              ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsForCapitalImprovements'],
-  dividendsPaid:      ['PaymentsOfDividends', 'PaymentsOfDividendsCommonStock', 'PaymentsOfOrdinaryDividends'],
-  pretaxIncome:       ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxes'],
+  sga:                ['SellingGeneralAndAdministrativeExpense', 'SellingGeneralAndAdministrativeExpenses', 'GeneralAndAdministrativeExpense', 'AdministrativeExpense'],
+  ocf:                ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations', 'CashFlowsFromUsedInOperatingActivities'],
+  capex:              ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsForCapitalImprovements', 'PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities'],
+  dividendsPaid:      ['PaymentsOfDividends', 'PaymentsOfDividendsCommonStock', 'PaymentsOfOrdinaryDividends', 'DividendsPaidClassifiedAsFinancingActivities', 'DividendsPaid'],
+  pretaxIncome:       ['IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxes', 'ProfitLossBeforeTax'],
 };
 
 function extractAnnual(facts, name, ns = null) {
-  const namespaces = ns ? [ns, 'dei'] : ['us-gaap', 'dei'];
+  const namespaces = ns ? [ns, 'dei'] : ['us-gaap', 'ifrs-full', 'dei'];
   for (const namespace of namespaces) {
     const c = facts[namespace]?.[name];
     if (!c) continue;

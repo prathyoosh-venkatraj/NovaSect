@@ -2189,9 +2189,38 @@
             if (!(shares > 1e6)) shares = null;
 
             const TAX = 0.21, ERP = 0.05, GT = 0.025, YEARS = 5;
-            let rf = null, beta = null, price = null;
-            try { const r = await fetch('/api/fred-proxy?series_id=DGS10'); if (r.ok) { const j = await r.json(); if (j && j.value != null) rf = Number(j.value) / 100; } } catch { /* rf stays null */ }
-            try { const m = await osirisIngestion.getTickerMetrics(yahooSym); if (m) { if (typeof m.beta === 'number') beta = m.beta; if (typeof m.currentPrice === 'number') price = m.currentPrice; } } catch { /* live metrics optional */ }
+            let rf = null, beta = null, price = null, betaSource = null;
+            // Fetch the risk-free rate (FRED) and live ticker metrics (Osiris)
+            // concurrently — they are independent, so awaiting them in parallel
+            // halves the latency of this block. allSettled so one failure never
+            // blocks the other.
+            const [rfRes, mRes] = await Promise.allSettled([
+                fetch('/api/fred-proxy?series_id=DGS10').then(r => r.ok ? r.json() : null),
+                osirisIngestion.getTickerMetrics(yahooSym),
+            ]);
+            if (rfRes.status === 'fulfilled' && rfRes.value && rfRes.value.value != null) rf = Number(rfRes.value.value) / 100;
+            if (mRes.status === 'fulfilled' && mRes.value) {
+                const m = mRes.value;
+                if (typeof m.beta === 'number') { beta = m.beta; betaSource = 'live'; }
+                if (typeof m.currentPrice === 'number') price = m.currentPrice;
+            }
+            // WACC β fallback: when the live (Yahoo) beta is unavailable — the most
+            // common upstream failure — fall back to a sector-proxy beta so the
+            // whole WACC/DCF valuation block still renders instead of vanishing.
+            // The source is surfaced in the UI so a proxied β is never mistaken for
+            // a measured one.
+            if (beta == null) {
+                const SECTOR_BETA = { energy: 1.05, utilities: 0.55, industrials: 1.10, 'consumer staples': 0.65, defense: 0.95, defence: 0.95 };
+                const key = (sector || '').toLowerCase();
+                const hit = Object.keys(SECTOR_BETA).find(k => key.includes(k));
+                beta = hit ? SECTOR_BETA[hit] : 1.0;
+                betaSource = hit ? 'sector' : 'assumed';
+            }
+            // rf fallback: if FRED is unavailable, fall back to a documented
+            // constant so the WACC/DCF block still renders (labelled), mirroring
+            // the β fallback above. FRED is cached 6h so this is a last resort.
+            let rfSource = rf != null ? 'FRED 10Y' : null;
+            if (rf == null) { rf = 0.045; rfSource = 'fallback 4.5%'; }
 
             const dupont = (ni != null && rev && ta && eq) ? { nm: ni / rev, at: rev / ta, em: ta / eq, roe: (ni / rev) * (rev / ta) * (ta / eq) } : null;
             const invCap = (td != null || eq != null) ? ((td || 0) + (eq || 0) - (cash || 0)) : null;
@@ -2231,7 +2260,7 @@
             if (dupont) cards.push(card('ROE (DuPont)', P(dupont.roe), `${P(dupont.nm)} margin × ${X(dupont.at)} turn × ${X(dupont.em)} lev`));
             if (roic != null) cards.push(card('ROIC', P(roic), 'NOPAT ÷ invested capital'));
             if (spread != null) cards.push(card('ROIC − WACC', PP(spread), spread >= 0 ? 'value-creating' : 'value-destroying', spread >= 0 ? 'pos' : 'neg'));
-            if (wacc != null) cards.push(card('WACC (book-wt)', P(wacc), `Ke ${P(ke)} · Kd ${P(kd)} · β ${beta != null ? beta.toFixed(2) : '–'}`));
+            if (wacc != null) cards.push(card('WACC (book-wt)', P(wacc), `Ke ${P(ke)} · Kd ${P(kd)} · β ${beta != null ? beta.toFixed(2) : '–'}${betaSource && betaSource !== 'live' ? ' (' + betaSource + ' proxy)' : ''}`));
             if (fairPS != null) cards.push(card('DCF fair value', '$' + fairPS.toFixed(2), upside != null ? `${(upside >= 0 ? '+' : '') + (upside * 100).toFixed(0)}% vs $${price.toFixed(2)}` : `g ${P(g)}`, upside != null ? (upside >= 0 ? 'pos' : 'neg') : ''));
             else if (dcf) cards.push(card('DCF equity value', '$' + (dcf.equity / 1e9).toFixed(1) + 'B', `g ${P(g)} · term ${P(GT)}`));
             if (scenBear != null && scenBull != null) cards.push(card('DCF range (bear–bull)', '$' + scenBear.toFixed(0) + ' – $' + scenBull.toFixed(0), '±3pp growth · ∓1pp WACC'));
@@ -2243,7 +2272,7 @@
             if (!cards.length) return;
             document.getElementById('analytics-grid').innerHTML = cards.join('');
             const note = document.getElementById('analytics-note');
-            if (note) note.textContent = `Deterministic models · tax ${(TAX * 100).toFixed(0)}% · ERP ${(ERP * 100).toFixed(0)}% · terminal g ${(GT * 100).toFixed(1)}% · DCF growth ${(g * 100).toFixed(1)}% (5y FCF CAGR, capped) · book-weighted WACC (rf = FRED 10Y${rf != null ? ' ' + (rf * 100).toFixed(2) + '%' : ' n/a'}, β vs SPY). Indicative — not investment advice.`;
+            if (note) note.textContent = `Deterministic models · tax ${(TAX * 100).toFixed(0)}% · ERP ${(ERP * 100).toFixed(0)}% · terminal g ${(GT * 100).toFixed(1)}% · DCF growth ${(g * 100).toFixed(1)}% (5y FCF CAGR, capped) · book-weighted WACC (rf = ${rfSource} ${(rf * 100).toFixed(2)}%, β ${betaSource === 'live' ? 'vs SPY' : betaSource === 'sector' ? 'sector proxy' : 'assumed 1.0'}). Indicative — not investment advice.`;
             sec.style.display = 'block';
         }
 

@@ -1,0 +1,32 @@
+name: CI
+
+# Runs the deterministic unit suites (forensic scores, XBRL history, Sentinel
+# spread + source-parity, Osiris simulation) and verifies the committed .min
+# build artifacts are in sync with source — so a stale bundle or a formula
+# regression is caught here instead of in production. Offline; no secrets.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci
+      - name: Unit tests (forensic · xbrl · sentinel-spread · osiris)
+        run: npm test
+      - name: Verify committed .min artifacts match source (no stale bundles)
+        run: node scripts/build.js --check

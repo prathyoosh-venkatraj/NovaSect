@@ -715,8 +715,28 @@ class OsirisOrchestrator {
             this.oracle.container.innerHTML = `> ALLOCATING ${runPaths.toLocaleString()} PATHS${hifiTag} TO COMPUTE SANDBOX... <span class="blinking-cursor">_</span>`;
             this.showHifiProgress(0);
 
+            // Stall watchdog: terminate and surface a retryable fault if the
+            // worker goes silent (no progress tick or result) for too long, so a
+            // hung simulation can never leave the UI on an indefinite spinner.
+            // Re-armed on every message, so a legitimately long HI-FI run that is
+            // still streaming progress is never killed.
+            let _osirisWatchdog = null;
+            const STALL_MS = 45000;
+            const clearWatchdog = () => { if (_osirisWatchdog) { clearTimeout(_osirisWatchdog); _osirisWatchdog = null; } };
+            const armWatchdog = () => {
+                clearWatchdog();
+                _osirisWatchdog = setTimeout(() => {
+                    console.error('[OSIRIS] Worker stalled (no message in ' + (STALL_MS / 1000) + 's) — terminating.');
+                    if (this.activeWorker) { this.activeWorker.terminate(); this.activeWorker = null; }
+                    this.hideHifiProgress();
+                    this.oracle.container.innerHTML = `<span style="color: red;">> SYSTEM FAULT: SIMULATION TIMED OUT — please retry.</span>`;
+                }, STALL_MS);
+            };
+            armWatchdog();
+
             this.activeWorker.onmessage = (e) => {
                 if (e.data.error) {
+                    clearWatchdog();
                     console.error('[OSIRIS] Worker Error:', e.data.error);
                     this.oracle.container.innerHTML = `<span style="color: red;">> SYSTEM FAULT: WORKER EXCEPTION.</span>`;
                     this.hideHifiProgress();
@@ -726,10 +746,12 @@ class OsirisOrchestrator {
                 // Worker streams {progress: 0..1} ticks during long HI-FI
                 // runs. They're delivered before the final result message.
                 if (typeof e.data.progress === 'number') {
+                    armWatchdog();
                     this.showHifiProgress(e.data.progress);
                     return;
                 }
 
+                clearWatchdog();
                 this.hideHifiProgress();
                 const percentiles = e.data.percentiles;
 
@@ -762,6 +784,16 @@ class OsirisOrchestrator {
                 // Cleanup worker after successful completion
                 this.activeWorker.terminate();
                 this.activeWorker = null;
+            };
+
+            // Worker script-level errors (load failure, uncaught throw) also clear
+            // the watchdog and surface a fault rather than hanging the UI.
+            this.activeWorker.onerror = (err) => {
+                clearWatchdog();
+                console.error('[OSIRIS] Worker onerror:', err && err.message);
+                if (this.activeWorker) { this.activeWorker.terminate(); this.activeWorker = null; }
+                this.hideHifiProgress();
+                this.oracle.container.innerHTML = `<span style="color: red;">> SYSTEM FAULT: WORKER EXCEPTION.</span>`;
             };
 
             // Total path length = horizon (in days) × steps-per-day. When

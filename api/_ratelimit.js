@@ -42,11 +42,27 @@ async function redisLimited(key, limit, windowSec, url, token) {
     }
 }
 
+// Warn once per cold start if we're rate-limiting in production WITHOUT a shared
+// store. The in-memory counter is per-Lambda-instance, so under scale-out the
+// effective limit becomes (limit × instance_count) — i.e. ineffective. This
+// surfaces the misconfiguration in the function logs instead of failing silently.
+let _warnedInMemoryProd = false;
+function warnInMemoryFallback() {
+    if (_warnedInMemoryProd) return;
+    _warnedInMemoryProd = true;
+    const isProd = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+    if (isProd) {
+        console.warn('[ratelimit] No Upstash/KV configured in production — using per-instance in-memory limiter. ' +
+                     'Limits will NOT hold across Lambda instances. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.');
+    }
+}
+
 export async function isRateLimited(id, bucket, limit, windowSec) {
     const key = `${bucket}:${id}`;
     const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
     const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
     if (url && token) return redisLimited(key, limit, windowSec, url, token);
+    warnInMemoryFallback();
     return memoryLimited(key, limit, windowSec);
 }
 

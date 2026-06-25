@@ -18,7 +18,7 @@ import { postDigest } from './notify.mjs';
 import {
     checkYahoo, checkFinnhub, checkUniverse, checkPublicAssets,
     checkFred, checkStaleAnchors, checkUniverseDrift, checkFinnhubAuthz,
-    checkOsirisEngine, checkPdfRender
+    checkOsirisEngine, checkOsirisCompensator, checkPdfRender
 } from './checks.mjs';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -86,6 +86,7 @@ const ALL_CHECKS = [
     { name: 'stale-anchors',     group: 'freshness', fn: () => checkStaleAnchors() },
     { name: 'universe-drift',    group: 'freshness', fn: () => checkUniverseDrift() },
     { name: 'osiris-engine',     group: 'liveness',  fn: () => checkOsirisEngine() },
+    { name: 'osiris-compensator',group: 'liveness',  fn: () => checkOsirisCompensator() },
     { name: 'pdf-render',        group: 'liveness',  fn: () => checkPdfRender(SITE_URL) }
 ];
 

@@ -65,7 +65,9 @@ export async function checkFinnhub(siteUrl) {
     try { t = await timed(() => fetchWithTimeout(url)); }
     catch (e) { return fail('Finnhub proxy unreachable', e.message); }
     if (!t.res.ok) {
-        return fail('Finnhub proxy returned ' + t.res.status, url + ' in ' + t.ms + ' ms');
+        const auth = (t.res.status === 401 || t.res.status === 403)
+            ? ' — API key likely expired/invalid (rotate FINNHUB_API_KEY in Vercel env)' : '';
+        return fail('Finnhub proxy returned ' + t.res.status + auth, url + ' in ' + t.ms + ' ms');
     }
     let data;
     try { data = await t.res.json(); }
@@ -151,7 +153,9 @@ export async function checkFred(siteUrl) {
     try { t = await timed(() => fetchWithTimeout(url)); }
     catch (e) { return fail('FRED proxy unreachable', e.message); }
     if (!t.res.ok) {
-        return fail('FRED proxy returned ' + t.res.status, url + ' in ' + t.ms + ' ms');
+        const auth = (t.res.status === 401 || t.res.status === 403)
+            ? ' — API key likely expired/invalid (rotate FRED_API_KEY in Vercel env)' : '';
+        return fail('FRED proxy returned ' + t.res.status + auth, url + ' in ' + t.ms + ' ms');
     }
     let data;
     try { data = await t.res.json(); }
@@ -562,4 +566,51 @@ export async function checkPdfRender(siteUrl) {
         if (browser) { try { await browser.close(); } catch {} }
         try { await fs.rm(tmp, { recursive: true, force: true }); } catch {}
     }
+}
+
+// ── 11. Osiris Merton compensator drift audit ──────────────────────
+//   The GBM+Jump engine subtracts a Merton compensator κ = λ·(e^{μ_J+½σ_J²}−1)
+//   from the drift so that ADDING jumps does not shift the central tendency of
+//   the terminal distribution. A miscalibrated jumpStd (the old sigma*1.5 bug)
+//   over-corrects and biases P50 downward ~-0.3%/day. This audit evaluates the
+//   SAME shipped worker source with jumps OFF (λ=0) vs ON (λ=6) at zero drift
+//   and asserts the two median terminals stay within 1.5% — i.e. jumps remain
+//   drift-neutral. Catches config/calibration drift in physics-config.json that
+//   the Node-port unit tests would not see in the deployed worker.
+export async function checkOsirisCompensator() {
+    const { readFileSync } = await import('node:fs');
+    const vm = await import('node:vm');
+    const path = 'components/osiris/stochasticWorker.js';
+
+    let src;
+    try { src = readFileSync(path, 'utf8'); }
+    catch (e) { return fail('Osiris worker source missing', e.message); }
+
+    const trimmed = src.replace(/self\.onmessage\s*=[\s\S]*$/, '');
+    const sandbox = { Math, Float32Array, Array, Number, isFinite, self: { postMessage: () => {} } };
+    const ctx = vm.createContext(sandbox);
+    try { vm.runInContext(trimmed, ctx, { timeout: 5000 }); }
+    catch (e) { return fail('Osiris worker source failed to evaluate', e.message); }
+
+    const sim = sandbox.simulateGBMJump;
+    if (typeof sim !== 'function') return fail('Osiris worker missing simulateGBMJump', '');
+
+    const S0 = 100, sigma = 0.22, steps = 63, paths = 12000;   // ~0.25 yr, μ=0
+    const med = (r) => r.percentiles.p50[r.percentiles.p50.length - 1];
+    let pNoJump, pJump;
+    try {
+        pNoJump = med(sim(S0, 0, sigma, steps, paths, 0, 0));   // λ=0 (no jumps)
+        pJump   = med(sim(S0, 0, sigma, steps, paths, 6, 0));   // λ=6 jumps/yr
+    } catch (e) { return fail('Osiris compensator run threw', (e && (e.stack || e.message)) || String(e)); }
+
+    if (!isFinite(pNoJump) || !isFinite(pJump) || pNoJump <= 0) {
+        return fail('Osiris compensator audit produced non-finite median', `λ=0:${pNoJump} λ=6:${pJump}`);
+    }
+    const driftPct = Math.abs(pJump - pNoJump) / pNoJump * 100;
+    if (driftPct > 1.5) {
+        return fail('Osiris jump compensator drift: ' + driftPct.toFixed(2) + '% P50 shift from jumps',
+            'median λ=0: ' + pNoJump.toFixed(2) + ' · λ=6: ' + pJump.toFixed(2) +
+            ' — jumps should be drift-neutral; check jumpStd/jumpMu in stochasticWorker.js + physics-config.json');
+    }
+    return ok('Osiris compensator drift-neutral · |ΔP50| ' + driftPct.toFixed(2) + '% (λ=0 vs λ=6)');
 }

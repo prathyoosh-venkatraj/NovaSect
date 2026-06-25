@@ -17,10 +17,10 @@
 import { isRateLimited, getClientIp } from './_ratelimit.js';
 import { buildSeries, historyData } from './_xbrl-history.js';
 import { forensicScores } from './_forensic-scores.js';
+import { TICKER_RE } from './_validate.js';
 
 // SEC asks for a UA identifying the app + a contact address.
 const SEC_UA = 'NovaSect FinVault (novasect.space) contact@novasect.space';
-const TICKER_RE = /^[A-Za-z0-9.\-]{1,15}$/;
 
 // company_tickers.json is ~1.5MB and changes rarely; cache the ticker->CIK map
 // in module scope so it's fetched at most once per warm instance.
