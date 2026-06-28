@@ -395,7 +395,16 @@ and the search panel re-renders per keystroke with up to 12 rows. Therefore:
 | Routing migration: `reports.html` cards → `brief.html?ticker=` (data-driven rewrite + MutationObserver), `report.html` accepts `?ticker=`, dossier accepts `?company=` shim, deep-links use `?ticker=` | ✅ shipped (82/83 cards; 1 unmapped slug left on legacy route) |
 | 3 — Watchlist: `watchlist.html` (sortable, progressive backfill, change dots, share `?list=` + CSV), site-wide nav ★+count | ✅ shipped, browser-verified |
 | 4 — Credit–equity bridge: dossier Sentinel band shows live equity σ → Merton → spread with an "equity-linked" provenance tag (graceful "sector proxy" fallback) | ✅ shipped, browser-verified |
-| 5 — Scenario Lab (drawer + multi-issuer `scenario.html`) | ⏳ next |
+| 5 — Scenario Lab: global drawer (presets + sliders), SCENARIO-MODE banner site-wide, shared `NSCreditSpread` engine, multi-issuer `scenario.html` (baseline→Δ across 83 issuers), dossier Sentinel propagation | ✅ shipped, browser-verified |
+
+**All five flagship phases shipped.** The Scenario Lab uses a shared, scenario-aware
+`NSCreditSpread` (canonical browser mirror of Sentinel's CreditEngine) so the
+dossier overlay, the multi-issuer table, and the Sentinel dashboard all reconcile.
+
+> Preview caveat: the static preview's browser caches `global-search.js`, so the
+> self-injected scenario drawer/banner only appear after a hard refresh there; on
+> deploy the content-changed file re-fetches normally. The scenario *compute*
+> (spread Δ everywhere) was verified directly.
 
 > Phase-4 scope note: the bridge ships on the dossier's Sentinel band (the hub's
 > Sentinel surface) and is displayed alongside — not replacing — the canonical

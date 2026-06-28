@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scenario Lab — NovaSect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.min.css">
+    <script src="components/state/state.js"></script>
+    <script src="components/scenario/credit-spread.js"></script>
+    <style>
+        .sl-page { max-width: 1150px; margin: 0 auto; padding: 6rem 1.5rem 4rem; }
+        .sl-title { font-family: var(--font-display); font-weight: 900; font-size: 0.9rem; color: var(--scenario-accent); letter-spacing: 6px; text-transform: uppercase; text-align: center; padding: 0.4rem 0 0.8rem; border-bottom: 1px solid rgba(125,211,252,0.25); text-shadow: 0 0 10px rgba(125,211,252,0.35); }
+        .sl-intro { font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: rgba(255,255,255,0.6); text-align: center; margin: 1rem 0; }
+        .sl-intro b { color: var(--scenario-accent); cursor: pointer; }
+        .sl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1.2rem 0; flex-wrap: wrap; }
+        .sl-summary { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: rgba(255,255,255,0.8); }
+        .sl-filters { display: flex; gap: 6px; }
+        .sl-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--scenario-accent); background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.3); border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+        .sl-chip.active { background: var(--scenario-accent); color: #021018; font-weight: 700; }
+        .sl-table-wrap { overflow-x: auto; border: 1px solid rgba(125,211,252,0.18); border-radius: 6px; }
+        table.sl-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; min-width: 820px; }
+        .sl-table thead th { text-align: right; padding: 9px 12px; color: rgba(125,211,252,0.75); font-size: 0.6rem; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid rgba(125,211,252,0.25); cursor: pointer; white-space: nowrap; user-select: none; }
+        .sl-table thead th:nth-child(-n+4) { text-align: left; }
+        .sl-table thead th.sorted::after { content: ' ▾'; } .sl-table thead th.sorted.asc::after { content: ' ▴'; }
+        .sl-table tbody td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.88); white-space: nowrap; text-align: right; }
+        .sl-table tbody td:nth-child(-n+4) { text-align: left; }
+        .sl-table tbody tr:hover { background: rgba(125,211,252,0.06); }
+        .sl-tk a { color: var(--accent-green); font-weight: 700; text-decoration: none; }
+        .sl-name { color: rgba(255,255,255,0.78); font-family: 'Montserrat', sans-serif; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+        .sl-chip-rating { font-size: 0.6rem; padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor; }
+        .green { color: var(--status-green); } .amber { color: var(--status-amber); } .red { color: var(--status-red); } .neutral { color: var(--status-neutral); }
+        .sl-pos { color: var(--status-red); } .sl-neg { color: var(--status-green); } /* wider spread = worse (red) */
+        .sl-muted { color: rgba(255,255,255,0.35); }
+        .sl-foot { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: rgba(255,255,255,0.4); margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="index.html" class="logo" style="color: white; text-decoration: none;">NovaSect</a>
+        <nav class="nav-links">
+            <div class="nav-dropdown">
+                <span class="dropdown-trigger nav-link">Tools</span>
+                <div class="dropdown-menu">
+                    <a href="sentinel.html" class="dropdown-item">Sentinel</a>
+                    <a href="reports.html" class="dropdown-item">FinVault</a>
+                    <a href="osiris.html" class="dropdown-item">Osiris</a>
+                </div>
+            </div>
+            <a href="about.html" class="nav-link">About us</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="sl-page">
+            <div class="sl-title">SCENARIO LAB</div>
+            <div class="sl-intro">Macro-shock every Sentinel issuer at once. Open the <b id="sl-open">⚡ Scenario console</b> (top nav) to set rate / VIX / sector-vol / sovereign shocks — this table recomputes live.</div>
+
+            <div class="sl-toolbar">
+                <span class="sl-summary" id="sl-summary">—</span>
+                <div class="sl-filters" id="sl-filters">
+                    <button class="sl-chip active" data-sec="all">All</button>
+                    <button class="sl-chip" data-sec="Energy">Energy</button>
+                    <button class="sl-chip" data-sec="Utilities">Utilities</button>
+                    <button class="sl-chip" data-sec="Industrials">Industrials</button>
+                </div>
+            </div>
+
+            <div class="sl-table-wrap">
+                <table class="sl-table">
+                    <thead><tr id="sl-head">
+                        <th data-k="ticker">Issuer</th>
+                        <th data-k="name">Name</th>
+                        <th data-k="sector">Sector</th>
+                        <th data-k="rating">Rating</th>
+                        <th data-k="baseSpread">Base spread</th>
+                        <th data-k="scnSpread">Scenario spread</th>
+                        <th data-k="delta">Δ bps</th>
+                        <th data-k="scnYield">Scenario yield</th>
+                    </tr></thead>
+                    <tbody id="sl-body"></tbody>
+                </table>
+            </div>
+            <div class="sl-foot" id="sl-foot">Loading issuers…</div>
+        </section>
+    </main>
+
+    <script src="components/global-search/global-search.js" defer></script>
+    <script src="components/mobile-nav/mobile-nav.js" defer></script>
+
+    <script type="module">
+        const NS = window.NSState;
+        const RATING_FRED = { AAA: 'BAMLC0A1CAAA', AA: 'BAMLC0A2CAA', A: 'BAMLC0A3CA', BBB: 'BAMLC0A4CBBB', HY: 'BAMLH0A0HYM2' };
+        const SECTOR_ETF = { Energy: 'XLE', Utilities: 'XLU', Industrials: 'XLI' };
+
+        let issuers = [], rows = [], macros = null;
+        let sortKey = 'delta', sortAsc = false, sectorFilter = 'all';
+        const $ = id => document.getElementById(id);
+
+        async function loadMacros() {
+            const j = async (u) => { try { const r = await fetch(u); return r.ok ? r.json() : null; } catch { return null; } };
+            const [ust, vix, xle, xlu, xli, aaa, aa, a, bbb, hy] = await Promise.all([
+                j('/api/fred-proxy?series_id=DGS10'), j('/api/fred-proxy?series_id=VIXCLS'),
+                j('/api/alpha-proxy?symbol=XLE'), j('/api/alpha-proxy?symbol=XLU'), j('/api/alpha-proxy?symbol=XLI'),
+                ...Object.values(RATING_FRED).map(c => j('/api/fred-proxy?series_id=' + c)),
+            ]);
+            const num = (o, k, d) => (o && typeof o[k] === 'number') ? o[k] : d;
+            const ratings = [aaa, aa, a, bbb, hy];
+            const ratingIdx = {};
+            Object.keys(RATING_FRED).forEach((rk, i) => { ratingIdx[rk] = ratings[i] && typeof ratings[i].value === 'number' ? Math.round(ratings[i].value * 100) : 0; });
+            return {
+                ust: num(ust, 'value', 4.25),
+                vix: num(vix, 'value', 15),
+                sectorVol: { Energy: num(xle, 'volatility', 22), Utilities: num(xlu, 'volatility', 18), Industrials: num(xli, 'volatility', 20) },
+                ratingIdx,
+                live: !!(ust && vix),
+            };
+        }
+
+        const macroFor = (it) => ({ ust: macros.ust, vix: macros.vix, ratingIdxBps: macros.ratingIdx[it.sentinel.rating] || 0, sectorVol: macros.sectorVol[it.sector] || 20 });
+
+        function recompute() {
+            const sc = (NS && NS.getScenario()) || null;
+            rows = issuers.map(it => {
+                const m = macroFor(it);
+                const base = window.NSCreditSpread.compute(it.sentinel, it.country, m, null);
+                const scn = window.NSCreditSpread.compute(it.sentinel, it.country, m, sc);
+                return { ticker: it.ticker, name: it.name, sector: it.sector, rating: it.sentinel.rating,
+                    baseSpread: base.spread, scnSpread: scn.spread, delta: scn.spread - base.spread,
+                    scnYield: scn.yield, tier: scn.tier };
+            });
+            render(!!sc);
+        }
+
+        function render(active) {
+            const filtered = rows.filter(r => sectorFilter === 'all' || r.sector === sectorFilter);
+            const sorted = [...filtered].sort((a, b) => {
+                let x = a[sortKey], y = b[sortKey];
+                if (typeof x === 'string') { x = x.toLowerCase(); y = String(y).toLowerCase(); }
+                return (x < y ? -1 : x > y ? 1 : 0) * (sortAsc ? 1 : -1);
+            });
+            const ratingCls = (r, t) => t === 'HY' ? 'red' : /^(AAA|AA|A)$/.test(r) ? 'green' : 'amber';
+            $('sl-body').innerHTML = sorted.map(r => {
+                const dCls = r.delta > 0 ? 'sl-pos' : r.delta < 0 ? 'sl-neg' : 'sl-muted';
+                const dTxt = !active || r.delta === 0 ? '<span class="sl-muted">—</span>' : '<span class="' + dCls + '">' + (r.delta > 0 ? '+' : '') + r.delta + '</span>';
+                const scnTxt = active && r.delta !== 0 ? '<span class="' + r.tier.cls + '">' + r.scnSpread + '</span>' : '<span class="sl-muted">' + r.scnSpread + '</span>';
+                return '<tr>'
+                    + '<td class="sl-tk"><a href="brief.html?ticker=' + encodeURIComponent(r.ticker) + '#brief-sentinel">' + r.ticker + '</a></td>'
+                    + '<td class="sl-name">' + r.name + '</td><td>' + r.sector + '</td>'
+                    + '<td><span class="sl-chip-rating ' + ratingCls(r.rating, r.tier) + '">' + r.rating + '</span></td>'
+                    + '<td>' + r.baseSpread + '</td><td>' + scnTxt + '</td><td>' + dTxt + '</td>'
+                    + '<td>' + r.scnYield.toFixed(2) + '%</td></tr>';
+            }).join('');
+
+            const shown = filtered.length;
+            if (active) {
+                const avg = shown ? Math.round(filtered.reduce((s, r) => s + r.delta, 0) / shown) : 0;
+                const worst = filtered.slice().sort((a, b) => b.delta - a.delta)[0];
+                $('sl-summary').innerHTML = shown + ' issuers · avg Δ <span class="' + (avg > 0 ? 'sl-pos' : 'sl-neg') + '">' + (avg > 0 ? '+' : '') + avg + ' bps</span>' + (worst ? ' · widest ' + worst.ticker + ' +' + worst.delta : '');
+            } else {
+                $('sl-summary').textContent = shown + ' issuers · baseline (no scenario active — open ⚡ Scenario)';
+            }
+        }
+
+        $('sl-head').addEventListener('click', (e) => {
+            const th = e.target.closest('th[data-k]'); if (!th) return;
+            const k = th.dataset.k;
+            if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = (k === 'ticker' || k === 'name' || k === 'sector'); }
+            document.querySelectorAll('#sl-head th').forEach(h => { h.classList.toggle('sorted', h.dataset.k === sortKey); h.classList.toggle('asc', h.dataset.k === sortKey && sortAsc); });
+            render(!!(NS && NS.getScenario()));
+        });
+        $('sl-filters').addEventListener('click', (e) => {
+            const c = e.target.closest('.sl-chip'); if (!c) return;
+            sectorFilter = c.dataset.sec;
+            document.querySelectorAll('#sl-filters .sl-chip').forEach(x => x.classList.toggle('active', x === c));
+            render(!!(NS && NS.getScenario()));
+        });
+        $('sl-open').addEventListener('click', () => { const b = document.querySelector('.scn-nav'); if (b) b.click(); });
+
+        (async () => {
+            let universe = {};
+            try { const r = await fetch('data/universe.json'); if (r.ok) universe = (await r.json()).tickers || {}; } catch {}
+            issuers = Object.values(universe).filter(e => e.sentinel && typeof e.sentinel.baseSpread === 'number');
+            macros = await loadMacros();
+            recompute();
+            $('sl-foot').textContent = '> ' + issuers.length + ' issuers · macros ' + (macros.live ? 'live (FRED/Alpha)' : 'fallback (offline)') + ' · spread mirrors Sentinel CreditEngine (Unsecured · 10Y) · scenario shocks applied client-side';
+            if (NS) NS.on('scenario', recompute);
+        })();
+    </script>
+</body>
+</html>

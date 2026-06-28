@@ -153,6 +153,18 @@
         document.head.appendChild(s);
     }
 
+    // Scenario Lab (drawer + SCENARIO-MODE banner + ⚡ nav) is needed on every
+    // page so the banner shows wherever an active scenario applies. Self-inject
+    // it here rather than adding a tag to all ~8 pages.
+    function ensureScenario() {
+        if (window.__nsScenarioInit || document.getElementById('ns-scenario-script')) return;
+        const s = document.createElement('script');
+        s.id = 'ns-scenario-script';
+        s.src = 'components/scenario/scenario.js';
+        s.defer = true;
+        document.head.appendChild(s);
+    }
+
     function injectStyles() {
         if (document.getElementById('gs-styles')) return;
         const s = document.createElement('style');
@@ -190,6 +202,7 @@
         if (!nav) return;
         injectStyles();
         ensureState();
+        ensureScenario();
         const wrap = buildElement();
         nav.insertBefore(wrap, nav.firstChild);
 
