@@ -4,6 +4,16 @@
     --text-white: #FFFFFF;
     --font-main: 'Montserrat', sans-serif;
     --font-display: 'Montserrat', sans-serif;
+
+    /* Status + delta tokens (flagship UI: verdict chips, scenario deltas, change
+       dots). Previously these colours were hardcoded inline per page. */
+    --status-green:   #39FF14;  /* safe / nominal / unlikely / strong */
+    --status-amber:   #FFB000;  /* grey / caution / moderate */
+    --status-red:     #FF4D4D;  /* distress / critical / likely / weak */
+    --status-neutral: #9AA5B1;  /* n/a */
+    --delta-pos:      #39FF14;
+    --delta-neg:      #FF4D4D;
+    --scenario-accent:#7DD3FC;  /* "scenario active" cyan — distinct from green */
 }
 
 * {
