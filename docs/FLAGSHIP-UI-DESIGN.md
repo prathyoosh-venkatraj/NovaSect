@@ -394,8 +394,15 @@ and the search panel re-renders per keystroke with up to 12 rows. Therefore:
 | 2 — Dossier: verdict strip, forensic band, sticky TOC, header watchlist ★ + recents | ✅ shipped, browser-verified |
 | Routing migration: `reports.html` cards → `brief.html?ticker=` (data-driven rewrite + MutationObserver), `report.html` accepts `?ticker=`, dossier accepts `?company=` shim, deep-links use `?ticker=` | ✅ shipped (82/83 cards; 1 unmapped slug left on legacy route) |
 | 3 — Watchlist: `watchlist.html` (sortable, progressive backfill, change dots, share `?list=` + CSV), site-wide nav ★+count | ✅ shipped, browser-verified |
-| 4 — Credit–equity bridge (Sentinel display) | ⏳ next |
-| 5 — Scenario Lab (drawer + multi-issuer `scenario.html`) | ⏳ |
+| 4 — Credit–equity bridge: dossier Sentinel band shows live equity σ → Merton → spread with an "equity-linked" provenance tag (graceful "sector proxy" fallback) | ✅ shipped, browser-verified |
+| 5 — Scenario Lab (drawer + multi-issuer `scenario.html`) | ⏳ next |
+
+> Phase-4 scope note: the bridge ships on the dossier's Sentinel band (the hub's
+> Sentinel surface) and is displayed alongside — not replacing — the canonical
+> sector-based headline spread, so it never diverges from the Sentinel dashboard.
+> Wiring the same provenance tag into the sentinel.html dashboard's driver
+> decomposition (sentinel.v2.js) is a possible follow-on (heavier, needs live
+> verification).
 
 > Known data nit (out of scope): the Embraer card slug `embj3-sa` in reports.html
 > doesn't match its `finvault.slug` in universe.json, so it stays on the legacy

@@ -318,6 +318,16 @@
     .forensic-card .fc-band { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
     .forensic-card .fc-sub { font-size: 0.6rem; color: rgba(255,255,255,0.45); margin-top: 5px; }
     .fc-green { color: #39FF14; } .fc-amber { color: #FFB000; } .fc-red { color: #FF4D4D; } .fc-neutral { color: #9AA5B1; }
+    /* Credit–equity bridge (Osiris σ → Merton → spread) */
+    .sn-bridge { margin-top: 0.6rem; }
+    .bridge-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .bridge-node { display: flex; flex-direction: column; line-height: 1.25; }
+    .bridge-val { font-family: 'JetBrains Mono', monospace; font-size: 1.05rem; font-weight: 700; color: #39FF14; }
+    .bridge-lbl { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.5px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+    .bridge-arrow { color: rgba(57,255,20,0.6); font-size: 1.1rem; }
+    .bridge-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; letter-spacing: 0.5px; color: #39FF14; border: 1px solid currentColor; border-radius: 3px; padding: 2px 6px; }
+    .bridge-tag.proxy { color: #FFB000; }
+    .bridge-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: rgba(255,255,255,0.45); margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -451,6 +461,8 @@
                         <span class="brief-cell-sub">default · adjust in Sentinel</span>
                     </div>
                 </div>
+                <div class="brief-section-label">Credit–Equity Bridge <span style="color:rgba(255,255,255,0.35);font-size:0.55rem;letter-spacing:1px;">· Osiris equity σ → Merton convexity → spread</span></div>
+                <div class="sn-bridge" id="sn-bridge"><span style="color:rgba(255,255,255,0.4);font-size:0.7rem;">&gt; Linking equity volatility…</span></div>
                 <div class="brief-footer-note" id="sn-footer">&gt; Loading live macro anchors…</div>
             </div>
 
@@ -1196,6 +1208,41 @@
                 setVerdict('credit', { label: 'Credit ' + tier.tier, cls: tier.tier === 'NOMINAL' ? 'green' : tier.tier === 'CRITICAL' ? 'red' : 'amber', jump: 'brief-sentinel' });
                 const ndColor = normDiff > 0 ? '#F97316' : normDiff < 0 ? '#39FF14' : 'rgba(255,255,255,0.92)';
                 setHTML('sn-norm-diff', '<span style="color:' + ndColor + ';">' + (normDiff > 0 ? '+' : '') + normDiff + ' bps</span>');
+
+                // ── Credit–equity bridge ───────────────────────────────────
+                // Drive the volatility leg from the issuer's LIVE equity σ (Osiris
+                // realised volatility) through the SAME Merton convexity the
+                // canonical sector-proxy spread uses, so the equity→credit link is
+                // explicit. Displayed alongside (not replacing) the headline spread,
+                // which stays sector-based to match the Sentinel dashboard.
+                const bridgeEl = document.getElementById('sn-bridge');
+                try {
+                    const m = await osirisIngestion.getTickerMetrics(entry.exchanges.yahoo).catch(() => null);
+                    const eqSigma = m && typeof m.realizedSigma === 'number' ? m.realizedSigma : null;
+                    if (eqSigma && eqSigma > 0) {
+                        const eqVol = eqSigma * 100;                                  // % — matches sector-vol units
+                        const eqMerton = 1.5 + 1.0 / (1 + Math.exp(-0.4 * (eqVol - 35)));
+                        const eqVolPrem = Math.round(eqVol * eqMerton * sensitivity);
+                        const eqSpread = Math.round(liveMacroSpread + eqVolPrem + marketComp);
+                        const sectorVolPrem = Math.round(volPremium);
+                        const dvs = eqSpread - creditSpread;
+                        bridgeEl.innerHTML =
+                            '<div class="bridge-flow">'
+                          + '<div class="bridge-node"><span class="bridge-val">' + eqVol.toFixed(1) + '%</span><span class="bridge-lbl">Equity σ (live)</span></div>'
+                          + '<span class="bridge-arrow">→</span>'
+                          + '<div class="bridge-node"><span class="bridge-val">' + eqMerton.toFixed(2) + '×</span><span class="bridge-lbl">Merton convexity</span></div>'
+                          + '<span class="bridge-arrow">→</span>'
+                          + '<div class="bridge-node"><span class="bridge-val">+' + eqVolPrem + ' bps</span><span class="bridge-lbl">vol premium</span></div>'
+                          + '<span class="bridge-tag">equity-linked</span>'
+                          + '</div>'
+                          + '<div class="bridge-sub">Sector-ETF proxy: σ ' + proxyVol.toFixed(1) + '% → +' + sectorVolPrem + ' bps (feeds the headline spread above). '
+                          + 'Equity-linked spread ≈ ' + eqSpread + ' bps' + (Math.abs(dvs) >= 1 ? ' (' + (dvs >= 0 ? '+' : '') + dvs + ' vs sector)' : '') + '.</div>';
+                    } else {
+                        bridgeEl.innerHTML = '<div class="bridge-sub">Equity-vol link unavailable — spread uses the sector-ETF volatility proxy. <span class="bridge-tag proxy">sector proxy</span></div>';
+                    }
+                } catch (e) {
+                    bridgeEl.innerHTML = '<div class="bridge-sub">Equity-vol link unavailable — spread uses the sector-ETF volatility proxy. <span class="bridge-tag proxy">sector proxy</span></div>';
+                }
 
                 footer.textContent = '> Live: UST10Y ' + baseUST.toFixed(2) + '% · VIX ' + vix.toFixed(1) + ' · ' + sectorEtf + ' σ=' + sectorVol.toFixed(1) + '% · ' + s.rating + ' idx ' + ratingIdxBps + ' bps';
             } catch (e) {
