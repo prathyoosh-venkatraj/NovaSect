@@ -391,11 +391,15 @@ and the search panel re-renders per keystroke with up to 12 rows. Therefore:
 |---|---|
 | 0 — Foundation: `NSState` (+ `ns-state-core.mjs` + 27 tests), status/delta tokens | ✅ shipped |
 | 1 — Search hub: launcher (watchlist + recents), precompute chips, inline ★, band deep-links, `/`·⌘K palette, scenario-aware routing, focused-row backfill | ✅ shipped, browser-verified |
-| 2 — Dossier (verdict strip, forensic band, sticky TOC) | ⏳ next |
-| 3 — Watchlist page (`watchlist.html`, nav ★+count, change dots, share/export) | ⏳ |
+| 2 — Dossier: verdict strip, forensic band, sticky TOC, header watchlist ★ + recents | ✅ shipped, browser-verified |
+| Routing migration: `reports.html` cards → `brief.html?ticker=` (data-driven rewrite + MutationObserver), `report.html` accepts `?ticker=`, dossier accepts `?company=` shim, deep-links use `?ticker=` | ✅ shipped (82/83 cards; 1 unmapped slug left on legacy route) |
+| 3 — Watchlist page (`watchlist.html`, nav ★+count, change dots, share/export) | ⏳ next |
 | 4 — Credit–equity bridge (Sentinel display) | ⏳ |
 | 5 — Scenario Lab (drawer + multi-issuer `scenario.html`) | ⏳ |
-| Routing migration (`?company=` → `?ticker=`) | ⏳ (with Phase 2) |
+
+> Known data nit (out of scope): the Embraer card slug `embj3-sa` in reports.html
+> doesn't match its `finvault.slug` in universe.json, so it stays on the legacy
+> `report.html?company=` route. Align the slug in a later data pass.
 
 > Note: Phase-1 self-injects `components/state/state.js` when `window.NSState` is
 > absent, so no per-page `<head>` edits were needed yet. Phase 2 adds the explicit

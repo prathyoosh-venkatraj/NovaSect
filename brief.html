@@ -298,6 +298,27 @@
   <script defer src="https://cloud.umami.is/script.js" data-website-id="134ef845-3a61-49b4-b2f2-1a954fc62467"></script>
   <!-- Sentry Error Tracking -->
   <script src="https://js-de.sentry-cdn.com/58fb277a213713b5996ae9454eb2a6c4.min.js" crossorigin="anonymous"></script>
+  <!-- Shared client state (window.NSState) — loaded synchronously so the dossier
+       module and global-search both see it. -->
+  <script src="components/state/state.js"></script>
+  <style id="dossier-styles">
+    .dossier-star { background: none; border: none; cursor: pointer; font-size: 1.5rem; line-height: 1; color: rgba(255,255,255,0.3); float: right; padding: 0; }
+    .dossier-star.is-on, .dossier-star:hover { color: #FFB000; }
+    .dossier-summary { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 1.2rem; }
+    .ds-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.5px; padding: 4px 10px; border-radius: 4px; border: 1px solid currentColor; cursor: pointer; background: rgba(0,0,0,0.25); }
+    .ds-chip.green { color: #39FF14; } .ds-chip.amber { color: #FFB000; } .ds-chip.red { color: #FF4D4D; } .ds-chip.neutral { color: #9AA5B1; }
+    .ds-chip.skeleton { color: rgba(255,255,255,0.25); border-style: dashed; cursor: default; }
+    .dossier-tabs { position: sticky; top: 72px; z-index: 40; display: flex; flex-wrap: wrap; gap: 4px; background: rgba(0,8,0,0.92); backdrop-filter: blur(6px); border: 1px solid rgba(57,255,20,0.2); border-radius: 6px; padding: 6px; margin-bottom: 1.4rem; }
+    .dossier-tabs a { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; text-decoration: none; color: rgba(255,255,255,0.6); padding: 5px 12px; border-radius: 4px; transition: all 0.15s ease; }
+    .dossier-tabs a:hover { color: #39FF14; }
+    .dossier-tabs a.active { color: #000; background: #39FF14; font-weight: 700; }
+    #forensic-cards .forensic-card { border: 1px solid rgba(57,255,20,0.25); border-radius: 8px; padding: 14px; background: rgba(0,12,0,0.4); }
+    .forensic-card .fc-title { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; letter-spacing: 1px; color: rgba(57,255,20,0.7); text-transform: uppercase; }
+    .forensic-card .fc-value { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; margin: 6px 0 2px; }
+    .forensic-card .fc-band { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
+    .forensic-card .fc-sub { font-size: 0.6rem; color: rgba(255,255,255,0.45); margin-top: 5px; }
+    .fc-green { color: #39FF14; } .fc-amber { color: #FFB000; } .fc-red { color: #FF4D4D; } .fc-neutral { color: #9AA5B1; }
+  </style>
 </head>
 <body>
     <header class="header">
@@ -326,10 +347,22 @@
 
             <!-- ── HEADER ─────────────────────────────────────────── -->
             <div class="brief-header" id="brief-header" style="display:none;">
+                <button class="dossier-star" id="b-star" title="Add to watchlist" aria-label="Toggle watchlist">☆</button>
                 <div class="brief-ticker" id="b-ticker">—</div>
                 <div class="brief-name" id="b-name">—</div>
                 <div class="brief-meta" id="b-meta">—</div>
             </div>
+
+            <!-- ── VERDICT STRIP — cross-engine read at a glance ───── -->
+            <div class="dossier-summary" id="dossier-summary" style="display:none;"></div>
+
+            <!-- ── STICKY IN-PAGE TOC ─────────────────────────────── -->
+            <nav class="dossier-tabs" id="dossier-tabs" style="display:none;">
+                <a href="#brief-finvault" data-band="brief-finvault">FinVault</a>
+                <a href="#brief-forensic" data-band="brief-forensic">Forensic</a>
+                <a href="#brief-sentinel" data-band="brief-sentinel">Sentinel</a>
+                <a href="#brief-osiris" data-band="brief-osiris">Osiris</a>
+            </nav>
 
             <!-- ── FINVAULT ───────────────────────────────────────── -->
             <div class="brief-band" id="brief-finvault" style="display:none;">
@@ -368,6 +401,16 @@
                     <div class="brief-cell"><span class="brief-cell-label">EPS Growth 5Y</span><span class="brief-cell-value" id="fv-epsg">—</span></div>
                 </div>
                 <div class="brief-footer-note" id="fv-footer">&gt; Loading market data…</div>
+            </div>
+
+            <!-- ── FORENSIC ───────────────────────────────────────── -->
+            <div class="brief-band" id="brief-forensic" style="display:none;">
+                <div class="brief-band-head">
+                    <div class="brief-band-title">Forensic <span class="brief-band-sub">Altman Z · Beneish M · Piotroski F · SEC-XBRL</span></div>
+                    <a class="brief-band-btn" id="fr-btn" href="#" rel="noopener noreferrer">Open in FinVault →</a>
+                </div>
+                <div class="brief-grid cols-3" id="forensic-cards"></div>
+                <div class="brief-footer-note" id="fr-footer">&gt; Loading forensic screens…</div>
             </div>
 
             <!-- ── SENTINEL ───────────────────────────────────────── -->
@@ -462,13 +505,13 @@
         import { osirisIngestion } from './components/osiris/osirisIngestion.min.js';
 
         const params = new URLSearchParams(window.location.search);
-        const tickerParam = params.get('ticker');
+        const idParam = params.get('ticker') || params.get('company');
         const emptyEl = document.getElementById('brief-empty');
 
-        if (!tickerParam) {
+        if (!idParam) {
             emptyEl.style.display = 'block';
         } else {
-            renderBrief(tickerParam).catch(err => {
+            renderBrief(idParam).catch(err => {
                 console.error('[Brief] render failed', err);
                 emptyEl.style.display = 'block';
                 emptyEl.querySelector('h1').textContent = 'Brief unavailable';
@@ -638,15 +681,103 @@
         const setText = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
         const setHTML = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
 
-        async function renderBrief(ticker) {
+        // ── Dossier: verdict strip + sticky TOC + watchlist ─────────
+        const verdict = {};
+        const VERDICT_ORDER = ['credit', 'altman', 'beneish', 'piotroski', 'osiris'];
+        function setVerdict(key, chip) { verdict[key] = chip; renderVerdict(); }
+        function renderVerdict() {
+            const el = document.getElementById('dossier-summary');
+            if (!el) return;
+            const chips = VERDICT_ORDER.filter(k => verdict[k]).map(k => {
+                const c = verdict[k];
+                return '<span class="ds-chip ' + (c.cls || 'neutral') + '" data-jump="' + (c.jump || '') + '">' + c.label + '</span>';
+            });
+            el.innerHTML = chips.length ? chips.join('') : '<span class="ds-chip skeleton">reading engines…</span>';
+        }
+        const tierClass = (sn) => !sn ? 'neutral' : sn.type !== 'IG' ? 'red' : /^(AAA|AA|A)$/i.test(sn.rating || '') ? 'green' : 'amber';
+        const bandClass = (band) => !band ? 'neutral'
+            : /safe|strong|unlikely/i.test(band) ? 'green'
+            : /grey|moderate/i.test(band) ? 'amber'
+            : /distress|weak|likely/i.test(band) ? 'red' : 'neutral';
+
+        function initDossier(entry) {
+            renderVerdict();
+            if (entry.sentinel) setVerdict('credit', { label: 'Credit ' + entry.sentinel.rating, cls: tierClass(entry.sentinel), jump: 'brief-sentinel' });
+
+            const star = document.getElementById('b-star');
+            const NS = window.NSState;
+            const sync = () => { const on = NS && NS.isWatched(entry.ticker); star.classList.toggle('is-on', !!on); star.textContent = on ? '★' : '☆'; };
+            sync();
+            star.addEventListener('click', () => { if (NS) { NS.toggleWatchlist(entry.ticker); sync(); } });
+            if (NS) NS.pushRecent(entry.ticker);
+
+            document.getElementById('dossier-summary').addEventListener('click', (e) => {
+                const chip = e.target.closest('.ds-chip'); if (!chip || !chip.dataset.jump) return;
+                const t = document.getElementById(chip.dataset.jump); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            const tabs = Array.from(document.querySelectorAll('#dossier-tabs a'));
+            const bands = tabs.map(a => document.getElementById(a.dataset.band)).filter(Boolean);
+            if ('IntersectionObserver' in window && bands.length) {
+                const io = new IntersectionObserver((ents) => {
+                    ents.forEach(en => { if (en.isIntersecting) tabs.forEach(a => a.classList.toggle('active', a.dataset.band === en.target.id)); });
+                }, { rootMargin: '-90px 0px -60% 0px', threshold: 0 });
+                bands.forEach(b => io.observe(b));
+            }
+        }
+
+        // ── Forensic screens (SEC-XBRL via sec-proxy) ───────────────
+        async function populateForensicLive(entry) {
+            const grid = document.getElementById('forensic-cards');
+            const footer = document.getElementById('fr-footer');
+            let scores = null;
+            try {
+                const r = await fetch('/api/sec-proxy?ticker=' + encodeURIComponent(entry.ticker) + '&sector=' + encodeURIComponent(entry.sector || ''));
+                if (r.ok) { const j = await r.json(); scores = j && j.scores; }
+            } catch (e) { /* offline / rate-limited → degrade */ }
+
+            if (!scores) {
+                grid.innerHTML = '<div class="forensic-card"><div class="fc-title">Forensic</div><div class="fc-sub">Screens unavailable — SEC data could not be loaded for ' + entry.ticker + '.</div></div>';
+                footer.textContent = '> SEC-XBRL forensic screens unavailable';
+                return;
+            }
+
+            const a = scores.altman || {}, b = scores.beneish || {}, p = scores.piotroski || {};
+            const card = (title, value, band, cls, sub) =>
+                '<div class="forensic-card"><div class="fc-title">' + title + '</div>'
+                + '<div class="fc-value ' + cls + '">' + value + '</div>'
+                + (band ? '<div class="fc-band ' + cls + '">' + band + '</div>' : '')
+                + (sub ? '<div class="fc-sub">' + sub + '</div>' : '') + '</div>';
+            const likely = /likely/i.test(b.flag || '');
+
+            grid.innerHTML = [
+                a.available ? card('Altman Z', (a.score != null ? a.score.toFixed(2) : '—'), a.band, 'fc-' + bandClass(a.band), a.model || 'distress risk')
+                            : card('Altman Z', '—', null, 'fc-neutral', a.reason || 'insufficient data'),
+                b.available ? card('Beneish M', (b.score != null ? b.score.toFixed(2) : '—'), b.flag, likely ? 'fc-red' : 'fc-green', 'manipulation screen')
+                            : card('Beneish M', '—', null, 'fc-neutral', b.reason || 'needs two annual periods'),
+                p.available ? card('Piotroski F', (p.score + ' / 9'), p.band, 'fc-' + bandClass(p.band), p.evaluable + ' of 9 evaluable')
+                            : card('Piotroski F', '—', null, 'fc-neutral', p.reason || 'needs two annual periods'),
+            ].join('');
+            footer.textContent = '> As of FY ' + (scores.asOf || '—') + ' · SEC EDGAR XBRL · screening signals, not verdicts';
+
+            if (a.available) setVerdict('altman', { label: 'Altman ' + (a.band || ''), cls: bandClass(a.band), jump: 'brief-forensic' });
+            if (b.available) setVerdict('beneish', { label: 'Beneish ' + (likely ? 'flag' : 'OK'), cls: likely ? 'red' : 'green', jump: 'brief-forensic' });
+            if (p.available) setVerdict('piotroski', { label: 'Piotroski ' + p.score + '/9', cls: bandClass(p.band), jump: 'brief-forensic' });
+        }
+
+        async function renderBrief(idParam) {
             const uRes = await fetch('data/universe.json');
             if (!uRes.ok) throw new Error('universe.json missing');
             const universe = await uRes.json();
-            const entry = universe.tickers[ticker];
+            let entry = universe.tickers[idParam] || universe.tickers[String(idParam).toUpperCase()];
+            if (!entry) {
+                // Back-compat: ?company=<finvault slug> resolves to the ticker entry.
+                entry = Object.values(universe.tickers).find(e => e.finvault && e.finvault.slug === idParam) || null;
+            }
             if (!entry) {
                 emptyEl.style.display = 'block';
                 emptyEl.querySelector('h1').textContent = 'Ticker not found';
-                emptyEl.querySelector('p').textContent = ticker + ' is not in the NovaSect universe.';
+                emptyEl.querySelector('p').textContent = idParam + ' is not in the NovaSect universe.';
                 return;
             }
 
@@ -673,7 +804,7 @@
             document.getElementById('brief-finvault').style.display = '';
             const fvBtn = document.getElementById('fv-btn');
             if (entry.finvault) {
-                fvBtn.href = entry.finvault.reportUrl;
+                fvBtn.href = 'report.html?ticker=' + encodeURIComponent(entry.ticker);
             } else {
                 fvBtn.classList.add('disabled');
             }
@@ -684,6 +815,17 @@
             document.getElementById('sn-btn').href = 'sentinel.html?ticker=' + encodeURIComponent(entry.ticker);
             document.getElementById('brief-osiris').style.display = '';
             document.getElementById('os-btn').href = 'osiris.html?ticker=' + encodeURIComponent(entry.ticker);
+
+            // ── Dossier hub: verdict strip · sticky TOC · forensic · watchlist ──
+            document.getElementById('brief-forensic').style.display = '';
+            document.getElementById('fr-btn').href = 'report.html?ticker=' + encodeURIComponent(entry.ticker);
+            document.getElementById('dossier-summary').style.display = '';
+            document.getElementById('dossier-tabs').style.display = '';
+            initDossier(entry);
+            populateForensicLive(entry).catch(e => {
+                console.warn('[Brief] forensic live failed', e);
+                const f = document.getElementById('fr-footer'); if (f) f.textContent = '> Forensic screens unavailable';
+            });
 
             // FinVault: kick the chart + ratios in immediately (static
             // data from universe.json), then load the live market /
@@ -990,6 +1132,8 @@
                 renderRet('os-1y-up',  oneY.p95);
                 renderRet('os-1y-down', oneY.p5);
 
+                setVerdict('osiris', { label: 'Osiris 1Y ' + fmtPct(oneY.median, true), cls: oneY.median >= 0 ? 'green' : 'red', jump: 'brief-osiris' });
+
                 footer.textContent = '> 1000 paths · ' + o.physics + ' · σ=' + (sigma * 100).toFixed(1) + '% · default regime (stress 1.0×, op-shock 1.0×)';
             } catch (e) {
                 console.warn('[Brief] simulation failed', e);
@@ -1049,6 +1193,7 @@
                 setText('sn-base-ust', baseUST.toFixed(2) + '%');
                 setHTML('sn-credit-spread', '<span style="color:' + tier.color + ';">' + creditSpread + ' bps</span>');
                 setText('sn-credit-tier', tier.tier);
+                setVerdict('credit', { label: 'Credit ' + tier.tier, cls: tier.tier === 'NOMINAL' ? 'green' : tier.tier === 'CRITICAL' ? 'red' : 'amber', jump: 'brief-sentinel' });
                 const ndColor = normDiff > 0 ? '#F97316' : normDiff < 0 ? '#39FF14' : 'rgba(255,255,255,0.92)';
                 setHTML('sn-norm-diff', '<span style="color:' + ndColor + ';">' + (normDiff > 0 ? '+' : '') + normDiff + ' bps</span>');
 

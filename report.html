@@ -2866,9 +2866,22 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const company = urlParams.get('company');
+            let company = urlParams.get('company');
+            // Canonical routing is ?ticker=; resolve it to the FinVault slug via
+            // universe.json (legacy ?company= links remain supported).
+            const tickerParam = urlParams.get('ticker');
+            if (!company && tickerParam) {
+                try {
+                    const ur = await fetch('data/universe.json');
+                    if (ur.ok) {
+                        const u = await ur.json();
+                        const e = u.tickers && (u.tickers[tickerParam] || u.tickers[String(tickerParam).toUpperCase()]);
+                        if (e && e.finvault && e.finvault.slug) company = e.finvault.slug;
+                    }
+                } catch (err) { /* no resolution → falls through to empty state */ }
+            }
             const pdfViewer = document.getElementById('pdf-viewer');
             const companyDisplayName = document.getElementById('company-name');
             const companyIndustry = document.getElementById('company-industry');
