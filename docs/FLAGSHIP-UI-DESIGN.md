@@ -393,8 +393,8 @@ and the search panel re-renders per keystroke with up to 12 rows. Therefore:
 | 1 — Search hub: launcher (watchlist + recents), precompute chips, inline ★, band deep-links, `/`·⌘K palette, scenario-aware routing, focused-row backfill | ✅ shipped, browser-verified |
 | 2 — Dossier: verdict strip, forensic band, sticky TOC, header watchlist ★ + recents | ✅ shipped, browser-verified |
 | Routing migration: `reports.html` cards → `brief.html?ticker=` (data-driven rewrite + MutationObserver), `report.html` accepts `?ticker=`, dossier accepts `?company=` shim, deep-links use `?ticker=` | ✅ shipped (82/83 cards; 1 unmapped slug left on legacy route) |
-| 3 — Watchlist page (`watchlist.html`, nav ★+count, change dots, share/export) | ⏳ next |
-| 4 — Credit–equity bridge (Sentinel display) | ⏳ |
+| 3 — Watchlist: `watchlist.html` (sortable, progressive backfill, change dots, share `?list=` + CSV), site-wide nav ★+count | ✅ shipped, browser-verified |
+| 4 — Credit–equity bridge (Sentinel display) | ⏳ next |
 | 5 — Scenario Lab (drawer + multi-issuer `scenario.html`) | ⏳ |
 
 > Known data nit (out of scope): the Embraer card slug `embj3-sa` in reports.html

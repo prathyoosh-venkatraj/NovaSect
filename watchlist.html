@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watchlist — NovaSect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.min.css">
+    <!-- Shared client state (window.NSState), loaded before the module below. -->
+    <script src="components/state/state.js"></script>
+    <style>
+        .wl-page { max-width: 1100px; margin: 0 auto; padding: 6rem 1.5rem 4rem; }
+        .wl-title { font-family: var(--font-display); font-weight: 900; font-size: 0.9rem; color: var(--accent-green); letter-spacing: 6px; text-transform: uppercase; text-align: center; padding: 0.4rem 0 0.8rem; border-bottom: 1px solid rgba(57,255,20,0.2); text-shadow: 0 0 10px rgba(57,255,20,0.35); }
+        .wl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1.2rem 0; flex-wrap: wrap; }
+        .wl-count { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: rgba(255,255,255,0.7); }
+        .wl-actions { display: flex; gap: 0.6rem; }
+        .wl-btn { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; letter-spacing: 0.5px; color: var(--accent-green); background: rgba(0,18,0,0.55); border: 1px solid rgba(57,255,20,0.35); border-radius: 4px; padding: 6px 12px; cursor: pointer; text-decoration: none; }
+        .wl-btn:hover { border-color: rgba(57,255,20,0.8); box-shadow: 0 0 8px rgba(57,255,20,0.25); }
+        .wl-shared-banner { font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: var(--scenario-accent); border: 1px solid rgba(125,211,252,0.4); background: rgba(125,211,252,0.06); border-radius: 4px; padding: 8px 12px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+        .wl-empty { text-align: center; padding: 4rem 1rem; color: rgba(57,255,20,0.45); font-family: 'JetBrains Mono', monospace; }
+        .wl-empty a { color: var(--accent-green); }
+        .wl-table-wrap { overflow-x: auto; border: 1px solid rgba(57,255,20,0.2); border-radius: 6px; }
+        table.wl-table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; min-width: 760px; }
+        .wl-table thead th { text-align: left; padding: 10px 12px; color: rgba(57,255,20,0.7); font-size: 0.62rem; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid rgba(57,255,20,0.25); cursor: pointer; white-space: nowrap; user-select: none; }
+        .wl-table thead th.sorted::after { content: ' ▾'; color: var(--accent-green); }
+        .wl-table thead th.sorted.asc::after { content: ' ▴'; }
+        .wl-table tbody td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.88); white-space: nowrap; }
+        .wl-table tbody tr:hover { background: rgba(57,255,20,0.06); }
+        .wl-tk { color: var(--accent-green); font-weight: 700; }
+        .wl-tk a { color: inherit; text-decoration: none; }
+        .wl-name { color: rgba(255,255,255,0.8); font-family: 'Montserrat', sans-serif; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+        .wl-chip { font-size: 0.62rem; padding: 1px 6px; border-radius: 3px; border: 1px solid currentColor; }
+        .wl-chip.green { color: var(--status-green); } .wl-chip.amber { color: var(--status-amber); } .wl-chip.red { color: var(--status-red); } .wl-chip.neutral { color: var(--status-neutral); }
+        .wl-pos { color: var(--delta-pos); } .wl-neg { color: var(--delta-neg); }
+        .wl-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--status-amber); box-shadow: 0 0 6px var(--status-amber); }
+        .wl-star { background: none; border: none; cursor: pointer; color: var(--status-amber); font-size: 1rem; padding: 0; }
+        .wl-star:hover { color: var(--status-red); }
+        .wl-muted { color: rgba(255,255,255,0.35); }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="index.html" class="logo" style="color: white; text-decoration: none;">NovaSect</a>
+        <nav class="nav-links">
+            <div class="nav-dropdown">
+                <span class="dropdown-trigger nav-link">Tools</span>
+                <div class="dropdown-menu">
+                    <a href="sentinel.html" class="dropdown-item">Sentinel</a>
+                    <a href="reports.html" class="dropdown-item">FinVault</a>
+                    <a href="osiris.html" class="dropdown-item">Osiris</a>
+                </div>
+            </div>
+            <a href="about.html" class="nav-link">About us</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="wl-page">
+            <div class="wl-title">NOVASECT WATCHLIST</div>
+
+            <div class="wl-shared-banner" id="wl-shared" style="display:none;">
+                <span id="wl-shared-text">Viewing a shared watchlist (read-only).</span>
+                <button class="wl-btn" id="wl-import">Import to my watchlist</button>
+            </div>
+
+            <div class="wl-toolbar">
+                <span class="wl-count" id="wl-count">—</span>
+                <div class="wl-actions">
+                    <button class="wl-btn" id="wl-share">Share ↗</button>
+                    <button class="wl-btn" id="wl-csv">Export CSV</button>
+                </div>
+            </div>
+
+            <div class="wl-empty" id="wl-empty" style="display:none;">
+                <p>Your watchlist is empty.</p>
+                <p>Use the <strong>★</strong> on the global search results or any company dossier to add names.</p>
+            </div>
+
+            <div class="wl-table-wrap" id="wl-table-wrap" style="display:none;">
+                <table class="wl-table">
+                    <thead>
+                        <tr id="wl-head">
+                            <th data-k="ticker">Ticker</th>
+                            <th data-k="name">Name</th>
+                            <th data-k="sector">Sector</th>
+                            <th data-k="rating">Credit</th>
+                            <th data-k="spread">Spread</th>
+                            <th data-k="altman">Altman</th>
+                            <th data-k="price">Price</th>
+                            <th data-k="change">Δ since</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="wl-body"></tbody>
+                </table>
+            </div>
+            <div class="wl-empty" id="wl-footer" style="display:none;padding:1rem;font-size:0.7rem;"></div>
+        </section>
+    </main>
+
+    <script src="components/global-search/global-search.js" defer></script>
+    <script src="components/mobile-nav/mobile-nav.js" defer></script>
+
+    <script type="module">
+        const NS = window.NSState;
+        const params = new URLSearchParams(location.search);
+
+        // Shared view (?list=<b64 JSON array>) is read-only; otherwise the user's
+        // own (editable) watchlist from NSState.
+        let shared = false, tickers = [];
+        const listParam = params.get('list');
+        if (listParam) {
+            try { const arr = JSON.parse(atob(listParam)); if (Array.isArray(arr)) { tickers = arr.filter(x => typeof x === 'string'); shared = true; } } catch { /* malformed */ }
+        }
+        if (!shared) tickers = (NS && NS.getWatchlist()) || [];
+
+        const emptyEl = document.getElementById('wl-empty');
+        const wrapEl = document.getElementById('wl-table-wrap');
+        const bodyEl = document.getElementById('wl-body');
+        const countEl = document.getElementById('wl-count');
+        const footerEl = document.getElementById('wl-footer');
+
+        const tierOf = (sn) => !sn ? { label: '—', cls: 'neutral' }
+            : { label: sn.rating || '—', cls: sn.type !== 'IG' ? 'red' : /^(AAA|AA|A)$/i.test(sn.rating || '') ? 'green' : 'amber' };
+        const bandClass = (b) => !b ? 'neutral' : /safe|strong/i.test(b) ? 'green' : /grey|moderate/i.test(b) ? 'amber' : /distress|weak/i.test(b) ? 'red' : 'neutral';
+
+        // Mirrors ns-state-core.diffSnapshots (that pure module isn't served to
+        // the browser); snapshot = { altmanBand, price }.
+        function diffSeen(prev, curr) {
+            if (!prev || !curr) return [];
+            const out = [];
+            if (prev.altmanBand && curr.altmanBand && prev.altmanBand !== curr.altmanBand) out.push('Altman ' + prev.altmanBand + '→' + curr.altmanBand);
+            if (typeof prev.price === 'number' && typeof curr.price === 'number' && prev.price > 0) {
+                const mv = (curr.price / prev.price - 1) * 100;
+                if (Math.abs(mv) >= 5) out.push('price ' + (mv >= 0 ? '+' : '') + mv.toFixed(1) + '%');
+            }
+            return out;
+        }
+
+        let rows = [];      // row models
+        let sortKey = 'ticker', sortAsc = true;
+
+        function fmtPrice(v) { return typeof v === 'number' ? '$' + v.toFixed(2) : '—'; }
+
+        function render() {
+            countEl.textContent = rows.length + (rows.length === 1 ? ' name' : ' names') + (shared ? ' · shared' : '');
+            if (!rows.length) { emptyEl.style.display = 'block'; wrapEl.style.display = 'none'; return; }
+            emptyEl.style.display = 'none'; wrapEl.style.display = 'block';
+
+            const sorted = [...rows].sort((a, b) => {
+                let x = a[sortKey], y = b[sortKey];
+                if (x == null) return 1; if (y == null) return -1;
+                if (typeof x === 'string') { x = x.toLowerCase(); y = String(y).toLowerCase(); }
+                return (x < y ? -1 : x > y ? 1 : 0) * (sortAsc ? 1 : -1);
+            });
+
+            bodyEl.innerHTML = sorted.map(r => {
+                const t = tierOf(r.sentinel);
+                const changeCell = r.changes && r.changes.length
+                    ? '<span class="wl-dot" title="' + r.changes.join(' · ') + '"></span> <span class="wl-muted">' + r.changes.length + '</span>'
+                    : '<span class="wl-muted">—</span>';
+                const altCell = r.altman ? '<span class="wl-chip ' + bandClass(r.altman) + '">' + r.altman + '</span>' : '<span class="wl-muted">' + (r.altmanPending ? '…' : '—') + '</span>';
+                const priceCell = r.price != null ? fmtPrice(r.price) : '<span class="wl-muted">' + (r.pricePending ? '…' : '—') + '</span>';
+                return '<tr>'
+                    + '<td class="wl-tk"><a href="brief.html?ticker=' + encodeURIComponent(r.ticker) + '">' + r.ticker + '</a></td>'
+                    + '<td class="wl-name">' + (r.name || '') + '</td>'
+                    + '<td>' + (r.sector || '—') + '</td>'
+                    + '<td><span class="wl-chip ' + t.cls + '">' + t.label + '</span></td>'
+                    + '<td>' + (r.spread != null ? r.spread + 'bp' : '—') + '</td>'
+                    + '<td>' + altCell + '</td>'
+                    + '<td>' + priceCell + '</td>'
+                    + '<td>' + changeCell + '</td>'
+                    + '<td>' + (shared ? '' : '<button class="wl-star" data-rm="' + r.ticker + '" title="Remove">✕</button>') + '</td>'
+                    + '</tr>';
+            }).join('');
+        }
+
+        // Sorting
+        document.getElementById('wl-head').addEventListener('click', (e) => {
+            const th = e.target.closest('th[data-k]'); if (!th) return;
+            const k = th.dataset.k;
+            if (sortKey === k) sortAsc = !sortAsc; else { sortKey = k; sortAsc = true; }
+            document.querySelectorAll('#wl-head th').forEach(h => { h.classList.toggle('sorted', h.dataset.k === sortKey); h.classList.toggle('asc', h.dataset.k === sortKey && sortAsc); });
+            render();
+        });
+
+        // Remove
+        bodyEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('.wl-star'); if (!btn || !NS) return;
+            NS.toggleWatchlist(btn.dataset.rm);
+            rows = rows.filter(r => r.ticker !== btn.dataset.rm);
+            render();
+        });
+
+        // Share / CSV / Import
+        document.getElementById('wl-share').addEventListener('click', async () => {
+            const url = location.origin + location.pathname + '?list=' + encodeURIComponent(btoa(JSON.stringify(rows.map(r => r.ticker))));
+            try { await navigator.clipboard.writeText(url); document.getElementById('wl-share').textContent = 'Copied ✓'; setTimeout(() => document.getElementById('wl-share').textContent = 'Share ↗', 1500); }
+            catch { prompt('Copy your shareable watchlist link:', url); }
+        });
+        document.getElementById('wl-csv').addEventListener('click', () => {
+            const head = 'ticker,name,sector,rating,spread_bp,altman,price';
+            const lines = rows.map(r => [r.ticker, '"' + (r.name || '').replace(/"/g, '""') + '"', r.sector || '', (r.sentinel && r.sentinel.rating) || '', r.spread != null ? r.spread : '', r.altman || '', r.price != null ? r.price.toFixed(2) : ''].join(','));
+            const blob = new Blob([[head, ...lines].join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'novasect-watchlist.csv';
+            document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        });
+        if (shared) {
+            document.getElementById('wl-shared').style.display = 'flex';
+            document.getElementById('wl-import').addEventListener('click', () => {
+                if (!NS) return;
+                tickers.forEach(t => { if (!NS.isWatched(t)) NS.toggleWatchlist(t); });
+                location.href = 'watchlist.html';
+            });
+        }
+
+        // ── Build rows (instant from universe) then backfill (bandwidth-safe) ──
+        (async () => {
+            if (!tickers.length) { render(); return; }
+            let universe = {};
+            try { const r = await fetch('data/universe.json'); if (r.ok) universe = (await r.json()).tickers || {}; } catch { /* degrade */ }
+
+            rows = tickers.map(t => {
+                const e = universe[t] || universe[String(t).toUpperCase()] || null;
+                return {
+                    ticker: e ? e.ticker : t,
+                    name: e ? e.name : t,
+                    sector: e ? e.sector : null,
+                    sentinel: e ? e.sentinel : null,
+                    rating: e && e.sentinel ? e.sentinel.rating : null,
+                    spread: e && e.sentinel ? e.sentinel.baseSpread : null,
+                    yahoo: e && e.exchanges ? e.exchanges.yahoo : null,
+                    altman: null, altmanPending: true,
+                    price: null, pricePending: true,
+                    change: 0, changes: [],
+                    _entry: e,
+                };
+            });
+            render();
+
+            // Sequential backfill — respects the tight per-IP proxy limits
+            // (sec 20/min, yahoo 30/min). sessionStorage + edge caches absorb
+            // repeats; each row updates as its data arrives.
+            let done = 0;
+            for (const r of rows) {
+                const snap = {};
+                // Price (yahoo-proxy default mode, 1h edge cache)
+                if (r.yahoo) {
+                    const ck = 'ns.wl.px.' + r.yahoo;
+                    let px = null;
+                    try { const c = JSON.parse(sessionStorage.getItem(ck) || 'null'); if (c && Date.now() - c.t < 3600000) px = c.v; } catch {}
+                    if (px == null) {
+                        try { const res = await fetch('/api/yahoo-proxy?symbol=' + encodeURIComponent(r.yahoo)); if (res.ok) { const j = await res.json(); if (typeof j.price === 'number') { px = j.price; sessionStorage.setItem(ck, JSON.stringify({ v: px, t: Date.now() })); } } } catch {}
+                    }
+                    if (px != null) { r.price = px; snap.price = px; }
+                }
+                r.pricePending = false;
+                // Altman (sec-proxy, 24h edge cache)
+                {
+                    const ck = 'ns.wl.az.' + r.ticker;
+                    let band = null;
+                    try { const c = JSON.parse(sessionStorage.getItem(ck) || 'null'); if (c) band = c.b; } catch {}
+                    if (band == null) {
+                        try { const res = await fetch('/api/sec-proxy?ticker=' + encodeURIComponent(r.ticker) + '&sector=' + encodeURIComponent(r.sector || '')); if (res.ok) { const j = await res.json(); band = j && j.scores && j.scores.altman && j.scores.altman.band; if (band) sessionStorage.setItem(ck, JSON.stringify({ b: band })); } } catch {}
+                    }
+                    if (band) { r.altman = band; snap.altmanBand = band; }
+                }
+                r.altmanPending = false;
+
+                // Change dots vs last visit (own watchlist only).
+                if (!shared && NS) {
+                    const prev = NS.getSeen(r.ticker);
+                    r.changes = diffSeen(prev, snap);
+                    r.change = r.changes.length;
+                    NS.setSeen(r.ticker, snap);
+                }
+                done++;
+                render();
+            }
+            footerEl.style.display = 'block';
+            footerEl.textContent = '> Live: price (Yahoo, ~1h) · Altman (SEC-XBRL, ~24h) · credit rating/spread static from universe · ' + done + ' names backfilled';
+        })();
+    </script>
+</body>
+</html>
