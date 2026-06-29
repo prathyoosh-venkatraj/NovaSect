@@ -33,8 +33,19 @@
   <!-- Sentry Error Tracking -->
   <script src="https://js-de.sentry-cdn.com/58fb277a213713b5996ae9454eb2a6c4.min.js" crossorigin="anonymous"></script>
   <style id="lpb-styles">
-    .lpb-section { position: relative; padding: 6rem 2rem; background: #000; border-top: 1px solid rgba(57,255,20,0.1); border-bottom: 1px solid rgba(57,255,20,0.1); }
-    .lpb-inner { max-width: 880px; margin: 0 auto; text-align: center; }
+    .lpb-section { position: relative; padding: 9rem 2rem; min-height: 82vh; display: flex; align-items: center; overflow: hidden; background: #000; border-top: 1px solid rgba(57,255,20,0.1); border-bottom: 1px solid rgba(57,255,20,0.1); }
+    .lpb-inner { position: relative; z-index: 2; max-width: 880px; margin: 0 auto; text-align: center; width: 100%; }
+    .lpb-holo { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .lpb-holo > div { position: absolute; }
+    .lpb-holo .grid { inset: -10%; background-image: linear-gradient(rgba(57,255,20,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(57,255,20,0.07) 1px, transparent 1px); background-size: 46px 46px; animation: lpbGrid 6s linear infinite; }
+    .lpb-holo .glow { top: 50%; left: 50%; width: 720px; height: 720px; transform: translate(-50%,-50%); background: radial-gradient(circle, rgba(57,255,20,0.12), transparent 62%); animation: lpbGlow 6s ease-in-out infinite; }
+    .lpb-holo .sweep { inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(57,255,20,0.05) 47%, rgba(57,255,20,0.11) 50%, rgba(57,255,20,0.05) 53%, transparent 70%); background-size: 300% 300%; animation: lpbSweep 8s linear infinite; }
+    .lpb-holo .scan { inset: 0; background: repeating-linear-gradient(0deg, rgba(57,255,20,0.05) 0px, rgba(57,255,20,0.05) 1px, transparent 1px, transparent 4px); opacity: 0.5; animation: lpbScan 12s linear infinite; }
+    @keyframes lpbGrid { from { background-position: 0 0, 0 0; } to { background-position: 46px 46px, 46px 46px; } }
+    @keyframes lpbGlow { 0%,100% { opacity: 0.45; transform: translate(-50%,-50%) scale(1); } 50% { opacity: 0.85; transform: translate(-50%,-50%) scale(1.1); } }
+    @keyframes lpbSweep { from { background-position: 200% 0; } to { background-position: -100% 0; } }
+    @keyframes lpbScan { from { background-position: 0 0; } to { background-position: 0 240px; } }
+    @media (prefers-reduced-motion: reduce) { .lpb-holo .grid, .lpb-holo .glow, .lpb-holo .sweep, .lpb-holo .scan { animation: none; } }
     .lpb-eyebrow { font-family: var(--font-display); font-weight: 900; letter-spacing: 6px; color: var(--accent-green); font-size: 0.8rem; text-shadow: 0 0 10px rgba(57,255,20,0.45); }
     .lpb-title { font-family: var(--font-display); font-weight: 900; color: #fff; font-size: 2.5rem; margin: 0.8rem 0 0.5rem; }
     .lpb-sub { color: rgba(255,255,255,0.6); font-family: var(--font-main); font-size: 1rem; max-width: 580px; margin: 0 auto 2.2rem; line-height: 1.6; }
@@ -47,7 +58,7 @@
     .lpb-quick-label { color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 1px; }
     .lpb-pill { border: 1px solid rgba(57,255,20,0.35); color: var(--accent-green); border-radius: 20px; padding: 5px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; text-decoration: none; transition: all .15s ease; }
     .lpb-pill:hover { background: rgba(57,255,20,0.1); border-color: var(--accent-green); }
-    @media (max-width: 768px) { .lpb-title { font-size: 1.8rem; } .lpb-section { padding: 4rem 1.2rem; } .lpb-sub { font-size: 0.9rem; } }
+    @media (max-width: 768px) { .lpb-title { font-size: 1.8rem; } .lpb-section { padding: 5rem 1.2rem; min-height: 66vh; } .lpb-sub { font-size: 0.9rem; } }
   </style>
 </head>
 
@@ -114,6 +125,12 @@
 
         <!-- ── NovaSect Brief — unified per-ticker dossier access ───────── -->
         <section class="lpb-section">
+            <div class="lpb-holo" aria-hidden="true">
+                <div class="grid"></div>
+                <div class="glow"></div>
+                <div class="sweep"></div>
+                <div class="scan"></div>
+            </div>
             <div class="lpb-inner reveal">
                 <div class="lpb-eyebrow">NOVASECT BRIEF</div>
                 <h2 class="lpb-title">One ticker. Every engine.</h2>

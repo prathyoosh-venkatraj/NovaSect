@@ -33,6 +33,15 @@
         .sl-pos { color: var(--status-red); } .sl-neg { color: var(--status-green); } /* wider spread = worse (red) */
         .sl-muted { color: rgba(255,255,255,0.35); }
         .sl-foot { font-family: 'JetBrains Mono', monospace; font-size: 0.64rem; color: rgba(255,255,255,0.4); margin-top: 1rem; }
+        .sl-controls { border: 1px solid rgba(125,211,252,0.25); border-radius: 8px; background: rgba(2,12,18,0.5); padding: 1.2rem 1.4rem; margin: 1.2rem 0; }
+        .sl-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.3rem; }
+        .sl-preset { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--scenario-accent); background: rgba(125,211,252,0.08); border: 1px solid rgba(125,211,252,0.35); border-radius: 4px; padding: 6px 12px; cursor: pointer; }
+        .sl-preset:hover { border-color: var(--scenario-accent); }
+        .sl-sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem 1.6rem; }
+        .sl-ctrl-top { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: rgba(255,255,255,0.75); margin-bottom: 5px; }
+        .sl-ctrl-val { color: var(--scenario-accent); }
+        .sl-ctrl input[type=range] { width: 100%; accent-color: var(--scenario-accent); }
+        .sl-reset { margin-top: 1.3rem; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; padding: 7px 14px; border-radius: 4px; cursor: pointer; background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.4); color: #FF4D4D; }
     </style>
 </head>
 <body>
@@ -54,7 +63,13 @@
     <main>
         <section class="sl-page">
             <div class="sl-title">SCENARIO LAB</div>
-            <div class="sl-intro">Macro-shock every Sentinel issuer at once. Open the <b id="sl-open">⚡ Scenario console</b> (top nav) to set rate / VIX / sector-vol / sovereign shocks — this table recomputes live.</div>
+            <div class="sl-intro">Macro-shock every Sentinel issuer at once. Set the inputs below — the table recomputes live and the shock carries into every dossier.</div>
+
+            <div class="sl-controls">
+                <div class="sl-presets" id="sl-presets"></div>
+                <div class="sl-sliders" id="sl-sliders"></div>
+                <button class="sl-reset" id="sl-reset">Reset to baseline</button>
+            </div>
 
             <div class="sl-toolbar">
                 <span class="sl-summary" id="sl-summary">—</span>
@@ -158,7 +173,7 @@
                 const worst = filtered.slice().sort((a, b) => b.delta - a.delta)[0];
                 $('sl-summary').innerHTML = shown + ' issuers · avg Δ <span class="' + (avg > 0 ? 'sl-pos' : 'sl-neg') + '">' + (avg > 0 ? '+' : '') + avg + ' bps</span>' + (worst ? ' · widest ' + worst.ticker + ' +' + worst.delta : '');
             } else {
-                $('sl-summary').textContent = shown + ' issuers · baseline (no scenario active — open ⚡ Scenario)';
+                $('sl-summary').textContent = shown + ' issuers · baseline (set the inputs above to shock)';
             }
         }
 
@@ -175,7 +190,51 @@
             document.querySelectorAll('#sl-filters .sl-chip').forEach(x => x.classList.toggle('active', x === c));
             render(!!(NS && NS.getScenario()));
         });
-        $('sl-open').addEventListener('click', () => { const b = document.querySelector('.scn-nav'); if (b) b.click(); });
+        // ── Scenario controls (presets + sliders) — formerly the side drawer ──
+        const CONTROLS = [
+            ['rateBps', 'Rate shock', -300, 300, 25, 'bp', 'delta'],
+            ['vix', 'VIX level', 0, 90, 1, '', 'level'],
+            ['sectorVolPct', 'Sector vol', -30, 60, 5, '%', 'pct'],
+            ['sovereignBps', 'Sovereign', 0, 300, 10, 'bp', 'delta'],
+            ['commodityPct', 'Commodity / FX', -60, 60, 5, '%', 'pct'],
+        ];
+        const PRESETS = {
+            'Baseline': { rateBps: 0, vix: 0, sectorVolPct: 0, sovereignBps: 0, commodityPct: 0 },
+            '2008 GFC': { rateBps: -150, vix: 80, sectorVolPct: 30, sovereignBps: 50, commodityPct: -40 },
+            'COVID 2020': { rateBps: -100, vix: 65, sectorVolPct: 25, sovereignBps: 20, commodityPct: -50 },
+            'Rate +200': { rateBps: 200, vix: 25, sectorVolPct: 5, sovereignBps: 0, commodityPct: 0 },
+            'Soft landing': { rateBps: -50, vix: 14, sectorVolPct: -5, sovereignBps: 0, commodityPct: 0 },
+        };
+        const fmtCtrl = (v, kind, unit) => kind === 'level' ? (v > 0 ? String(v) : 'live') : (v === 0 ? '0' + unit : (v > 0 ? '+' : '') + v + unit);
+
+        $('sl-presets').innerHTML = Object.keys(PRESETS).map(p => '<button class="sl-preset" data-preset="' + p + '">' + p + '</button>').join('');
+        $('sl-sliders').innerHTML = CONTROLS.map(([k, label, min, max, step, unit, kind]) =>
+            '<div class="sl-ctrl"><div class="sl-ctrl-top"><span>' + label + '</span><span class="sl-ctrl-val" data-k="' + k + '">' + fmtCtrl(0, kind, unit) + '</span></div>'
+            + '<input type="range" data-k="' + k + '" min="' + min + '" max="' + max + '" step="' + step + '" value="0"></div>').join('');
+
+        function syncControls() {
+            const sc = (NS && NS.getScenario()) || {};
+            CONTROLS.forEach(([k, , , , , unit, kind]) => {
+                const input = document.querySelector('#sl-sliders input[data-k="' + k + '"]');
+                const val = document.querySelector('.sl-ctrl-val[data-k="' + k + '"]');
+                if (input) { input.value = Number(sc[k]) || 0; if (val) val.textContent = fmtCtrl(Number(input.value), kind, unit); }
+            });
+        }
+        function applyControls() {
+            const sc = {};
+            CONTROLS.forEach(([k]) => { const input = document.querySelector('#sl-sliders input[data-k="' + k + '"]'); sc[k] = Number(input.value) || 0; });
+            if (NS) NS.setScenario(sc);   // emits 'scenario' → recompute()
+        }
+        $('sl-sliders').addEventListener('input', (e) => {
+            if (!e.target.matches('input[type=range]')) return;
+            const k = e.target.dataset.k, c = CONTROLS.find(x => x[0] === k);
+            const val = document.querySelector('.sl-ctrl-val[data-k="' + k + '"]');
+            if (val) val.textContent = fmtCtrl(Number(e.target.value), c[6], c[5]);
+            applyControls();
+        });
+        $('sl-presets').addEventListener('click', (e) => { const p = e.target.closest('.sl-preset'); if (!p) return; if (NS) NS.setScenario(PRESETS[p.dataset.preset]); syncControls(); });
+        $('sl-reset').addEventListener('click', () => { if (NS) NS.setScenario(null); syncControls(); });
+        syncControls();   // reflect any scenario hydrated from the URL
 
         (async () => {
             let universe = {};
