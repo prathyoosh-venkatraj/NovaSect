@@ -87,9 +87,7 @@
 .gs-star.is-on { color: #FFB000; }
 .gs-star:hover { color: #FFB000; }
 .gs-empty { padding: 16px; text-align: center; color: rgba(57, 255, 20, 0.4); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
-.gs-wl { display: inline-flex; align-items: center; gap: 4px; color: #FFB000; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; margin-right: 1rem; }
-.gs-wl:hover { filter: brightness(1.2); }
-.gs-wl-count { font-size: 0.62rem; background: #FFB000; color: #000; border-radius: 9px; padding: 0 6px; font-weight: 700; line-height: 1.5; }
+.gs-wl { cursor: pointer; }   /* inherits .nav-link font/colour to match About us / Tools */
 @media (max-width: 768px) {
     .nav-links { gap: 0.85rem; }
     .gs-wrap { margin-right: 0; flex: 0 1 auto; max-width: 190px; }
@@ -210,13 +208,13 @@
         // search. Count updates on NSState 'watchlist' events; we wait for the
         // (self-injected) state store to exist before wiring.
         const wlLink = document.createElement('a');
-        wlLink.className = 'gs-wl';
+        wlLink.className = 'nav-link gs-wl';
         wlLink.href = 'watchlist.html';
         wlLink.title = 'Watchlist';
         nav.insertBefore(wlLink, wrap.nextSibling);
         const updateWl = () => {
             const n = (window.NSState && window.NSState.getWatchlist().length) || 0;
-            wlLink.innerHTML = '★' + (n ? ' <span class="gs-wl-count">' + n + '</span>' : '');
+            wlLink.textContent = 'Watchlist' + (n ? ' (' + n + ')' : '');
         };
         (function wireWl() {
             if (!window.NSState) { setTimeout(wireWl, 150); return; }

@@ -28,8 +28,10 @@
     };
 
     const STYLE = `
-.scn-nav { display:inline-flex; align-items:center; gap:4px; color:#7DD3FC; text-decoration:none; font-family:'JetBrains Mono',monospace; font-size:0.9rem; margin-right:1rem; cursor:pointer; }
-.scn-nav:hover { filter:brightness(1.2); } .scn-nav.on { text-shadow:0 0 8px rgba(125,211,252,0.6); }
+/* Matches .nav-link (About us / Tools); light-green glow makes it stand out. */
+.scn-nav { cursor:pointer; color:var(--accent-green); text-shadow:0 0 8px rgba(57,255,20,0.55); }
+.scn-nav:hover { color:var(--accent-green); text-shadow:0 0 12px rgba(57,255,20,0.9); }
+.scn-nav.on { text-shadow:0 0 14px rgba(57,255,20,1); }
 .scn-banner { position:fixed; top:0; left:0; right:0; z-index:9998; background:rgba(8,30,46,0.96); border-bottom:1px solid #7DD3FC; color:#7DD3FC; font-family:'JetBrains Mono',monospace; font-size:0.72rem; letter-spacing:0.5px; padding:6px 14px; display:flex; align-items:center; justify-content:center; gap:14px; }
 .scn-banner b { color:#fff; } .scn-banner button { background:none; border:1px solid #7DD3FC; color:#7DD3FC; border-radius:3px; font-size:0.62rem; padding:2px 8px; cursor:pointer; font-family:inherit; }
 .scn-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; opacity:0; pointer-events:none; transition:opacity 0.2s ease; }
@@ -49,7 +51,6 @@
 .scn-actions { display:flex; gap:8px; margin-top:1.4rem; }
 .scn-btn { flex:1; font-family:'JetBrains Mono',monospace; font-size:0.72rem; padding:8px; border-radius:4px; cursor:pointer; background:rgba(125,211,252,0.1); border:1px solid rgba(125,211,252,0.4); color:#7DD3FC; }
 .scn-btn.reset { background:rgba(255,77,77,0.08); border-color:rgba(255,77,77,0.4); color:#FF4D4D; }
-@media (max-width:768px){ .scn-nav span.scn-label{display:none;} }
 `;
 
     function fmt(v, kind, unit) {
@@ -106,8 +107,8 @@
         const nav = document.querySelector('.nav-links');
         if (nav) {
             navBtn = document.createElement('a');
-            navBtn.className = 'scn-nav';
-            navBtn.innerHTML = '⚡<span class="scn-label">Scenario</span>';
+            navBtn.className = 'nav-link scn-nav';
+            navBtn.textContent = 'Scenario';
             navBtn.title = 'Scenario Lab';
             navBtn.addEventListener('click', openDrawer);
             // place after the watchlist star if present, else first

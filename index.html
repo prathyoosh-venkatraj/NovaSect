@@ -32,6 +32,23 @@
   <script defer src="https://cloud.umami.is/script.js" data-website-id="134ef845-3a61-49b4-b2f2-1a954fc62467"></script>
   <!-- Sentry Error Tracking -->
   <script src="https://js-de.sentry-cdn.com/58fb277a213713b5996ae9454eb2a6c4.min.js" crossorigin="anonymous"></script>
+  <style id="lpb-styles">
+    .lpb-section { position: relative; padding: 6rem 2rem; background: #000; border-top: 1px solid rgba(57,255,20,0.1); border-bottom: 1px solid rgba(57,255,20,0.1); }
+    .lpb-inner { max-width: 880px; margin: 0 auto; text-align: center; }
+    .lpb-eyebrow { font-family: var(--font-display); font-weight: 900; letter-spacing: 6px; color: var(--accent-green); font-size: 0.8rem; text-shadow: 0 0 10px rgba(57,255,20,0.45); }
+    .lpb-title { font-family: var(--font-display); font-weight: 900; color: #fff; font-size: 2.5rem; margin: 0.8rem 0 0.5rem; }
+    .lpb-sub { color: rgba(255,255,255,0.6); font-family: var(--font-main); font-size: 1rem; max-width: 580px; margin: 0 auto 2.2rem; line-height: 1.6; }
+    .lpb-form { display: flex; justify-content: center; max-width: 540px; margin: 0 auto 1.6rem; }
+    .lpb-input { flex: 1; min-width: 0; background: rgba(0,18,0,0.6); border: 1px solid rgba(57,255,20,0.4); border-right: none; border-radius: 4px 0 0 4px; color: #fff; padding: 15px 18px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; outline: none; transition: border-color .18s ease, box-shadow .18s ease; }
+    .lpb-input:focus { border-color: rgba(57,255,20,0.8); box-shadow: 0 0 10px rgba(57,255,20,0.2); }
+    .lpb-btn { background: var(--accent-green); color: #000; border: none; border-radius: 0 4px 4px 0; padding: 0 24px; font-weight: 800; font-family: var(--font-display); cursor: pointer; letter-spacing: 0.5px; white-space: nowrap; transition: box-shadow .18s ease; }
+    .lpb-btn:hover { box-shadow: 0 0 14px rgba(57,255,20,0.5); }
+    .lpb-quick { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .lpb-quick-label { color: rgba(255,255,255,0.4); font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 1px; }
+    .lpb-pill { border: 1px solid rgba(57,255,20,0.35); color: var(--accent-green); border-radius: 20px; padding: 5px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; text-decoration: none; transition: all .15s ease; }
+    .lpb-pill:hover { background: rgba(57,255,20,0.1); border-color: var(--accent-green); }
+    @media (max-width: 768px) { .lpb-title { font-size: 1.8rem; } .lpb-section { padding: 4rem 1.2rem; } .lpb-sub { font-size: 0.9rem; } }
+  </style>
 </head>
 
 <body>
@@ -94,6 +111,51 @@
 
             </div>
         </section>
+
+        <!-- ── NovaSect Brief — unified per-ticker dossier access ───────── -->
+        <section class="lpb-section">
+            <div class="lpb-inner reveal">
+                <div class="lpb-eyebrow">NOVASECT BRIEF</div>
+                <h2 class="lpb-title">One ticker. Every engine.</h2>
+                <p class="lpb-sub">Fundamentals, forensic screens, a live credit spread, and a Monte-Carlo cone — unified in a single view.</p>
+                <form class="lpb-form" id="lpb-form" autocomplete="off">
+                    <input class="lpb-input" id="lpb-input" type="text" placeholder="Search a company or ticker…" aria-label="Search a company or ticker" spellcheck="false">
+                    <button class="lpb-btn" type="submit" data-umami-event="open-brief-landing">OPEN BRIEF →</button>
+                </form>
+                <div class="lpb-quick">
+                    <span class="lpb-quick-label">QUICK ACCESS</span>
+                    <a class="lpb-pill" href="brief.html?ticker=XOM">XOM</a>
+                    <a class="lpb-pill" href="brief.html?ticker=NEE">NEE</a>
+                    <a class="lpb-pill" href="brief.html?ticker=RHM.DE">RHM.DE</a>
+                    <a class="lpb-pill" href="brief.html?ticker=CVX">CVX</a>
+                    <a class="lpb-pill" href="brief.html?ticker=SHEL">SHEL</a>
+                    <a class="lpb-pill" href="brief.html?ticker=NOC">NOC</a>
+                </div>
+            </div>
+        </section>
+        <script>
+            (function () {
+                var form = document.getElementById('lpb-form');
+                var input = document.getElementById('lpb-input');
+                if (!form) return;
+                var uni = null;
+                async function resolve(q) {
+                    q = (q || '').trim(); if (!q) return null;
+                    if (!uni) { try { var r = await fetch('data/universe.json'); uni = r.ok ? Object.values((await r.json()).tickers || {}) : []; } catch (e) { uni = []; } }
+                    var ql = q.toLowerCase();
+                    var hit = uni.find(function (t) { return t.ticker.toLowerCase() === ql; })
+                           || uni.find(function (t) { return t.ticker.toLowerCase().indexOf(ql) === 0; })
+                           || uni.find(function (t) { return (t.name || '').toLowerCase().split(/[\s\-,&]+/).some(function (w) { return w.indexOf(ql) === 0; }); })
+                           || uni.find(function (t) { return (t.name || '').toLowerCase().indexOf(ql) >= 0; });
+                    return hit ? hit.ticker : q.toUpperCase();   // fall through → brief shows "not found"
+                }
+                form.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    var t = await resolve(input.value);
+                    if (t) window.location.href = 'brief.html?ticker=' + encodeURIComponent(t);
+                });
+            })();
+        </script>
 
         <section class="cards-section">
             <div id="secondary-canvas-container" class="segments-bg-canvas"></div>
