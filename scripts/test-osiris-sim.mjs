@@ -1,19 +1,39 @@
 /**
- * Unit tests for Website/backtest/engine/simulate.mjs — the Node port of the
- * Osiris stochastic worker (identical math to components/osiris/stochasticWorker.js).
+ * Unit tests for the Osiris stochastic worker math (components/osiris/
+ * stochasticWorker.js — the actual shipped code).
  *
  *   node scripts/test-osiris-sim.mjs
+ *
+ * The worker is a classic Web Worker (self.onmessage), not an ES module, so we
+ * load it the same way the health-check (scripts/health/checks.mjs) does: read
+ * the source, strip the dispatcher, and evaluate it in a vm sandbox to expose
+ * the top-level simulateOU / simulateGBMJump. This keeps the test in-repo (the
+ * Node port lives outside the deployable tree) and tests the real engine.
  *
  * Mixes deterministic checks (zero-vol paths are exact) with statistical
  * property checks at high path counts and generous tolerances, so the suite is
  * robust to the unseeded RNG.
  */
-import { simulateOU, simulateGBMJump } from '../../backtest/engine/simulate.mjs';
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
 
 let pass = 0, fail = 0;
 const ok   = (c, m) => { if (c) { pass++; } else { fail++; console.log('  ✗ ' + m); } };
 const near = (a, b, eps) => a != null && Math.abs(a - b) <= eps;
 
+// ── Load the shipped worker into a sandbox ────────────────────────────────────
+const src = readFileSync(new URL('../components/osiris/stochasticWorker.js', import.meta.url), 'utf8');
+const trimmed = src.replace(/self\.onmessage\s*=[\s\S]*$/, '');   // drop the Web Worker dispatcher
+const sandbox = { Math, Float32Array, Array, Number, isFinite, self: { postMessage: () => {} } };
+const ctx = vm.createContext(sandbox);
+vm.runInContext(trimmed, ctx, { timeout: 5000 });
+const simulateOU = sandbox.simulateOU;
+const simulateGBMJump = sandbox.simulateGBMJump;
+ok(typeof simulateOU === 'function' && typeof simulateGBMJump === 'function', 'worker exposes simulateOU / simulateGBMJump');
+
+// Worker signatures:
+//   simulateOU(S0, drift, sigma, steps, paths, theta, longTermMean, antithetic, intradaySteps, garchAlpha, garchBeta)
+//   simulateGBMJump(S0, mu, sigma, steps, paths, lambda, jumpMu, antithetic, intradaySteps, garchAlpha, garchBeta)
 const STEPS = 253;                     // 252 increments ≈ 1 trading year (dt = 1/252)
 const term  = (res, p) => res.percentiles[p][res.percentiles[p].length - 1];
 const PCTS  = ['p05', 'p10', 'p25', 'p45', 'p50', 'p55', 'p75', 'p90', 'p95'];
@@ -35,7 +55,6 @@ function allFinite(res) {
 }
 
 // ── Zero-vol determinism: terminal = S0·e^(μ·T), all percentiles equal ─────────
-// μ=0.10, T=1 → 100·e^0.10 = 110.517. (Float32 path storage → small tolerance.)
 {
   const r = simulateGBMJump(100, 0.10, 0, STEPS, 64, 4, 0, false);
   ok(near(term(r, 'p05'), 110.517, 0.3) && near(term(r, 'p95'), 110.517, 0.3), 'GBM zero-vol: terminal ≈ 110.52');
@@ -57,8 +76,7 @@ function allFinite(res) {
   ok(dn.pAboveSpot < 0.5, 'GBM strong −drift: pAboveSpot < 0.5');
 }
 
-// ── OU mean reversion both directions ─────────────────────────────────────────
-// Deterministic part S(1) = μ + (S0−μ)·e^(−θ) ; θ=2 → e^-2 = 0.1353.
+// ── OU mean reversion both directions (drift=0 so the worker's reversion drives it) ──
 {
   const upTo120 = simulateOU(100, 0, 0.15, STEPS, 20000, 2, 120, false);   // → ~117.3
   ok(term(upTo120, 'p50') > 108 && term(upTo120, 'p50') < 124, 'OU: reverts up toward 120 (median ~117)');
@@ -70,7 +88,8 @@ function allFinite(res) {
 {
   const a = simulateGBMJump(100, 0.05, 0.25, STEPS, 20000, 4, 0, true);
   ok(monotonic(a) && allFinite(a) && a.pAboveSpot >= 0 && a.pAboveSpot <= 1, 'antithetic GBM: valid, finite, ordered');
-  const g = simulateGBMJump(100, 0.05, 0.60, STEPS, 8000, 6, 0, false, 0.12, 0.86);  // high vol + persistent GARCH
+  // high vol + persistent GARCH (intradaySteps=1 explicit, then α=0.12, β=0.86)
+  const g = simulateGBMJump(100, 0.05, 0.60, STEPS, 8000, 6, 0, false, 1, 0.12, 0.86);
   ok(allFinite(g), 'high-vol persistent GARCH: no NaN/Inf blow-up');
 }
 

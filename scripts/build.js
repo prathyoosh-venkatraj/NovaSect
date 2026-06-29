@@ -54,7 +54,10 @@ async function emit(opts, out, label) {
         const built = res.outputFiles[0].text;
         let committed = null;
         try { committed = fs.readFileSync(out, 'utf8'); } catch { /* missing */ }
-        if (committed === built) {
+        // Compare content, not line-ending encoding — the working tree may be
+        // CRLF on Windows (autocrlf) while esbuild emits LF.
+        const norm = s => s == null ? null : s.replace(/\r\n/g, '\n');
+        if (norm(committed) === norm(built)) {
             console.log(`  ✓ ${label}`);
         } else {
             mismatches.push(out);
