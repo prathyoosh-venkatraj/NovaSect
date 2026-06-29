@@ -26,10 +26,10 @@
 .scn-nav { color:var(--accent-green); text-shadow:0 0 8px rgba(57,255,20,0.55); }
 .scn-nav:hover { color:var(--accent-green); text-shadow:0 0 12px rgba(57,255,20,0.9); }
 .scn-nav.on { text-shadow:0 0 14px rgba(57,255,20,1); }
-.scn-banner { position:fixed; top:0; left:0; right:0; z-index:9998; background:rgba(8,30,46,0.96); border-bottom:1px solid #7DD3FC; color:#7DD3FC; font-family:'JetBrains Mono',monospace; font-size:0.72rem; letter-spacing:0.5px; padding:6px 14px; display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
+.scn-banner { position:fixed; top:0; left:0; right:0; z-index:9998; background:rgba(0,18,0,0.96); border-bottom:1px solid #39FF14; color:#39FF14; font-family:'JetBrains Mono',monospace; font-size:0.72rem; letter-spacing:0.5px; padding:6px 14px; display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap; }
 .scn-banner b { color:#fff; }
-.scn-banner a.scn-edit { color:#7DD3FC; }
-.scn-banner button { background:none; border:1px solid #7DD3FC; color:#7DD3FC; border-radius:3px; font-size:0.62rem; padding:2px 8px; cursor:pointer; font-family:inherit; }
+.scn-banner a.scn-edit { color:#39FF14; }
+.scn-banner button { background:none; border:1px solid #39FF14; color:#39FF14; border-radius:3px; font-size:0.62rem; padding:2px 8px; cursor:pointer; font-family:inherit; }
 `;
 
     function fmt(v, kind, unit) {
