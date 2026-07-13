@@ -1,10 +1,10 @@
 {
- "generated": "2026-07-06",
+ "generated": "2026-07-13",
  "source": "SEC EDGAR XBRL",
  "count": 83,
- "ok": 46,
+ "ok": 45,
  "foreign": 37,
- "fail": 0,
+ "fail": 1,
  "rows": [
   {
    "ticker": "XOM",
@@ -14,20 +14,7 @@
    "rating": "AA",
    "slug": "exxonmobil",
    "reportUrl": "report.html?company=exxonmobil",
-   "pdfReady": true,
-   "revenue": 332238000000,
-   "revGrowth": 0.0385,
-   "netMargin": 0.0868,
-   "operatingMargin": 0.126,
-   "roe": 0.1112,
-   "roa": 0.0642,
-   "roic": 0.1132,
-   "debtToEquity": 0.1678,
-   "netLeverage": 0.4841,
-   "interestCoverage": 112.54,
-   "fcfMargin": 0.0711,
-   "impliedCredit": "AAA/AA",
-   "latestFY": "FY 2025"
+   "pdfReady": true
   },
   {
    "ticker": "SHEL",
